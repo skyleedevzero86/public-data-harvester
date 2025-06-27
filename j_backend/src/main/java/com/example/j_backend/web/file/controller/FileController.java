@@ -29,7 +29,7 @@ public class FileController {
     // 파일 업로드 폼 페이지
     @GetMapping("/uploadForm")
     public String uploadForm() {
-        return "uploadForm"; // /WEB-INF/views/uploadForm.jsp
+        return "file/uploadForm"; // /WEB-INF/views/uploadForm.jsp
     }
 
     // 파일 업로드 처리 (CREATE)
@@ -59,7 +59,7 @@ public class FileController {
         } catch (Exception e) {
             model.addAttribute("error", "파일 목록을 불러오는데 실패했습니다: " + e.getMessage());
         }
-        return "fileList"; // /WEB-INF/views/fileList.jsp
+        return "file/fileList"; // /WEB-INF/views/fileList.jsp
     }
 
     // 특정 파일 정보 조회 (READ One) - (선택 사항, 상세 보기 페이지로 연결)
@@ -71,7 +71,7 @@ public class FileController {
         } catch (Exception e) {
             model.addAttribute("error", "파일 상세 정보를 불러오는데 실패했습니다: " + e.getMessage());
         }
-        return "fileDetails"; // /WEB-INF/views/fileDetails.jsp
+        return "file/fileDetails"; // /WEB-INF/views/fileDetails.jsp
     }
 
     // 파일 다운로드
@@ -105,7 +105,7 @@ public class FileController {
             model.addAttribute("error", "파일 정보를 불러오는데 실패했습니다: " + e.getMessage());
             return "redirect:/files";
         }
-        return "editFile"; // /WEB-INF/views/editFile.jsp
+        return "file/editFile"; // /WEB-INF/views/editFile.jsp
     }
 
     // 파일 설명 업데이트 처리 (UPDATE)
