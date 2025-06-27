@@ -1,3 +1,4 @@
+src/test/**/ScritSelectKey*.java
 application.yml
 application-*.yml
 build.gradle.kts
