@@ -1,5 +1,6 @@
 application.yml
 application-*.yml
+build.gradle.kts
 .idea/
 HELP.md
 .gradle
