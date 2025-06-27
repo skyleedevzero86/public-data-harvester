@@ -17,7 +17,7 @@
         .search-form input[type="submit"] { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
         .search-form input[type="submit"]:hover { background-color: #0056b3; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .actions a { margin-right: 10px; text-decoration: none; padding: 5px 10px; border-radius: 3px; }
         .actions .download-btn { background-color: #17a2b8; color: white; }
@@ -67,7 +67,7 @@
                 <td>${file.originalFileName}</td>
                 <td><fmt:formatNumber value="${file.fileSize / (1024 * 1024)}" maxFractionDigits="2" /> MB</td>
                 <td>${file.contentType}</td>
-                <td><fmt:formatDateTime value="${file.uploadTime}" pattern="yyyy-MM-dd HH:mm:ss"/></td>
+                <td><fmt:formatDate value="${file.uploadTimeAsDate}" pattern="yyyy-MM-dd HH:mm:ss"/></td>
                 <td>${file.description}</td>
                 <td>
                     <c:if test="${not empty file.downloadUrl}">
