@@ -5,7 +5,11 @@ import com.antock.api.coseller.application.CorpApiService;
 import com.antock.api.coseller.application.CsvService;
 import com.antock.api.coseller.application.RegionApiService;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
+import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
+import com.antock.api.coseller.infrastructure.CorpMastRepository;
+import com.antock.api.coseller.value.City;
+import com.antock.api.coseller.value.District;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,14 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import static org.mockito.ArgumentMatchers.anyList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CoSellerServiceTest {
@@ -28,17 +32,28 @@ public class CoSellerServiceTest {
     private CsvService csvService;
     @Mock private CorpApiService corpApiService;
     @Mock private RegionApiService regionApiService;
+    @Mock private CorpMastRepository corpMastRepository;
 
     @InjectMocks
     private CoSellerService coSellerService;
 
+    //엑셀에서 읽은 csv 데이터
     private final List<BizCsvInfoDto> csvInfoList = new ArrayList<>();
+
+    //controller에서 넘어온 요청 dto
+    private RegionRequestDto requestDto ;
 
     public CoSellerServiceTest() {
     }
 
     @BeforeEach
     void setUp() {
+
+        requestDto = RegionRequestDto.builder()
+                .city(City.서울특별시)
+                .district(District.강남구)
+                .build();
+
         BizCsvInfoDto csvInfo1 = BizCsvInfoDto.builder()
                 .sellerId("2025-서울강남-00789")
                 .bizNo("518-42-01193")
@@ -58,6 +73,32 @@ public class CoSellerServiceTest {
         csvInfoList.add(csvInfo1);
         csvInfoList.add(csvInfo2);
 
+    }
+
+    @Test
+    @DisplayName("데이터 저장 로직 검증")
+    void saveCoSeller_save_success() throws Exception {
+        // given
+
+        when(csvService.readBizCsv("서울특별시", "강남구"))
+                .thenReturn(csvInfoList);
+
+        when(corpApiService.getCorpRegNo(anyString()))
+                .thenReturn(CompletableFuture.completedFuture("111111-1234567"));
+
+        when(regionApiService.getRegionCode(anyString()))
+                .thenReturn(CompletableFuture.completedFuture("1168010300"));
+
+        //mock 저장 수행
+        when(corpMastRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        int savedCount = coSellerService.saveCoSeller(requestDto);
+
+        // then
+        assertThat(savedCount).isEqualTo(2);
+        verify(corpMastRepository, times(1)).saveAll(anyList());
     }
 
     @Test

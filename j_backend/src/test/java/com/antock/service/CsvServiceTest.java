@@ -1,5 +1,7 @@
 package com.antock.service;
 
+import com.antock.api.coseller.application.CsvService;
+import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
 import com.antock.global.common.constants.CsvConstants;
@@ -36,14 +38,15 @@ public class CsvServiceTest {
 
         //when
         long startTime =  System.currentTimeMillis();
-        List<BizCsvInfo> list = csvService.readBizCsv(city.name(), district.name());
+        List<BizCsvInfoDto> list = csvService.readBizCsv(city.name(), district.name());
+
 
         long endTime =  System.currentTimeMillis();
         System.out.println("소요시간 = " + (endTime - startTime) + " ms");
         //then
         assertNotNull(list);
 
-        BizCsvInfo info = list.get(0);
+        BizCsvInfoDto info = list.get(0);
         Assertions.assertThat(CsvConstants.CORP_TYPE_BIZ).isEqualTo(info.getBizType());
     }
 }

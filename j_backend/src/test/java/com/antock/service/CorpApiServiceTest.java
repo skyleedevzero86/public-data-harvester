@@ -59,24 +59,29 @@ public class CorpApiServiceTest {
     public void get_CorpRegNo_from_API() throws Exception {
         //given
         when(corpApiProperties.buildRequestUrlWithBizNo(bizNo)).thenReturn(mockUri);
-        when(restTemplate.getForEntity(mockUri,String.class)).thenReturn(new ResponseEntity<>(mockResponseBody, HttpStatus.OK));
+        when(restTemplate.getForEntity(mockUri,String.class)).thenReturn(
+                new ResponseEntity<>(mockResponseBody, HttpStatus.OK)
+        );
 
         //when
         CompletableFuture<String> future = apiService.getCorpRegNo(bizNo);
         String result = future.get(); //111111-1234567
 
         //then
-        Assertions.assertThat(result).isEqualTo("111111-1234567");
+        assertThat(result).isEqualTo("111111-1234567");
     }
 
     @Test
     @DisplayName("API 타임아웃 예외 발생 시 동작 확인")
     void exception_CorpRegNo_from_API() throws Exception {
+        //given
         when(corpApiProperties.buildRequestUrlWithBizNo(bizNo)).thenReturn(mockUri);
         when(restTemplate.getForEntity(mockUri,String.class))
                 .thenThrow(new ResourceAccessException("Timeout"));
 
+        //when
         String result = apiService.getCorpRegNo(bizNo).get();
+        //then
         assertThat(result).isEqualTo("");
     }
 }
