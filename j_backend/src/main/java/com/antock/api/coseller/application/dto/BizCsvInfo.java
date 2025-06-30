@@ -2,12 +2,14 @@ package com.antock.api.coseller.application.dto;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * csv 파일에서 읽어오는 통신 판매 정보
  */
 @Getter
 @Builder
+@ToString
 public class BizCsvInfo {
     private String sellerId; //통신판매번호
     private String bizNm; //상호
