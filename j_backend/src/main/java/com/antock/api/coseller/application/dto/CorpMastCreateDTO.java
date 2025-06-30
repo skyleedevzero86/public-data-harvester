@@ -1,5 +1,6 @@
 package com.antock.api.coseller.application.dto;
 
+import com.antock.api.coseller.domain.CorpMast;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,13 +16,13 @@ public class CorpMastCreateDTO {
     private String corpRegNo;
     private String regionCd;
 
-    public CorpMast toEntity(CorpMastCreateDTO createDto) {
+    public CorpMast toEntity() {
         return CorpMast.builder()
-                .sellerId(createDto.sellerId)
-                .bizNm(createDto.bizNm)
-                .bizNo(createDto.bizNo)
-                .corpRegNo(createDto.corpRegNo)
-                .regionCd(createDto.regionCd)
+                .sellerId(this.sellerId)
+                .bizNm(this.bizNm)
+                .bizNo(this.bizNo)
+                .corpRegNo(this.corpRegNo)
+                .regionCd(this.regionCd)
                 .build();
     }
 

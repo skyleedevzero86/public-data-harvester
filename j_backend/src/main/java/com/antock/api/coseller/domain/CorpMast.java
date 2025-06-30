@@ -1,9 +1,7 @@
 package com.antock.api.coseller.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 //@Entity
 //@Table(uniqueConstraints = {
@@ -12,8 +10,16 @@ import lombok.Getter;
 //                columnNames = {"biz_id"}
 //        )
 //})
+@Entity
+@Table(name= "corp_mast" , uniqueConstraints = {
+        @UniqueConstraint(
+                name="CORP_MAST_UNIQUE",
+                columnNames = {"biz_id"}
+        )
+})
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class CorpMast {
 
