@@ -38,8 +38,8 @@ public class CorpApiService {
         try{
             ResponseEntity<String> response = restTemplate.getForEntity(requestUrl, String.class);
 
-            System.out.println(response.getBody());
             log.debug("CorpRegNo API Response {} : {}", bizNo, response.getBody());
+            log.info("CorpRegNo API get Response success");
 
             corpRegNo = parseCorpResponse(response.getBody());
 
