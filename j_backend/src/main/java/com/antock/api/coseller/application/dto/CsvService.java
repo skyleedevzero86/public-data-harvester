@@ -1,5 +1,6 @@
 package com.antock.api.coseller.application.dto;
 
+import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.global.common.constants.CsvConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -17,8 +18,8 @@ public class CsvService {
 
     @Value("${csv.file-template}")
     private String fileTemplate; // application.yml에서 설정한 파일 경로 템플릿
-    public List<BizCsvInfo> readBizCsv(String city, String district) {
-        String fileName = String.format(fileTemplate, city, district); //통신판매사업자_city_district.csv
+    public List<BizCsvInfoDto> readBizCsv(String city, String district) {
+        String fileName = String.format(fileTemplate, city, district); //city_district.csv
 
         ClassPathResource resource = new ClassPathResource("csvFiles/" + fileName);
 
@@ -54,9 +55,9 @@ public class CsvService {
      * @param tokens
      * @return
      */
-    private BizCsvInfo parseCsvData(String[] tokens) {
+    private BizCsvInfoDto parseCsvData(String[] tokens) {
 
-        return BizCsvInfo.builder()
+        return BizCsvInfoDto.builder()
                 .sellerId(tokens[0].trim())
                 .bizNm(tokens[2].trim())
                 .bizNo(tokens[3].trim())

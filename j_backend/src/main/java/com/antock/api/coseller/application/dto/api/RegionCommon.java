@@ -3,16 +3,14 @@ package com.antock.api.coseller.application.dto.api;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
-import java.net.URI;
-import java.util.List;
 
+/**
+ * 행정코드 받아오기 api에서 json "result": "common"파싱
+ */
 @Setter
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CorpApiJsonResponse {
-
-    private String ResultCode;
-    private String resultMsg;
-    private List<CorpItem> items;
-
+public class RegionCommon {
+    private String errorCode;
+    private String errorMessage;
 }
