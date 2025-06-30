@@ -1,7 +1,6 @@
 package com.antock.api.coseller.application;
 
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
-import com.antock.api.coseller.application.dto.CsvService;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import lombok.RequiredArgsConstructor;

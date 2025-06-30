@@ -1,6 +1,5 @@
 package com.antock.service;
 
-import com.antock.api.coseller.application.dto.CsvService;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
 import com.antock.global.common.constants.CsvConstants;
