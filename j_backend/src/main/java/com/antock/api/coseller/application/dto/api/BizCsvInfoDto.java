@@ -1,4 +1,4 @@
-package com.antock.api.coseller.application.dto;
+package com.antock.api.coseller.application.dto.api;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.ToString;
 @Getter
 @Builder
 @ToString
-public class BizCsvInfo {
+public class BizCsvInfoDto {
     private String sellerId; //통신판매번호
     private String bizNm; //상호
     private String bizNo; //사업자 등록번호
