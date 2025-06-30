@@ -40,7 +40,7 @@ public class RegionApiService {
             ResponseEntity<String> response = restTemplate.getForEntity(requestUrl, String.class);
             log.debug("CorpRegNo API Response {} : {}", address, response.getBody());
             log.info("CorpRegNo API get Response success");
-            
+
             if (response.getStatusCode().is2xxSuccessful()) {
                 return CompletableFuture.completedFuture(parseRegionResponse(response.getBody()));
             } else {
