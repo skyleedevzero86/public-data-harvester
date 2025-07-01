@@ -3,16 +3,25 @@ package com.antock.api.coseller.application.service;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.global.common.constants.CsvConstants;
 import com.antock.global.common.exception.CsvParsingException;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,19 +30,35 @@ import java.util.stream.Collectors;
 public class CsvService {
 
     @Value("${csv.file-template}")
-    private String fileTemplate; // application.yml에서 설정한 파일 경로 템플릿
+    private String fileTemplate;
+
+    @Value("${csv.file-path:classpath}")
+    private String filePath;
+
+    @Value("${minio.url:}")
+    private String minioUrl;
+
+    @Value("${minio.access-key:}")
+    private String minioAccessKey;
+
+    @Value("${minio.secret-key:}")
+    private String minioSecretKey;
+
+    @Value("${minio.bucket:}")
+    private String minioBucket;
+
+    private MinioClient minioClient;
 
     public List<BizCsvInfoDto> readBizCsv(String city, String district) {
-        String fileName = String.format(fileTemplate, city, district); // city_district.csv
-        ClassPathResource resource = new ClassPathResource("csvFiles/" + fileName);
+        String fileName = String.format(fileTemplate, city, district);
 
-        try (BufferedReader br = getReaderFromDefault(resource)) {
+        try (BufferedReader br = getBufferedReader(fileName)) {
             List<BizCsvInfoDto> results = br.lines()
                     .skip(1)
-                    .map(line -> line.split(",", -1)) // csv라인을 읽어서 String으로 넘김
-                    .filter(this::isBiz)  // 법인여부 필터링
-                    .filter(this::isValidData) // Null, N/A, 0000000000000 필터링
-                    .map(this::parseCsvData) // String[]를 BizCsvInfoDto로 변환
+                    .map(line -> line.split(",", -1))
+                    .filter(this::isBiz)
+                    .filter(this::isValidData)
+                    .map(this::parseCsvData)
                     .collect(Collectors.toList());
 
             log.info("데이터 필터링 완료: 총 {}개의 유효한 레코드 처리됨", results.size());
@@ -45,18 +70,99 @@ public class CsvService {
         }
     }
 
+    private BufferedReader getBufferedReader(String fileName) throws IOException {
+        if ("minio".equals(filePath)) {
+            return getMinioBufferedReader(fileName);
+        } else if (filePath.startsWith("classpath")) {
+            return getClasspathBufferedReader(fileName);
+        } else {
+            return getFileSystemBufferedReader(fileName);
+        }
+    }
+
     /**
-     * 요청받은 city, district 로 데이터가 없는경우 "서울특별시_강남구 csv동작"
-     * @param resource
-     * @return
-     * @throws IOException
+     * MinIO에서 CSV 파일 읽기
      */
-    private BufferedReader getReaderFromDefault(ClassPathResource resource) throws IOException {
+    private BufferedReader getMinioBufferedReader(String fileName) throws IOException {
+        try {
+            if (minioClient == null) {
+                minioClient = MinioClient.builder()
+                        .endpoint(minioUrl)
+                        .credentials(minioAccessKey, minioSecretKey)
+                        .build();
+            }
+
+            String objectName = "csv/" + fileName;
+
+            try (InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(minioBucket)
+                            .object(objectName)
+                            .build())) {
+
+                // InputStream을 String으로 읽어서 BufferedReader로 변환
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, Charset.forName("EUC-KR")))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                }
+
+                return new BufferedReader(new java.io.StringReader(content.toString()));
+
+            } catch (Exception e) {
+                log.debug("MinIO에서 요청한 CSV 파일 없음. 기본 파일로 대체. 요청 파일: {}", fileName);
+                log.info("MinIO에서 요청한 CSV 파일 없음. 기본 파일로 대체.");
+                return getMinioDefaultFile();
+            }
+
+        } catch (Exception e) {
+            log.error("MinIO 연결 실패: {}", e.getMessage(), e);
+            throw new IOException("MinIO에서 파일을 읽는데 실패했습니다.", e);
+        }
+    }
+
+    /**
+     * MinIO에서 기본 파일 읽기
+     */
+    private BufferedReader getMinioDefaultFile() throws IOException {
+        try {
+            String defaultFileName = String.format(fileTemplate, CsvConstants.DEFAULT_CITY, CsvConstants.DEFAULT_DISTRICT);
+            String defaultObjectName = "csv/" + defaultFileName;
+
+            try (InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(minioBucket)
+                            .object(defaultObjectName)
+                            .build())) {
+
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, Charset.forName("EUC-KR")))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                }
+
+                return new BufferedReader(new java.io.StringReader(content.toString()));
+            }
+        } catch (Exception e) {
+            throw new IOException("MinIO에서 기본 파일을 읽는데 실패했습니다.", e);
+        }
+    }
+
+    /**
+     * 클래스패스에서 CSV 파일 읽기 (기존 방식)
+     */
+    private BufferedReader getClasspathBufferedReader(String fileName) throws IOException {
+        ClassPathResource resource = new ClassPathResource("csvFiles/" + fileName);
+
         try {
             return new BufferedReader(new InputStreamReader(resource.getInputStream(), Charset.forName("EUC-KR")));
         } catch (IOException e) {
-            log.debug("요청한 CSV 파일 없음. 기본 파일로 대체. 요청 파일: {}", resource.getFilename());
-            log.info("요청한 CSV 파일 없음. 기본 파일로 대체.");
+            log.debug("클래스패스에서 요청한 CSV 파일 없음. 기본 파일로 대체. 요청 파일: {}", fileName);
+            log.info("클래스패스에서 요청한 CSV 파일 없음. 기본 파일로 대체.");
             String defaultFileName = String.format(fileTemplate, CsvConstants.DEFAULT_CITY, CsvConstants.DEFAULT_DISTRICT);
             ClassPathResource defaultResource = new ClassPathResource("csvFiles/" + defaultFileName);
             return new BufferedReader(new InputStreamReader(defaultResource.getInputStream(), Charset.forName("EUC-KR")));
@@ -64,9 +170,29 @@ public class CsvService {
     }
 
     /**
+     * 파일 시스템에서 CSV 파일 읽기
+     */
+    private BufferedReader getFileSystemBufferedReader(String fileName) throws IOException {
+        Path csvPath = Paths.get(filePath, fileName);
+
+        try {
+            if (!Files.exists(csvPath)) {
+                log.debug("파일 시스템에서 요청한 CSV 파일 없음. 기본 파일로 대체. 요청 파일: {}", fileName);
+                log.info("파일 시스템에서 요청한 CSV 파일 없음. 기본 파일로 대체.");
+                String defaultFileName = String.format(fileTemplate, CsvConstants.DEFAULT_CITY, CsvConstants.DEFAULT_DISTRICT);
+                csvPath = Paths.get(filePath, defaultFileName);
+            }
+
+            return Files.newBufferedReader(csvPath, Charset.forName("EUC-KR"));
+
+        } catch (IOException e) {
+            log.error("파일 시스템에서 CSV 파일 읽기 실패: {}", e.getMessage(), e);
+            throw new IOException("파일 시스템에서 파일을 읽는데 실패했습니다.", e);
+        }
+    }
+
+    /**
      * "법인여부" 가 "법인" 인지 필터링
-     * @param tokens
-     * @return
      */
     private boolean isBiz(String[] tokens) {
         boolean result = tokens.length > 4 && CsvConstants.CORP_TYPE_BIZ.equals(tokens[4].trim());
@@ -78,8 +204,6 @@ public class CsvService {
 
     /**
      * 데이터 유효성 검사: Null, '%N/A%' 및 0000000000000 제외
-     * @param tokens
-     * @return
      */
     private boolean isValidData(String[] tokens) {
         if (tokens.length <= 3) {
@@ -118,12 +242,9 @@ public class CsvService {
 
     /**
      * CSV 데이터를 BizCsvInfoDto로 파싱
-     * @param tokens
-     * @return
      */
     private BizCsvInfoDto parseCsvData(String[] tokens) {
         try {
-            // 배열 길이 체크하여 안전하게 파싱
             return BizCsvInfoDto.builder()
                     .sellerId(tokens.length > 0 ? tokens[0].trim() : "")
                     .bizNm(tokens.length > 2 ? tokens[2].trim() : "")
