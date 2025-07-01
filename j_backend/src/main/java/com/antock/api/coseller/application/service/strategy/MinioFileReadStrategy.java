@@ -30,7 +30,7 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
     @Override
     public BufferedReader getBufferedReader(String fileName) throws IOException {
         try {
-            String objectName = "csv/" + fileName;
+            String objectName =  fileName;
             log.info("MinIO에서 파일 요청: bucket={}, object={}", minioBucket, objectName);
 
             InputStream stream = minioClient.getObject(
