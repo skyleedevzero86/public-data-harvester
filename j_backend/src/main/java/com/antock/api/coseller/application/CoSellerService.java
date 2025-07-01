@@ -1,5 +1,7 @@
 package com.antock.api.coseller.application;
 
+import com.antock.api.coseller.application.client.CorpApiClient;
+import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
@@ -27,9 +29,9 @@ public class CoSellerService {
     // csv 조회 서비스
     private final CsvService csvService;
     // 법인 등록번호 조회 api 호출
-    private final CorpApiService corpApiService;
+    private final CorpApiClient corpApiClient;
     // 행정 구역 코드 조회 api 호출
-    private final RegionApiService regionApiService;
+    private final RegionApiClient regionApiClient;
     // Repository
     private final CorpMastRepository corpMastRepository;
 
@@ -107,8 +109,8 @@ public class CoSellerService {
 
     @Async
     public CompletableFuture<Optional<CorpMastCreateDTO>> processAsync(BizCsvInfoDto csvInfo) {
-        CompletableFuture<String> corpFuture = corpApiService.getCorpRegNo(csvInfo.getBizNo());
-        CompletableFuture<String> regionFuture = regionApiService.getRegionCode(csvInfo.getBizAddress());
+        CompletableFuture<String> corpFuture = corpApiClient.getCorpRegNo(csvInfo.getBizNo());
+        CompletableFuture<String> regionFuture = regionApiClient.getRegionCode(csvInfo.getBizAddress());
 
         return corpFuture.thenCombine(regionFuture, (corpRegNo, regionCd)->{
             if(corpRegNo == null && regionCd == null) {

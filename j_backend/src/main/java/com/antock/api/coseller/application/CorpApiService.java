@@ -7,6 +7,7 @@ import com.antock.api.coseller.application.dto.properties.CorpApiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -45,11 +46,12 @@ public class CorpApiService implements CorpApiClient {
             corpRegNo = parseCorpResponse(response.getBody());
 
         } catch (ResourceAccessException e) {
+            corpRegNo = "";
             log.error("네트워크 오류 또는 타임아웃: {}", e.getMessage());
         } catch (RestClientException e) {
-            log.error("RestTemplate 예외 발생: {}", e.getMessage());
+            throw new ExternalApiException(HttpStatus.BAD_GATEWAY, "통신에 실패하였습니다.");
         } catch (Exception e) {
-            log.error("예상치 못한 예외: {}", e.getMessage());
+            throw new ExternalApiException(HttpStatus.BAD_GATEWAY, "통신에 실패하였습니다.");
         }
 
         return CompletableFuture.completedFuture(corpRegNo);

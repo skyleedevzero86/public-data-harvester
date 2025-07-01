@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Enum<?>> {
 
     private Set<String> enumValues;
+    private String message;
 
     @Override
     public void initialize(ValidEnum targetEnum) {
@@ -17,13 +18,19 @@ public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Enum<?
         enumValues = Arrays.stream(enumClass.getEnumConstants())
                 .map(Enum::name)
                 .collect(Collectors.toSet());
+        message = targetEnum.message(); // message 저장
     }
 
     @Override
     public boolean isValid(Enum<?> value, ConstraintValidatorContext context) {
-        if(value == null) {
+
+        // 유효한 Enum 값인지 확인
+        if (value == null || !enumValues.contains(value.name())) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate(this.message) // << 여기에 주목
+                    .addConstraintViolation();
             return false;
         }
-        return enumValues.contains(value.name());
+        return true;
     }
 }

@@ -4,6 +4,8 @@ import com.antock.api.coseller.application.CoSellerService;
 import com.antock.api.coseller.application.CorpApiService;
 import com.antock.api.coseller.application.CsvService;
 import com.antock.api.coseller.application.RegionApiService;
+import com.antock.api.coseller.application.client.CorpApiClient;
+import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
@@ -30,8 +32,8 @@ import static org.mockito.Mockito.*;
 public class CoSellerServiceTest {
     @Mock
     private CsvService csvService;
-    @Mock private CorpApiService corpApiService;
-    @Mock private RegionApiService regionApiService;
+    @Mock private CorpApiClient corpApiClient;
+    @Mock private RegionApiClient regionApiClient;
     @Mock private CorpMastRepository corpMastRepository;
 
     @InjectMocks
@@ -83,10 +85,10 @@ public class CoSellerServiceTest {
         when(csvService.readBizCsv("서울특별시", "강남구"))
                 .thenReturn(csvInfoList);
 
-        when(corpApiService.getCorpRegNo(anyString()))
+        when(corpApiClient.getCorpRegNo(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("111111-1234567"));
 
-        when(regionApiService.getRegionCode(anyString()))
+        when(regionApiClient.getRegionCode(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("1168010300"));
 
         //mock 저장 수행
@@ -106,11 +108,11 @@ public class CoSellerServiceTest {
     public void proccessAsync_success() throws Exception {
         //given
         //법인 코드 조회
-        when(corpApiService.getCorpRegNo(csvInfoList.get(0).getBizNo())).thenReturn(
+        when(corpApiClient.getCorpRegNo(csvInfoList.get(0).getBizNo())).thenReturn(
                 CompletableFuture.completedFuture("111111-1234567")
         );
         // 행정 구역 코드 조회
-        when(regionApiService.getRegionCode(csvInfoList.get(0).getBizAddress())).thenReturn(
+        when(regionApiClient.getRegionCode(csvInfoList.get(0).getBizAddress())).thenReturn(
                 CompletableFuture.completedFuture("1168010300")
         );
         //when
@@ -127,10 +129,10 @@ public class CoSellerServiceTest {
     @DisplayName("API둘다 실패시 csvInfo 데이터를 가진 CorpMastCreateDTO 반환")
     void processAsync_fail_when_corpApi_fails() throws Exception {
         // given
-        when(corpApiService.getCorpRegNo(csvInfoList.get(0).getBizNo()))
+        when(corpApiClient.getCorpRegNo(csvInfoList.get(0).getBizNo()))
                 .thenReturn(CompletableFuture.completedFuture(null)); // 실패 시 null
 
-        when(regionApiService.getRegionCode(csvInfoList.get(0).getBizAddress()))
+        when(regionApiClient.getRegionCode(csvInfoList.get(0).getBizAddress()))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // when
