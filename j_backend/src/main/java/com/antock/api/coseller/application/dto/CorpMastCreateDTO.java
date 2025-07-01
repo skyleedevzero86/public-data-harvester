@@ -25,5 +25,4 @@ public class CorpMastCreateDTO {
                 .regionCd(this.regionCd)
                 .build();
     }
-
 }

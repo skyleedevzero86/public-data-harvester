@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 public class MinioConfig {
 
     @Bean
-    @Profile({"dev", "!prod"}) // 개발/운영 환경에서 분리
+    @Profile("dev")
     public MinioClient minioClient(
             @Value("${minio.url}") String minioUrl,
             @Value("${minio.access-key}") String accessKey,

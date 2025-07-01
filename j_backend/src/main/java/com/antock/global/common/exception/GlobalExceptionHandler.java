@@ -13,26 +13,23 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    //Enum 매핑 실패시 Exception handler
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiResponse<?> handleInvalidEnum(MethodArgumentNotValidException ex) {  // @ValidEnum에서 설정한 메시지 처리
+    public ApiResponse<?> handleInvalidEnum(MethodArgumentNotValidException ex) {
 
         String errorMsg = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)  // 메시지 출력
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
         log.debug("검증 실패: {}", errorMsg);
 
-        return ApiResponse.of(HttpStatus.BAD_REQUEST,errorMsg,"");
-
+        return ApiResponse.of(HttpStatus.BAD_REQUEST, errorMsg, "");
     }
 
-    //커스텀 예외 발생시 Exception handler
     @ExceptionHandler(CustomException.class)
     public ApiResponse<?> handleCustomException(CustomException ex) {
-        log.debug (ex.getResultMsg());
-        return ApiResponse.of(ex.getHttpStatus(), ex.getResultMsg());
+        log.debug(ex.getMessage());
+        return ApiResponse.of(ex.getStatus(), ex.getMessage());
     }
 }

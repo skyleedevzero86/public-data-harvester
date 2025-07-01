@@ -1,21 +1,21 @@
 package com.antock.global.common.exception;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@Getter
-public class CustomException extends  RuntimeException{
-    private HttpStatus httpStatus;
-    private String resultMsg;
+public class CustomException extends RuntimeException {
+    private final HttpStatus status;
 
-    public CustomException(HttpStatus httpStatus, String resultMsg) {
-        this.httpStatus = httpStatus;
-        this.resultMsg = resultMsg;
+    public CustomException(HttpStatus status, String message) {
+        super(message);
+        this.status = status;
     }
-    public CustomException(HttpStatus httpStatus) {
-        this.httpStatus = httpStatus;
-    }
-    public CustomException(String message, Throwable cause) {
+
+    public CustomException(HttpStatus status, String message, Throwable cause) {
         super(message, cause);
+        this.status = status;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
     }
 }

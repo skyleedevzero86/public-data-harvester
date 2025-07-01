@@ -22,8 +22,7 @@ public class CoSellerRestController {
 
     @PostMapping("/save")
     public ApiResponse<Integer> saveCoSeller(@Valid @RequestBody RegionRequestDto regionRequestDto) {
-        log.debug("지역 요청 수신 : {}" , regionRequestDto.toString());
-
+        log.info("Received request: {}", regionRequestDto);
         return ApiResponse.of(HttpStatus.OK, cosellerService.saveCoSeller(regionRequestDto));
     }
 }
