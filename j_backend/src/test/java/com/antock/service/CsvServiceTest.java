@@ -1,6 +1,6 @@
 package com.antock.service;
 
-import com.antock.api.coseller.application.CsvService;
+import com.antock.api.coseller.application.service.CsvService;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;

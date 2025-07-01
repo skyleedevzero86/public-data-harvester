@@ -1,6 +1,6 @@
 package com.antock.presentation;
 
-import com.antock.api.coseller.application.CoSellerService;
+import com.antock.api.coseller.application.service.CoSellerService;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.presentation.CoSellerRestController;
 import com.antock.api.coseller.value.City;

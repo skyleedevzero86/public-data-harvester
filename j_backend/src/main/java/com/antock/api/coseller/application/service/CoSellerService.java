@@ -1,4 +1,4 @@
-package com.antock.api.coseller.application;
+package com.antock.api.coseller.application.service;
 
 import com.antock.api.coseller.application.client.CorpApiClient;
 import com.antock.api.coseller.application.client.RegionApiClient;
@@ -6,14 +6,11 @@ import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.coseller.infrastructure.CorpMastStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;

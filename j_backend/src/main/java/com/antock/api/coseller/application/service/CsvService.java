@@ -1,4 +1,4 @@
-package com.antock.api.coseller.application;
+package com.antock.api.coseller.application.service;
 
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.global.common.constants.CsvConstants;
@@ -13,7 +13,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 

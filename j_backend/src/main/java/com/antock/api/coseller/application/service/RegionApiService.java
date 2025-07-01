@@ -1,4 +1,4 @@
-package com.antock.api.coseller.application;
+package com.antock.api.coseller.application.service;
 
 import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.api.RegionApiJsonResponse;

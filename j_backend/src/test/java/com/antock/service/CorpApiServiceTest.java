@@ -1,8 +1,7 @@
 package com.antock.service;
 
-import com.antock.api.coseller.application.CorpApiService;
+import com.antock.api.coseller.application.service.CorpApiService;
 import com.antock.api.coseller.application.dto.properties.CorpApiProperties;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 

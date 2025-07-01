@@ -3,7 +3,7 @@ package com.antock.api.coseller.application.dto.api;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
-import java.net.URI;
+
 import java.util.List;
 
 @Setter

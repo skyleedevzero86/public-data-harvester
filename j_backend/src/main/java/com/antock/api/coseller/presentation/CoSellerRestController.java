@@ -1,6 +1,6 @@
 package com.antock.api.coseller.presentation;
 
-import com.antock.api.coseller.application.CoSellerService;
+import com.antock.api.coseller.application.service.CoSellerService;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.global.common.response.ApiResponse;
 import jakarta.validation.Valid;

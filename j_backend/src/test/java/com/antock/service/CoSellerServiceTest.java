@@ -1,15 +1,12 @@
 package com.antock.service;
 
-import com.antock.api.coseller.application.CoSellerService;
-import com.antock.api.coseller.application.CorpApiService;
-import com.antock.api.coseller.application.CsvService;
-import com.antock.api.coseller.application.RegionApiService;
+import com.antock.api.coseller.application.service.CoSellerService;
+import com.antock.api.coseller.application.service.CsvService;
 import com.antock.api.coseller.application.client.CorpApiClient;
 import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
-import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.coseller.infrastructure.CorpMastStore;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
