@@ -2,9 +2,11 @@ package com.antock.api.coseller.application;
 
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.global.common.constants.CsvConstants;
+import com.antock.global.common.exception.CsvParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -38,7 +40,7 @@ public class CsvService {
 
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new CsvParsingException(HttpStatus.INTERNAL_SERVER_ERROR, "CSV파일 읽어오기에 실패했습니다.");
         }
 
     }

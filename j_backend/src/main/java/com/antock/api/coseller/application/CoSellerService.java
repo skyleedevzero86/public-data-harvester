@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 법인 판매 데이터 가공을 위한 Service
+ */
 @Slf4j
 @Service
 @Transactional
