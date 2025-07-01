@@ -1,5 +1,6 @@
 package com.antock.api.coseller.application;
 
+import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.api.RegionApiJsonResponse;
 import com.antock.api.coseller.application.dto.properties.RegionApiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +22,7 @@ import com.antock.global.utils.AddressUtil;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RegionApiService {
+public class RegionApiService implements RegionApiClient {
 
     private final RestTemplate restTemplate;
     private final RegionApiProperties regionProp;
