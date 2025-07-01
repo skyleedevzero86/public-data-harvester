@@ -26,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class CoSellerService {
 
