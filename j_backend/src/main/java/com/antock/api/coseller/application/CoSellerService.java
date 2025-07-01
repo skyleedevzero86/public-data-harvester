@@ -7,6 +7,7 @@ import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.domain.CorpMast;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
+import com.antock.api.coseller.infrastructure.CorpMastStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -34,7 +35,7 @@ public class CoSellerService {
     // 법인 등록번호 조회 api 호출
     private final CorpApiClient corpApiClient;
     // 행정 구역 코드 조회 api 호출
-    private final RegionApiClient regionApiClient;
+    private final CorpMastStore corpMastStore;
     // Repository
     private final CorpMastRepository corpMastRepository;
 
@@ -69,7 +70,7 @@ public class CoSellerService {
 
         try {
             log.info("saveAll 시작 - 총 {}건", entityList.size());
-            corpMastRepository.saveAll(entityList);
+            corpMastStore.saveAll(entityList);
             savedCount = entityList.size();
             log.info("saveAll 성공 - 저장된 건수: {}", savedCount);
         } catch (DataIntegrityViolationException e) {
@@ -77,7 +78,7 @@ public class CoSellerService {
 
             for (CorpMast entity : entityList) {
                 try {
-                    corpMastRepository.save(entity);
+                    corpMastStore.save(entity);
                     savedCount++;
                 } catch (DataIntegrityViolationException dupEx) {
                     duplicatedBizNos.add(entity.getBizNo());
