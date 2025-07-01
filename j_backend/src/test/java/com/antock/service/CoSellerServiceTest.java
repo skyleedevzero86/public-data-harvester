@@ -10,6 +10,7 @@ import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
+import com.antock.api.coseller.infrastructure.CorpMastStore;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,13 +29,14 @@ import java.util.concurrent.CompletableFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+
 @ExtendWith(MockitoExtension.class)
 public class CoSellerServiceTest {
     @Mock
     private CsvService csvService;
     @Mock private CorpApiClient corpApiClient;
     @Mock private RegionApiClient regionApiClient;
-    @Mock private CorpMastRepository corpMastRepository;
+    @Mock private CorpMastStore corpMastStore;
 
     @InjectMocks
     private CoSellerService coSellerService;
@@ -50,7 +52,6 @@ public class CoSellerServiceTest {
 
     @BeforeEach
     void setUp() {
-
         requestDto = RegionRequestDto.builder()
                 .city(City.서울특별시)
                 .district(District.강남구)
@@ -77,6 +78,7 @@ public class CoSellerServiceTest {
 
     }
 
+
     @Test
     @DisplayName("데이터 저장 로직 검증")
     void saveCoSeller_save_success() throws Exception {
@@ -92,17 +94,15 @@ public class CoSellerServiceTest {
                 .thenReturn(CompletableFuture.completedFuture("1168010300"));
 
         //mock 저장 수행
-        when(corpMastRepository.saveAll(anyList()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        doNothing().when(corpMastStore).saveAll(anyList());
 
         // when
         int savedCount = coSellerService.saveCoSeller(requestDto);
 
         // then
         assertThat(savedCount).isEqualTo(2);
-        verify(corpMastRepository, times(1)).saveAll(anyList());
+        verify(corpMastStore, times(1)).saveAll(anyList());
     }
-
     @Test
     @DisplayName("csv list를 넣어서 dto 반환 코드 검증 ")
     public void proccessAsync_success() throws Exception {

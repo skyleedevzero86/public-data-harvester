@@ -20,6 +20,7 @@ public class JpaCorpMastStore implements CorpMastStore{
     private final CorpMastRepository corpMastRepository;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(CorpMast corpMast) {
         corpMastRepository.save(corpMast);
     }

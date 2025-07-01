@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+
+
 /**
  * 법인 판매 데이터 가공을 위한 Service
  */
@@ -34,21 +36,21 @@ public class CoSellerService {
     // 법인 등록번호 조회 api 호출
     private final CorpApiClient corpApiClient;
     // 행정 구역 코드 조회 api 호출
-    private final CorpMastStore corpMastStore;
+    private final RegionApiClient regionApiClient;
     // Repository
-    private final CorpMastRepository corpMastRepository;
+    private final CorpMastStore corpMastStore;
 
     /**
      * 법인 데이터 저장 로직
      * @param requestDto
      * @return
      */
-    public String saveCoSeller(RegionRequestDto requestDto){
+    public int saveCoSeller(RegionRequestDto requestDto){
 
         //City와 disctrict로 csv 파일 읽어오기
-
         List<BizCsvInfoDto> list = csvService.readBizCsv(requestDto.getCity().name(), requestDto.getDistrict().name());
 
+        // 받아온 csv로 API호출하여 법인 등록 코드, 행정 구역 코드 받아오기
         List<CorpMastCreateDTO> corpCreateDtoList = getCorpApiInfo(list);
 
         //저장
@@ -64,25 +66,30 @@ public class CoSellerService {
                 .toList();
 
         int savedCount = 0;
-        List<String> duplicatedBizNos = Collections.synchronizedList(new ArrayList<>()); //중복되어 저장되지 않은 리스트
+        List<String> duplicatedBizNos = Collections.synchronizedList(new ArrayList<>()); // 중복되어 저장되지 않은 리스트
 
+        // 이 부분에 새 코드를 적용합니다
+        for (CorpMast entity : entityList) {
+            try {
+                // 엔티티가 이미 존재하는지 확인
+                Optional<CorpMast> existingEntity = corpMastStore.findByBizNo(entity.getBizNo());
+                log.info("save All 시작 - 총 {}건",entityList.size());
 
-        try {
-            log.info("saveAll 시작 - 총 {}건", entityList.size());
-            corpMastStore.saveAll(entityList);
-            savedCount = entityList.size();
-            log.info("saveAll 성공 - 저장된 건수: {}", savedCount);
-        } catch (DataIntegrityViolationException e) {
-            log.warn("saveAll 실패 - 개별 저장으로 fallback");
-
-            for (CorpMast entity : entityList) {
-                try {
+                if (existingEntity.isPresent()) {
+                    // 기존 엔티티 업데이트 로직
+                    CorpMast existing = existingEntity.get();
+                    // 필요한 필드 업데이트
+                    // existing.setField(entity.getField());
+                    corpMastStore.save(existing);
+                } else {
+                    // 새 엔티티 저장
                     corpMastStore.save(entity);
-                    savedCount++;
-                } catch (DataIntegrityViolationException dupEx) {
-                    duplicatedBizNos.add(entity.getBizNo());
-                    log.debug("중복된 bizNo 건 스킵: {}", entity.getBizNo());
                 }
+                savedCount++;
+                log.info("save All 성공 - 저장된건수: {}",savedCount);
+            } catch (Exception ex) {
+                duplicatedBizNos.add(entity.getBizNo());
+                log.debug("저장 실패한 bizNo: {}, 오류: {}", entity.getBizNo(), ex.getMessage());
             }
         }
 
@@ -92,7 +99,8 @@ public class CoSellerService {
         }
 
         return savedCount;
-}
+    }
+
     /**
      * csv로 부터 api2개를 읽어와 dto를 반환
      * @param csvList
