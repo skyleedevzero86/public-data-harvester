@@ -4,6 +4,7 @@ import com.antock.api.coseller.application.client.CorpApiClient;
 import com.antock.api.coseller.application.dto.api.CorpApiJsonResponse;
 import com.antock.api.coseller.application.dto.api.CorpItem;
 import com.antock.api.coseller.application.dto.properties.CorpApiProperties;
+import com.antock.global.common.exception.ExternalApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

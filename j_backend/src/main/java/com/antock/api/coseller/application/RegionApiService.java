@@ -3,6 +3,7 @@ package com.antock.api.coseller.application;
 import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.api.RegionApiJsonResponse;
 import com.antock.api.coseller.application.dto.properties.RegionApiProperties;
+import com.antock.global.common.exception.ExternalApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
