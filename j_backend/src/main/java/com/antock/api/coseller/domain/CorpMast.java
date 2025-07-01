@@ -14,7 +14,7 @@ import lombok.*;
 @Table(name= "corp_mast" , uniqueConstraints = {
         @UniqueConstraint(
                 name="CORP_MAST_UNIQUE",
-                columnNames = {"biz_id"}
+                columnNames = {"biz_no"}
         )
 })
 @Getter

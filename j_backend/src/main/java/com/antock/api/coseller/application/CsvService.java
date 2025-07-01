@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -39,6 +40,24 @@ public class CsvService {
         }
 
     }
+
+    /**
+     * 요청받은 city, district 로 데이터가 없는경우 "서울특별시_강남구 csv동작"
+     * @param resource
+     * @return
+     * @throws IOException
+     */
+    private BufferedReader getReaderFromDefault(ClassPathResource resource) throws IOException {
+        try {
+            return new BufferedReader(new InputStreamReader(resource.getInputStream(), Charset.forName("EUC-KR")));
+        } catch (IOException e) {
+            log.debug("요청한 CSV 파일 없음. 기본 파일로 대체. 요청 파일: {}", resource.getFilename());
+            String defaultFileName = String.format(fileTemplate, CsvConstants.DEFAULT_CITY, CsvConstants.DEFAULT_DISTRICT);
+            ClassPathResource defaultResource = new ClassPathResource("csvFiles/" + defaultFileName);
+            return new BufferedReader(new InputStreamReader(defaultResource.getInputStream(), Charset.forName("EUC-KR")));
+        }
+    }
+
 
     /**
      * "법인여부" 가 "법인" 인지 필터링
