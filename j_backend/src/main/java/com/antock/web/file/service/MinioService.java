@@ -2,48 +2,51 @@ package com.antock.web.file.service;
 
 import io.minio.*;
 import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.InputStreamResource;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class MinioService {
 
-    private final MinioClient minioClient;
+    private final Optional<MinioClient> minioClient;
 
-    @Value("${minio.bucket}")
+    @Value("${minio.bucket:default-bucket}")
     private String bucketName;
 
-    /**
-     * 버킷이 존재하지 않으면 생성합니다.
-     */
-    public void createBucket() throws Exception {
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+    // Optional로 MinioClient 주입 (없어도 됨)
+    public MinioService(@Autowired(required = false) MinioClient minioClient) {
+        this.minioClient = Optional.ofNullable(minioClient);
+    }
+
+    private void validateMinioAvailable() {
+        if (minioClient.isEmpty()) {
+            throw new UnsupportedOperationException("MinIO is not available in this environment");
         }
     }
 
-    /**
-     * MinIO에 파일을 업로드합니다.
-     * @param file MultipartFile
-     * @param objectName MinIO에 저장될 객체 이름
-     * @return 성공 여부
-     */
+    public void createBucket() throws Exception {
+        validateMinioAvailable();
+        boolean found = minioClient.get().bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+        if (!found) {
+            minioClient.get().makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+        }
+    }
+
     public String uploadFile(MultipartFile file, String objectName) throws Exception {
-        createBucket(); // 버킷이 존재하는지 확인하고 없으면 생성
+        validateMinioAvailable();
+        createBucket();
 
         try (InputStream is = file.getInputStream()) {
-            minioClient.putObject(
+            minioClient.get().putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
@@ -54,13 +57,9 @@ public class MinioService {
         }
     }
 
-    /**
-     * MinIO에서 파일을 다운로드합니다.
-     * @param objectName MinIO에 저장된 객체 이름
-     * @return 파일 InputStreamResource
-     */
     public InputStreamResource downloadFile(String objectName) throws Exception {
-        InputStream stream = minioClient.getObject(
+        validateMinioAvailable();
+        InputStream stream = minioClient.get().getObject(
                 GetObjectArgs.builder()
                         .bucket(bucketName)
                         .object(objectName)
@@ -68,30 +67,27 @@ public class MinioService {
         return new InputStreamResource(stream);
     }
 
-    /**
-     * MinIO에서 파일의 사전 서명된 URL을 가져옵니다. (다운로드 링크)
-     * @param objectName MinIO에 저장된 객체 이름
-     * @return 사전 서명된 URL
-     */
     public String getPreSignedUrl(String objectName) throws Exception {
-        return minioClient.getPresignedObjectUrl(
+        validateMinioAvailable();
+        return minioClient.get().getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.GET)
                         .bucket(bucketName)
                         .object(objectName)
-                        .expiry(7, TimeUnit.DAYS) // 7일 유효
+                        .expiry(7, TimeUnit.DAYS)
                         .build());
     }
 
-    /**
-     * MinIO에서 파일을 삭제합니다.
-     * @param objectName MinIO에 저장된 객체 이름
-     */
     public void deleteFile(String objectName) throws Exception {
-        minioClient.removeObject(
+        validateMinioAvailable();
+        minioClient.get().removeObject(
                 RemoveObjectArgs.builder()
                         .bucket(bucketName)
                         .object(objectName)
                         .build());
+    }
+
+    public boolean isMinioAvailable() {
+        return minioClient.isPresent();
     }
 }
