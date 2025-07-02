@@ -1,4 +1,4 @@
-package com.antock.corp.service;
+package com.antock.corp.application.service;
 
 import com.antock.api.coseller.application.service.CsvService;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;

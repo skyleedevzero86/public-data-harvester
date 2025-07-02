@@ -1,4 +1,4 @@
-package com.antock.member.service;
+package com.antock.member.application.service;
 
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberResponse;
