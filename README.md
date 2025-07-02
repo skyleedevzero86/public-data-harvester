@@ -7,16 +7,16 @@
 
 ## 프로젝트 소개
 
-**Public Data Harvester**는 시/Do(city), 구/군(district) 정보를 입력받아,
-공개 데이터(CSV)와 외부 API(법인등록번호, 행정구역코드)를 활용해
-통신판매 사업자 정보를 수집·과감·저장하는 백어드 시스템입니다.
+**Public Data Harvester**는 시/도(city), 구/군(district) 정보를 입력받아,
+공공 데이터(CSV)와 외부 API(법인등록번호, 행정구역코드)를 활용해
+통신판매 사업자 정보를 수집·가공·저장하는 백엔드 시스템입니다.
 
 * **CSV 데이터 필터링**: 시/도, 구/군별 통신판매 사업자 데이터(CSV)에서 법인 데이터만 선별
-* **공개 API 연동**: 법인등록번호, 행정구역코드 등 추가 정보 실시간 수집
-* **비동기 병련 처리**: 대량 데이터도 빠른 처리 (CompletableFuture 기반)
+* **공공 API 연동**: 법인등록번호, 행정구역코드 등 추가 정보 실시간 수집
+* **비동기 병렬 처리**: 대량 데이터도 빠르게 처리 (CompletableFuture 기반)
 * **유연한 저장소 구조**: JPA 기반, H2/PostgreSQL 등 DB 교체 용이
-* **운영/관리 기능**: 케시/레이트만드/헬스체크/모니터링 내장
-* **환경별 설정 분리**: dev/prod 프리평, application.yml 기반 설정
+* **운영/관리 기능**: 캐시/레이트리밋/헬스체크/모니터링 내장
+* **환경별 설정 분리**: dev/prod 프로필, application.yml 기반 설정
 
 ---
 
@@ -31,7 +31,7 @@ graph TD
     Domain[Domain Layer<br/>Entity/Value Object/Enum]
     Infra[Infrastructure Layer<br/>JPA/외부 API/CSV/Redis/Minio]
     DB[(DB)]
-    API[(공개 API)]
+    API[(공공 API)]
     Controller --> Service
     Service --> Domain
     Service --> Infra
@@ -40,9 +40,9 @@ graph TD
 ```
 
 * **Presentation**: REST API, Web Controller, 관리자/사용자 인터페이스
-* **Application**: 비즈니스 서비스, 튴닉션, 비동기/병련 처리
-* **Domain**: 해당 동어인 드라이브, 엔티티, 값 객체, Enum
-* **Infrastructure**: JPA 저장소, 외부 API 클라이언트, 파일/케시/레이트마인드 등
+* **Application**: 비즈니스 서비스, 트랜잭션, 비동기/병렬 처리
+* **Domain**: 핵심 도메인 모델, 엔티티, 값 객체, Enum
+* **Infrastructure**: JPA 저장소, 외부 API 클라이언트, 파일/캐시/레이트리밋 등
 
 ### 2. **주요 기술 스택**
 
@@ -57,27 +57,33 @@ graph TD
 ## 주요 기능
 
 * **CSV 데이터 필터링 및 저장**: 시/도, 구/군별 CSV에서 법인 데이터만 추출, DB 저장
-* **공개 API 연동**: 법인등록번호, 행정구역코드 실시간 조회 및 병합
-* **비동기 병련 처리**: 대량 데이터도 빠른 처리 (CompletableFuture)
-* **운영/관리**: 케시/레이트만드/헬스체크/모니터링 API 제공
-* **환경별 설정**: dev(로커량+Redis+Minio), prod(H2+로커파일) 등 profile별 분리
+* **공공 API 연동**: 법인등록번호, 행정구역코드 실시간 조회 및 병합
+* **비동기 병렬 처리**: 대량 데이터도 빠르게 처리 (CompletableFuture)
+* **운영/관리**: 캐시/레이트리밋/헬스체크/모니터링 API 제공
+* **환경별 설정**: dev(로컬+Redis+Minio), prod(H2+로컬파일) 등 profile별 분리
 
 ---
 
 ## 폴더 구조
 
+```
 src/
-main/
-java/
-com.antock/
-api/
-coseller/  # 통신판매 사업자 동어문
-member/  # 회원 동어문
-admin/ # 관리자/운영
-global/ # 공통/유형/설정
-web/ # Web Controller (JSP)
-resources/
-application.yml, application-dev.yml, application-prod.yml, ...
+└── main/
+    ├── java/
+    │   └── com/antock/
+    │       ├── api/
+    │       │   ├── coseller/   # 통신판매 사업자 도메인
+    │       │   ├── member/     # 회원 도메인
+    │       │   ├── admin/      # 관리자 및 운영 기능
+    │       │   ├── global/     # 공통/유틸/설정
+    │       │   └── web/        # Web Controller (JSP 기반)
+    └── resources/
+        ├── application.yml
+        ├── application-dev.yml
+        └── application-prod.yml
+```
+
+---
 
 ## 실행 방법
 
@@ -85,6 +91,6 @@ application.yml, application-dev.yml, application-prod.yml, ...
 # 개발 환경 (dev, Redis/Minio 사용)
 ./gradlew runDev
 
-# 운영 환경 (prod, H2/로커파일 사용)
+# 운영 환경 (prod, H2/로컬파일 사용)
 ./gradlew runProd
 ```
