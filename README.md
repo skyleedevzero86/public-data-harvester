@@ -1,111 +1,124 @@
 ![image](https://github.com/user-attachments/assets/0ab4c671-8dfc-4498-8f6d-47b3b9d5ab4d)
 ![image](https://github.com/user-attachments/assets/68edacdd-3ccb-4f2c-8371-a2cca89aca93)
 
-
-
 <br/>
 
+## 프로젝트 개요
+
+공정거래위원회에서 제공하는 통신판매사업자 CSV 정보를 기반으로, **파일을 읽고**, 공공 API를 활용해 추가 정보를 수집 후 **DB에 저장**하는 백엔드 서비스입니다.
 
 ---
 
-## 화면 구성 (*) 추후변경가능..
+## 아키텍처 개요
 
-- **대시보드**: 주요 지표, 최근 활동, 시스템 상태
-- **데이터 수집**: 수집 현황, 수집 실행/이력
-- **데이터 관리**: 데이터 목록, 품질 검증, 내보내기
-- **스케줄 관리**: 스케줄 등록/수정/삭제, 크론 관리
-- **모니터링**: 통계, 트렌드, 성공률
-- **설정**: 환경설정, 알림 설정, (사용자 관리)
+### 전체 데이터 흐름
+
+```
+[CSV 파일]
+    │
+    ▼
+[CsvService]  --(사업자 리스트 추출)--> [CoSellerService]
+    │                                         │
+    │-------------------비동기-----------------│
+    ▼                                         ▼
+[CorpApiService]                        [RegionApiService]
+ (공공데이터 API)                        (주소 API)
+    │                                         │
+    └-------------------결과-------------------┘
+                      │
+                      ▼
+                [CorpMast] (엔티티 변환)
+                      │
+                      ▼
+      [CorpMastStore / JpaCorpMastStore]
+                      │
+                      ▼
+                   [H2 DB/PostgreSql]
+                      │
+                      ▼
+         [CoSellerRestController]
+                      │
+                      ▼
+           [클라이언트(JSP/프론트)]
+─────────────────────────────────────────────
+공통 지원: ApiResponse, 예외처리, 로깅, 설정
+```
+
+---
+
+## 계층 구조 및 주요 역할
+
+- **Controller**: API 엔드포인트 제공 (`CoSellerRestController`)
+- **Service**: 비즈니스 로직, 외부 API 연동, 병렬 처리 (`CoSellerService`, `CorpApiService`, `RegionApiService`, `CsvService`)
+- **Repository/Store**: DB 접근, 저장소 추상화 (`CorpMastRepository`, `CorpMastStore`, `JpaCorpMastStore`)
+- **Domain/Entity**: 핵심 데이터 모델 (`CorpMast`)
+- **DTO/Properties**: 데이터 전달 객체, 외부 API 설정
+- **공통**: 예외 처리, 응답 포맷, 유효성 검증, 로깅, 설정 등
 
 ---
 
 ## 기술 스택
 
-- Java, Spring Boot
-- (DB) redis, PostgreSQL 등
-- (프론트) Jsp
-- (기타) Docker, JPA, Swagger, JUnit 등
+| 구분       | 내용                           |
+| ---------- | ------------------------------ |
+| 언어       | Java 17                        |
+| 프레임워크 | Spring Boot 3.x                |
+| DB         | H2 / PostgreSql /Redis         |
+| 빌드       | Gradle                         |
+| 로깅       | Logback (`logback-spring.xml`) |
+| 병렬 처리  | `@Async` + `CompletableFuture` |
+| API 통신   | `RestTemplate`                 |
+| 테스트     | JUnit5, AssertJ                |
 
 ---
 
-## 설치 및 실행
+## 기능 요구사항
 
-```bash
-# 의존성 설치
-./gradlew build
+- 다섯개의 기능 상세 구현 완료
 
-# 애플리케이션 실행
-java -jar build/libs/enterprise-info-crawler.jar
-```
+## 비즈니스 고려사항
 
----
+### API 출처 변경시 확장성 고려
 
-## 기여 및 문의
+- yml 파일에서 API 설정을 읽어오도록 구현
+- API 변경시 yml 파일에서 `url`,`endpoint`,`apiKey`,`queryParams` 변경하여 적용 가능
 
-- Pull Request, Issue 등록 환영
-- 문의: [your-email@example.com]
+### 저장소 변경시 확장성 고려
 
+- 추상화 클래스 `CorpMastStore`를 생성하여 JpaRepository를 래핑한 `JpaCorpMastStore`로 JpaRepository 를 사용하도록 구현
 
+### 병렬 처리
 
-# 통신판매사업자 정보 관리 시스템
+- '@Async'를 활용한 비동기 메서드를 통해 'CompletableFuture' 기반 병렬 API 호출 구현
+- 실패한 항목은 로깅 후 skip 처리하여 유연성 확보
 
-## 프로젝트 개요
+### 로깅 전략
 
-본 시스템은 통신판매사업자(기업) 정보를 자동으로 수집, 관리, 분석하는 통합 플랫폼입니다.  
-크롤링, 데이터 품질 검증, 스케줄링, 모니터링, 알림 등 실무에 필요한 다양한 기능을 제공합니다.
+- `logback-spring.xml` 설정
+  - `INFO` 이상 로그는 콘솔 및 파일에 출력
+  - 로그 파일은 날짜별로 분리 & 7일 보관
 
----
+### 예외 처리
 
-## 주요 기능
+- `CustomException` 기반 공통 예외 클래스 정의
+- 상황별 커스텀 예외:
+  - `CsvParsingException`: CSV 파싱 실패
+  - `ExternalApiException`: 공공 API 호출 실패
+- 모든 예외는 `GlobalExceptionHandler`에서 처리
+- Client 요청값은 'Enum'으로 받아 '@ValidEnum' 어노테이션을 추가하여 검증 처리
+- 일관된 응답 포맷 반환: `ApiResponse.class` 사용
 
-### 1. 대시보드
-- 전체 등록 업체, 오늘 수집, 수집 성공률, API 호출 수 등 주요 지표 시각화
-- 최근 활동 및 시스템 상태(연결, 서비스, 스케줄러) 실시간 표시
+### 테스트 코드
 
-### 2. 데이터 수집
-- 다양한 기업 정보 자동 크롤링
-- 정기적/수동 데이터 수집 지원
-
-### 3. 데이터 관리
-- 수집 데이터 목록/상세 조회
-- 데이터 품질 검증(중복, 누락 체크)
-- 데이터 필터링 및 정렬
-
-### 4. 데이터 모니터링 & 분석
-- 수집 데이터 통계 및 트렌드 분석
-- 수집 성공률 모니터링
-
-### 5. 스케줄 관리
-- 크론 표현식 기반 정기적 데이터 수집 자동화
-- 스케줄 등록/수정/삭제
-
-### 6. 데이터 내보내기
-- Excel, JSON 등 다양한 포맷 지원
-- 조건별 데이터 다운로드
-
-### 7. 알림 시스템
-- 수집 완료/실패, 데이터 품질 이슈 등 실시간 알림(이메일, 슬랙 등)
-
-### 8. 시스템 관리
-- 환경설정(application.yml)
-- 로그 관리(logback-spring.xml)
-- (선택) 사용자/권한 관리
+- 각 레이어 별 기능 단위 테스트 작성
+- 정상 케이스 및 예외 케이스 테스트 포함하여 안정성 검증
 
 ---
 
-## 폴더 구조
+## 추가 참고 사항
 
-```
-src/
-└─ main/
-├─ java/com/antock/enterprise_info_crawler/
-│ ├─ api/ # API 엔드포인트
-│ ├─ common/ # 공통 모듈
-│ ├─ config/ # 환경설정
-│ ├─ utils/ # 유틸리티
-│ └─ ... # 기타 비즈니스 로직
-└─ resources/
-├─ application.yml # 환경설정 파일
-├─ logback-spring.xml # 로그 설정
-└─ csvFiles/ # 데이터 파일 저장
-```
+- CSV 를 다운 API가 없어 임의로 생성한 csv파일로 작업 진행(서울특별시\_강남구.csv)
+- 공통 응답 포맷(`resultCode`,`resultMsg`,`data`)생성
+- 데이터 저장 로직은 전체 롤백이 아닌, 일부 실패 허용 구조로 설계되어 트랜잭션은 미사용 및 실패한 건에 대해서는 로깅 후 skip 처리( saveAll실패시 개별 저장됨)
+
+---
