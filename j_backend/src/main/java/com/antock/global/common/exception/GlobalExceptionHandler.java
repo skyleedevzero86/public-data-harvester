@@ -3,6 +3,7 @@ package com.antock.global.common.exception;
 import com.antock.global.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,23 +14,73 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiResponse<?> handleInvalidEnum(MethodArgumentNotValidException ex) {
+    @ExceptionHandler(BusinessException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
+        log.error("Business exception occurred: {}", e.getMessage(), e);
 
-        String errorMsg = ex.getBindingResult()
+        ApiResponse<Void> response = ApiResponse.of(
+                e.getErrorCode().getHttpStatus(),
+                e.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(e.getErrorCode().getHttpStatus())
+                .body(response);
+    }
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException ex) {
+        log.debug("Custom exception: {}", ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.of(
+                ex.getStatus(),
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        log.error("Validation error occurred: {}", e.getMessage());
+
+        String errorMessage = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        log.debug("검증 실패: {}", errorMsg);
+        if (errorMessage.isEmpty()) {
+            errorMessage = "입력값이 올바르지 않습니다.";
+        }
 
-        return ApiResponse.of(HttpStatus.BAD_REQUEST, errorMsg, "");
+        ApiResponse<Void> response = ApiResponse.of(
+                HttpStatus.BAD_REQUEST,
+                errorMessage,
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
     }
 
-    @ExceptionHandler(CustomException.class)
-    public ApiResponse<?> handleCustomException(CustomException ex) {
-        log.debug(ex.getMessage());
-        return ApiResponse.of(ex.getStatus(), ex.getMessage());
+    @ExceptionHandler(Exception.class)
+    protected ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+        log.error("Unexpected error occurred: {}", e.getMessage(), e);
+
+        ApiResponse<Void> response = ApiResponse.of(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "서버 내부 오류가 발생했습니다.",
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
     }
 }
