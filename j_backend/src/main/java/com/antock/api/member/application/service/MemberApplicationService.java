@@ -1,8 +1,17 @@
 package com.antock.api.member.application.service;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
+import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.application.dto.request.MemberUpdateRequest;
+import com.antock.api.member.application.dto.response.MemberLoginResponse;
+import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.domain.Member;
-import com.antock.api.member.infrastructure.security.service.AuthTokenService;
+import com.antock.global.security.service.AuthTokenService;
+import com.antock.global.security.service.RateLimitService;
+import com.antock.api.member.value.MemberStatus;
+import com.antock.api.member.value.Role;
+import com.antock.global.common.exception.BusinessException;
+import com.antock.global.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

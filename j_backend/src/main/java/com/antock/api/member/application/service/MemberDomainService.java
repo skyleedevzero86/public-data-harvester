@@ -4,6 +4,8 @@ import com.antock.api.member.domain.Member;
 import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
+import com.antock.global.common.exception.BusinessException;
+import com.antock.global.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,7 @@ public class MemberDomainService {
 
         Member member = Member.builder()
                 .username(username)
-                .password(password) // 실제로는 암호화된 패스워드
+                .password(password)
                 .nickname(nickname)
                 .email(email)
                 .apiKey(generateApiKey())

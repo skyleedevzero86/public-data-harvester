@@ -2,6 +2,7 @@ package com.antock.api.member.infrastructure.scheduler;
 
 import com.antock.api.member.domain.Member;
 import com.antock.api.member.infrastructure.MemberRepository;
+import com.antock.api.member.value.MemberStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -47,7 +48,7 @@ public class MemberScheduler {
         log.info("승인 대기 회원 알림 스케줄러 시작");
 
         List<Member> pendingMembers = memberRepository.findPendingMembersAfter(
-                com.antock.domain.member.vo.MemberStatus.PENDING,
+                MemberStatus.PENDING,
                 LocalDateTime.now().minusDays(7)
         );
 

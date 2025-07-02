@@ -29,24 +29,19 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiResponse<?> handleInvalidEnum(MethodArgumentNotValidException ex) {
-
-        String errorMsg = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.joining(", "));
-
-        log.debug("검증 실패: {}", errorMsg);
-
-        return ApiResponse.of(HttpStatus.BAD_REQUEST, errorMsg, "");
-    }
-
     @ExceptionHandler(CustomException.class)
-    public ApiResponse<?> handleCustomException(CustomException ex) {
-        log.debug(ex.getMessage());
-        return ApiResponse.of(ex.getStatus(), ex.getMessage());
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException ex) {
+        log.debug("Custom exception: {}", ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.of(
+                ex.getStatus(),
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -56,9 +51,12 @@ public class GlobalExceptionHandler {
         String errorMessage = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .findFirst()
-                .map(error -> error.getDefaultMessage())
-                .orElse("입력값이 올바르지 않습니다.");
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        if (errorMessage.isEmpty()) {
+            errorMessage = "입력값이 올바르지 않습니다.";
+        }
 
         ApiResponse<Void> response = ApiResponse.of(
                 HttpStatus.BAD_REQUEST,
@@ -85,5 +83,4 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
     }
-
 }

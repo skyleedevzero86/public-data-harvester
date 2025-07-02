@@ -1,4 +1,4 @@
-package com.antock.api.member.infrastructure.security.service;
+package com.antock.global.security.service;
 
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;

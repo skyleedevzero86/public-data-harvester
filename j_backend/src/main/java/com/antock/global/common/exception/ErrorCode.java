@@ -13,7 +13,6 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C002", "허용되지 않은 메서드입니다."),
     ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "C003", "엔티티를 찾을 수 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C004", "서버 오류가 발생했습니다."),
-    INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "C005", "잘못된 타입 값입니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "C006", "접근이 거부되었습니다."),
 
     // Member
@@ -23,13 +22,12 @@ public enum ErrorCode {
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "M004", "아이디 또는 비밀번호가 잘못되었습니다."),
     MEMBER_NOT_APPROVED(HttpStatus.FORBIDDEN, "M005", "승인되지 않은 회원입니다."),
     ACCOUNT_LOCKED(HttpStatus.FORBIDDEN, "M006", "계정이 잠겨있습니다."),
-    INVALID_MEMBER_STATUS(HttpStatus.BAD_REQUEST, "M007", "유효하지 않은 회원 상태입니다."),
+    INVALID_MEMBER_STATUS(HttpStatus.FORBIDDEN, "M007", "유효하지 않은 회원 상태입니다."),
 
     // Security
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "S001", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "S002", "만료된 토큰입니다."),
-    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "S003", "요청 한도를 초과했습니다."),
-    INSUFFICIENT_PERMISSIONS(HttpStatus.FORBIDDEN, "S004", "권한이 부족합니다.");
+    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "S003", "요청 한도를 초과했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

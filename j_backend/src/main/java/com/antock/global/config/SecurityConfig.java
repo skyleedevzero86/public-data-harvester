@@ -1,7 +1,9 @@
 package com.antock.global.config;
 
+import com.antock.global.security.filter.JwtAuthenticationFilter;
+import com.antock.global.security.handler.JwtAccessDeniedHandler;
+import com.antock.global.security.handler.JwtAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProfile;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;

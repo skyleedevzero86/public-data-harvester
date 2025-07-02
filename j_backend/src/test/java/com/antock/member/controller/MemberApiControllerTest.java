@@ -1,6 +1,12 @@
 package com.antock.member.controller;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
+import com.antock.api.member.application.dto.response.MemberResponse;
+import com.antock.api.member.application.service.MemberApplicationService;
+import com.antock.api.member.presentation.MemberApiController;
+import com.antock.api.member.value.MemberStatus;
+import com.antock.api.member.value.Role;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
