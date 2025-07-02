@@ -1,4 +1,4 @@
-package com.antock.member.service;
+package com.antock.member.application.service;
 
 import com.antock.api.member.application.service.MemberDomainService;
 import com.antock.api.member.domain.Member;
