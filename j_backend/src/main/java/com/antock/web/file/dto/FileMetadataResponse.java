@@ -20,9 +20,7 @@ public class FileMetadataResponse {
     private String contentType;
     private LocalDateTime uploadTime;
     private String description;
-    private String downloadUrl; // 파일 다운로드 URL 추가
-
-
+    private String downloadUrl;
 
     public static FileMetadataResponse from(FileMetadata fileMetadata, String downloadUrl) {
         return FileMetadataResponse.builder()
@@ -37,7 +35,6 @@ public class FileMetadataResponse {
                 .build();
     }
 
-    // JSTL용으로 Date 타입 추가
     public Date getUploadTimeAsDate() {
         return Date.from(uploadTime.atZone(ZoneId.systemDefault()).toInstant());
     }

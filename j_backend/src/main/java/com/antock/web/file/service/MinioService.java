@@ -22,7 +22,6 @@ public class MinioService {
     @Value("${minio.bucket:default-bucket}")
     private String bucketName;
 
-    // Optional로 MinioClient 주입 (없어도 됨)
     public MinioService(@Autowired(required = false) MinioClient minioClient) {
         this.minioClient = Optional.ofNullable(minioClient);
     }

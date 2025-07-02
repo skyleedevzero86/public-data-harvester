@@ -9,13 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 저장소 확장성을 고려한 JPA 구현체
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JpaCorpMastStore implements CorpMastStore{
+public class JpaCorpMastStore implements CorpMastStore {
 
     private final CorpMastRepository corpMastRepository;
 

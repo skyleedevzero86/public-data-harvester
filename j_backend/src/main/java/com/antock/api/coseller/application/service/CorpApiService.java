@@ -19,9 +19,6 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * 법인등록번호 조회 API Service
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,13 +28,13 @@ public class CorpApiService implements CorpApiClient {
     private final CorpApiProperties corpProp;
 
     @Async
-    public CompletableFuture<String> getCorpRegNo(String bizNo){
-        //url + param 생성
+    public CompletableFuture<String> getCorpRegNo(String bizNo) {
+        // url + param 생성
         URI requestUrl = corpProp.buildRequestUrlWithBizNo(bizNo);
-        log.debug("request CorpRegNo API : {} " , requestUrl);
+        log.debug("request CorpRegNo API : {} ", requestUrl);
         String corpRegNo = "";
 
-        try{
+        try {
             ResponseEntity<String> response = restTemplate.getForEntity(requestUrl, String.class);
 
             log.debug("CorpRegNo API Response {} : {}", bizNo, response.getBody());
@@ -61,7 +58,6 @@ public class CorpApiService implements CorpApiClient {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             CorpApiJsonResponse response = objectMapper.readValue(json, CorpApiJsonResponse.class);
-
 
             CorpItem item = response.getItems().get(0);
             String crno = item.getCrno();

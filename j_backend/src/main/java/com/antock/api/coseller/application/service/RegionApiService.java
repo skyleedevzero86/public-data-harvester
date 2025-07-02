@@ -1,15 +1,14 @@
-// RegionApiService.java 파일 (현재 코드는 변경하지 않습니다)
 package com.antock.api.coseller.application.service;
 
 import com.antock.api.coseller.application.client.RegionApiClient;
 import com.antock.api.coseller.application.dto.api.RegionApiJsonResponse;
 import com.antock.api.coseller.application.dto.api.RegionJuso;
 import com.antock.api.coseller.application.dto.properties.RegionApiProperties;
-import com.antock.global.common.exception.ExternalApiException; // 이 임포트가 이제 정상 작동
+import com.antock.global.common.exception.ExternalApiException;
 import com.antock.global.utils.AddressUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // @Slf4j를 위한 임포트
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -23,10 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * 행정구역코드 조회 API Service
- */
-@Slf4j // 이 어노테이션이 log 필드를 자동으로 생성합니다.
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegionApiService implements RegionApiClient {

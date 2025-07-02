@@ -8,5 +8,5 @@ import org.springframework.web.multipart.MultipartFile;
 @Setter
 public class FileUploadRequest {
     private MultipartFile file;
-    private String description; // 파일에 대한 설명
+    private String description;
 }

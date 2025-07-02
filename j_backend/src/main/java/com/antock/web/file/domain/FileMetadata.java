@@ -34,11 +34,11 @@ public class FileMetadata {
     @Column(nullable = false)
     private LocalDateTime uploadTime; // 업로드 시간
 
-    // 검색을 위한 추가 필드 (예: 파일 설명)
     private String description;
 
     @Builder
-    public FileMetadata(String originalFileName, String storedFileName, Long fileSize, String contentType, LocalDateTime uploadTime, String description) {
+    public FileMetadata(String originalFileName, String storedFileName, Long fileSize, String contentType,
+            LocalDateTime uploadTime, String description) {
         this.originalFileName = originalFileName;
         this.storedFileName = storedFileName;
         this.fileSize = fileSize;
