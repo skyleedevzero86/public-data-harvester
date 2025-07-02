@@ -2,6 +2,7 @@ package com.antock.member.service;
 
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.MemberCacheService;
+import com.antock.api.member.application.service.RedisMemberCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,13 +12,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.time.Duration;
-import static org.assertj.core.api.Assertions.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class MemberCacheServiceTest {
+class RedisMemberCacheServiceTest {
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
@@ -25,7 +29,7 @@ class MemberCacheServiceTest {
     @Mock
     private ValueOperations<String, Object> valueOperations;
 
-    private MemberCacheService memberCacheService;
+    private RedisMemberCacheService memberCacheService;
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -33,7 +37,17 @@ class MemberCacheServiceTest {
         objectMapper = new ObjectMapper();
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-        memberCacheService = new MemberCacheService(redisTemplate, objectMapper);
+        // RedisMemberCacheService 초기화
+        memberCacheService = new RedisMemberCacheService(redisTemplate, objectMapper);
+
+        // @Value 속성 설정
+        ReflectionTestUtils.setField(memberCacheService, "redisEnabled", true);
+        ReflectionTestUtils.setField(memberCacheService, "memberCachePrefix", "member:");
+        ReflectionTestUtils.setField(memberCacheService, "profileCachePrefix", "profile:");
+        ReflectionTestUtils.setField(memberCacheService, "cacheTtlMinutes", 5);
+
+        // @PostConstruct 호출 시뮬레이션
+        ReflectionTestUtils.invokeMethod(memberCacheService, "init");
     }
 
     @Test
@@ -55,7 +69,7 @@ class MemberCacheServiceTest {
         assertThat(result.getId()).isEqualTo(memberId);
         assertThat(result.getUsername()).isEqualTo("testuser");
 
-        verify(valueOperations).set(eq(expectedKey), eq(testResponse), any(Duration.class));
+        verify(valueOperations).set(eq(expectedKey), eq(testResponse), eq(Duration.ofMinutes(5)));
         verify(valueOperations).get(expectedKey);
     }
 
