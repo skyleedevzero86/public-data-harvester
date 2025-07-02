@@ -6,8 +6,6 @@ import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.domain.Member;
-import com.antock.global.security.service.AuthTokenService;
-import com.antock.global.security.service.RateLimitService;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
@@ -26,7 +24,7 @@ public class MemberApplicationService {
 
     private final MemberDomainService memberDomainService;
     private final AuthTokenService authTokenService;
-    private final RateLimitService rateLimitService;
+    private final RateLimitServiceInterface rateLimitService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional

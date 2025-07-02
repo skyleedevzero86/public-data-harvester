@@ -2,7 +2,7 @@ package com.antock.global.security.filter;
 
 import com.antock.api.member.application.service.MemberDomainService;
 import com.antock.api.member.domain.Member;
-import com.antock.global.security.service.AuthTokenService;
+import com.antock.api.member.application.service.AuthTokenService;
 import com.antock.global.security.dto.AuthenticatedUser;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
