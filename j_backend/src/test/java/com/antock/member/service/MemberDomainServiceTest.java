@@ -4,6 +4,7 @@ import com.antock.api.member.application.service.MemberDomainService;
 import com.antock.api.member.domain.Member;
 import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.api.member.value.MemberStatus;
+import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
