@@ -1,4 +1,4 @@
-package com.antock.service;
+package com.antock.corp.service;
 
 import com.antock.api.coseller.application.service.CorpApiService;
 import com.antock.api.coseller.application.dto.properties.CorpApiProperties;

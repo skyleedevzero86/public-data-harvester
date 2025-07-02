@@ -1,4 +1,4 @@
-package com.antock.service;
+package com.antock.corp.service;
 
 import com.antock.api.coseller.application.service.CoSellerService;
 import com.antock.api.coseller.application.service.CsvService;

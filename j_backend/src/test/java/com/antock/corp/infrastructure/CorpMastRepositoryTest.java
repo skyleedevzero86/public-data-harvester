@@ -1,4 +1,4 @@
-package com.antock.infrastructure;
+package com.antock.corp.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;

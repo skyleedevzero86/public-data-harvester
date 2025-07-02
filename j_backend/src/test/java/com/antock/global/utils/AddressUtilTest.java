@@ -1,4 +1,4 @@
-package com.antock.utils;
+package com.antock.global.utils;
 
 import com.antock.global.utils.AddressUtil;
 import org.junit.jupiter.api.DisplayName;

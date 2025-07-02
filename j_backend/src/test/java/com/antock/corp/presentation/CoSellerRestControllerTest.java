@@ -1,11 +1,11 @@
-package com.antock.presentation;
+package com.antock.corp.presentation;
 
 import com.antock.api.coseller.application.service.CoSellerService;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.presentation.CoSellerRestController;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
-import com.antock.config.MockConfig;
+import com.antock.global.config.MockConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
