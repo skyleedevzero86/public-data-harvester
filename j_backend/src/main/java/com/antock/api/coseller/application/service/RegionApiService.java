@@ -77,8 +77,15 @@ public class RegionApiService implements RegionApiClient {
                 return "";
             }
 
-            String regionCd = jusoList.get(0).getAdmCd();
+            RegionJuso juso = jusoList.get(0);
+            String regionCd = juso.getAdmCd();
+            String siNm = juso.getSiNm();
+            String sggNm = juso.getSggNm();
+
             log.debug("Parsed regionCd: {}", regionCd);
+            log.debug("Parsed siNm: {}", siNm);
+            log.debug("Parsed sggNm: {}", sggNm);
+
             return regionCd;
 
         } catch (Exception e) {

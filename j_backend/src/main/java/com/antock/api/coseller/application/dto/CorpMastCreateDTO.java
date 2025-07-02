@@ -15,6 +15,8 @@ public class CorpMastCreateDTO {
     private String bizNo;
     private String corpRegNo;
     private String regionCd;
+    private String siNm;
+    private String sggNm;
 
     public CorpMast toEntity() {
         return CorpMast.builder()
@@ -23,6 +25,8 @@ public class CorpMastCreateDTO {
                 .bizNo(this.bizNo)
                 .corpRegNo(this.corpRegNo)
                 .regionCd(this.regionCd)
+                .siNm(this.siNm)
+                .sggNm(this.sggNm)
                 .build();
     }
 }

@@ -5,10 +5,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "corp_mast", uniqueConstraints = {
-        @UniqueConstraint(
-                name = "CORP_MAST_UNIQUE",
-                columnNames = {"biz_no"}
-        )
+        @UniqueConstraint(name = "CORP_MAST_UNIQUE", columnNames = { "biz_no" })
 })
 @Getter
 @Builder
@@ -35,6 +32,12 @@ public class CorpMast {
     @Column(nullable = false)
     private String regionCd;
 
+    @Column(nullable = false)
+    private String siNm;
+
+    @Column(nullable = false)
+    private String sggNm;
+
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
     }
@@ -49,5 +52,13 @@ public class CorpMast {
 
     public void setRegionCd(String regionCd) {
         this.regionCd = regionCd;
+    }
+
+    public void setSiNm(String siNm) {
+        this.siNm = siNm;
+    }
+
+    public void setSggNm(String sggNm) {
+        this.sggNm = sggNm;
     }
 }

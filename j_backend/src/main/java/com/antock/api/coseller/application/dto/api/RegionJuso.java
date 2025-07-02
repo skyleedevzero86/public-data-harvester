@@ -10,5 +10,7 @@ import lombok.ToString;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RegionJuso {
-    private String admCd; // 행정코드
+    private String admCd;
+    private String siNm;
+    private String sggNm;
 }

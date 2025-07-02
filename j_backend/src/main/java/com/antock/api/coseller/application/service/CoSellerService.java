@@ -39,6 +39,7 @@ public class CoSellerService {
 
     /**
      * 법인 데이터 저장 로직
+     * 
      * @param requestDto 지역 요청 DTO (시/도, 구/군 포함)
      * @return 저장된 법인 마스터 데이터의 총 개수
      */
@@ -47,7 +48,8 @@ public class CoSellerService {
         log.info("데이터 저장 프로세스 시작: City={}, District={}", requestDto.getCity().name(), requestDto.getDistrict().name());
 
         // City와 district로 csv 파일 읽어오기
-        List<BizCsvInfoDto> csvList = csvService.readBizCsv(requestDto.getCity().name(), requestDto.getDistrict().name());
+        List<BizCsvInfoDto> csvList = csvService.readBizCsv(requestDto.getCity().name(),
+                requestDto.getDistrict().name());
         log.info("CSV 파일에서 읽어온 유효한 데이터 수: {}건", csvList.size());
 
         if (csvList.isEmpty()) {
@@ -72,6 +74,7 @@ public class CoSellerService {
 
     /**
      * DTO 리스트를 CorpMast 엔티티로 변환하여 저장합니다.
+     * 
      * @param corpCreateDtoList 저장할 CorpMastCreateDTO 리스트
      * @return 실제로 저장된 엔티티의 개수
      */
@@ -122,6 +125,7 @@ public class CoSellerService {
 
     /**
      * CSV 정보 리스트로부터 법인 등록 코드와 행정 구역 코드를 비동기적으로 조회하여 DTO 리스트를 반환합니다.
+     * 
      * @param csvList BizCsvInfoDto 리스트
      * @return API 호출을 통해 정보가 보강된 CorpMastCreateDTO 리스트
      */
@@ -141,6 +145,7 @@ public class CoSellerService {
 
     /**
      * 단일 BizCsvInfoDto에 대해 법인 등록 번호와 지역 코드를 비동기적으로 조회합니다.
+     * 
      * @param csvInfo 처리할 BizCsvInfoDto
      * @return CorpMastCreateDTO를 포함하는 CompletableFuture
      */
@@ -164,8 +169,9 @@ public class CoSellerService {
                                 .bizNo(csvInfo.getBizNo())
                                 .corpRegNo("")
                                 .regionCd("")
-                                .build()
-                );
+                                .siNm("")
+                                .sggNm("")
+                                .build());
             }
 
             return Optional.of(
@@ -175,11 +181,13 @@ public class CoSellerService {
                             .bizNo(csvInfo.getBizNo())
                             .corpRegNo(Optional.ofNullable(corpRegNo).orElse(""))
                             .regionCd(Optional.ofNullable(regionCd).orElse(""))
-                            .build()
-            );
+                            .siNm("")
+                            .sggNm("")
+                            .build());
         }).exceptionally(ex -> {
 
-            log.error("비동기 API 처리 중 예외 발생: bizNo={}, bizNm={}. 오류: {}", csvInfo.getBizNo(), csvInfo.getBizNm(), ex.getMessage(), ex);
+            log.error("비동기 API 처리 중 예외 발생: bizNo={}, bizNm={}. 오류: {}", csvInfo.getBizNo(), csvInfo.getBizNm(),
+                    ex.getMessage(), ex);
             return Optional.empty(); // 이 데이터는 최종 목록에서 제외됩니다.
         });
     }
