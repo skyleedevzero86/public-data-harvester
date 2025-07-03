@@ -18,7 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import java.util.Arrays;
 
 @Configuration
@@ -55,15 +54,17 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/img/**").permitAll()
                         .requestMatchers("/static/**", "/public/**", "/resources/**").permitAll()
                         .requestMatchers("/assets/**", "/fonts/**", "/icons/**").permitAll()
-                        .requestMatchers("/members/join", "/members/login").permitAll()
-                        .requestMatchers("/api/v1/members/join", "/api/v1/members/login").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/debug/**").permitAll()
-                        .requestMatchers("/coseller/save").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/", "/home", "/index").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/members/join", "/members/login").permitAll()
+                        .requestMatchers("/api/v1/members/join", "/api/v1/members/login").permitAll()
+                        .requestMatchers("/coseller/save").permitAll()
+                        .requestMatchers("/web/files/**").permitAll()
+                        .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/members/profile", "/members/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )

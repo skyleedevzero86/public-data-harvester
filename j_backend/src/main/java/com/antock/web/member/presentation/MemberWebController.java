@@ -1,4 +1,4 @@
-package com.antock.web.member.controller;
+package com.antock.web.member.presentation;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;

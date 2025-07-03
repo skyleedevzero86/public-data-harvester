@@ -11,7 +11,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
 @Slf4j
@@ -35,29 +34,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.debug("토큰 추출 결과 - URI: {}, Token exists: {}", requestURI, token != null);
 
         if (token != null) {
-            boolean isValid = jwtTokenProvider.validateToken(token);
-            log.debug("토큰 검증 결과 - URI: {}, Valid: {}", requestURI, isValid);
+            try {
+                boolean isValid = jwtTokenProvider.validateToken(token);
+                log.debug("토큰 검증 결과 - URI: {}, Valid: {}", requestURI, isValid);
 
-            if (isValid) {
-                try {
+                if (isValid) {
                     Authentication auth = jwtTokenProvider.getAuthentication(token);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                     log.info("JWT 인증 성공 - URI: {}, User: {}, Authorities: {}",
                             requestURI, auth.getName(), auth.getAuthorities());
-                } catch (Exception e) {
-                    log.error("JWT 인증 처리 중 오류 발생 - URI: {}, Error: {}", requestURI, e.getMessage(), e);
-                    SecurityContextHolder.clearContext();
+                } else {
+                    log.warn("유효하지 않은 토큰 - URI: {}", requestURI);
+                    clearTokenCookie(response);
                 }
+            } catch (Exception e) {
+                log.error("JWT 인증 처리 중 오류 발생 - URI: {}, Error: {}", requestURI, e.getMessage());
+                SecurityContextHolder.clearContext();
+                clearTokenCookie(response);
             }
         } else {
-            log.warn("JWT 토큰이 없음 - URI: {}", requestURI);
+            log.debug("JWT 토큰이 없음 - URI: {}", requestURI);
         }
 
         filterChain.doFilter(request, response);
     }
 
     private String resolveToken(HttpServletRequest request) {
-
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             log.debug("Authorization 헤더에서 토큰 발견 - URI: {}", request.getRequestURI());
@@ -65,24 +67,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Cookie[] cookies = request.getCookies();
-        log.debug("쿠키 확인 - URI: {}, Cookies exist: {}", request.getRequestURI(), cookies != null);
-
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                log.debug("쿠키 검사 - Name: {}, Value length: {}",
-                        cookie.getName(), cookie.getValue() != null ? cookie.getValue().length() : 0);
-
                 if ("accessToken".equals(cookie.getName())) {
                     String tokenValue = cookie.getValue();
-                    log.info("쿠키에서 accessToken 발견 - URI: {}, Token length: {}",
+                    log.debug("쿠키에서 accessToken 발견 - URI: {}, Token length: {}",
                             request.getRequestURI(), tokenValue != null ? tokenValue.length() : 0);
                     return tokenValue;
                 }
             }
         }
 
-        log.warn("토큰을 찾을 수 없음 - URI: {}", request.getRequestURI());
         return null;
+    }
+
+    private void clearTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie("accessToken", null);
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+        log.info("유효하지 않은 토큰 쿠키 삭제 완료");
     }
 
     @Override
