@@ -6,11 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 
-/**
- * API응답 공통 처리
- * @param <T>
- */
-
 @Builder
 @Getter
 @NoArgsConstructor
@@ -19,7 +14,7 @@ public class ApiResponse<T> {
 
     private int resultCode;
     private String resultMsg;
-    private T data; //응답데이터
+    private T data; // 응답데이터
 
     public ApiResponse(HttpStatus resultStatus, String resultMsg) {
         this.resultCode = resultStatus.value();

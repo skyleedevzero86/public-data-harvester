@@ -23,9 +23,9 @@ public class MemberJoinRequest {
     private String username;
 
     @NotBlank(message = "비밀번호는 필수입니다.")
-    @Size(min = 8, max = 50, message = "비밀번호는 8~50자 사이여야 합니다.")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$",
-            message = "비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다.")
+    @Size(min = 6, max = 50, message = "비밀번호는 6~50자 사이여야 합니다.")
+    @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*\\d)[A-Za-z\\d@$!%*?&]+$",
+            message = "비밀번호는 영문과 숫자를 포함해야 합니다.")
     private String password;
 
     @NotBlank(message = "닉네임은 필수입니다.")

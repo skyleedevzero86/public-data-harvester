@@ -10,11 +10,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.Map;
 
-/**
- * 법인 등록 번호 API 설정파일
- */
 @Component
-@ConfigurationProperties(prefix ="corp-info")
+@ConfigurationProperties(prefix = "corp-info")
 @Getter
 @Setter
 @ToString
@@ -25,7 +22,7 @@ public class CorpApiProperties {
     private String serviceKey;
     private Map<String, String> queryParams;
 
-    public URI  buildRequestUrlWithBizNo(String bizNo) {
+    public URI buildRequestUrlWithBizNo(String bizNo) {
         try {
             UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                     .path(endpoint);
@@ -46,7 +43,7 @@ public class CorpApiProperties {
             return URI.create(finalUri);
 
         } catch (Exception e) {
-            log.error("URI 생성 중 예외 발생: {}" , e.getMessage());
+            log.error("URI 생성 중 예외 발생: {}", e.getMessage());
             throw e;
         }
     }

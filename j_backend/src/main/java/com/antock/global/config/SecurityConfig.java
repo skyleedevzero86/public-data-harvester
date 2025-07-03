@@ -47,12 +47,24 @@ public class SecurityConfig {
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/WEB-INF/views/**").permitAll()
+                        .requestMatchers("/.well-known/**").permitAll()
+                        .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers("/robots.txt").permitAll()
+                        .requestMatchers("/sitemap.xml").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/img/**").permitAll()
+                        .requestMatchers("/static/**", "/public/**", "/resources/**").permitAll()
+                        .requestMatchers("/assets/**", "/fonts/**", "/icons/**").permitAll()
+                        .requestMatchers("/members/join", "/members/login").permitAll()
                         .requestMatchers("/api/v1/members/join", "/api/v1/members/login").permitAll()
-                        .requestMatchers("/members/join", "/members/login", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/debug/**").permitAll()
                         .requestMatchers("/coseller/save").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/", "/home", "/index").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/members/profile", "/members/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -68,7 +80,6 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("HEAD", "POST", "GET", "DELETE", "PUT", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

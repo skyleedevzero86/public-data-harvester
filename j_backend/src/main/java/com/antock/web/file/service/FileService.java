@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Slf4j  // 로깅 추가
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileService {
@@ -26,17 +26,11 @@ public class FileService {
     private final FileMetadataRepository fileMetadataRepository;
     private final MinioService minioService;
 
-    // 허용된 파일 확장자 목록 (방어 코딩)
     private static final List<String> ALLOWED_EXTENSIONS = List.of(
-            "jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "xls", "xlsx", "txt", "zip"
-    );
+            "jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "xls", "xlsx", "txt", "zip");
 
-    // 최대 파일 크기 (예: 100MB)
     private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
-    /**
-     * 파일 업로드 및 메타데이터 저장 (CREATE)
-     */
     @Transactional
     public FileMetadataResponse uploadFile(FileUploadRequest request) throws Exception {
         log.info("파일 업로드 시작: {}", request.getFile().getOriginalFilename());
@@ -88,7 +82,8 @@ public class FileService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "파일 크기가 너무 큽니다. (최대 " + MAX_FILE_SIZE / (1024 * 1024) + "MB)");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "파일 크기가 너무 큽니다. (최대 " + MAX_FILE_SIZE / (1024 * 1024) + "MB)");
         }
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isBlank()) {
@@ -100,9 +95,6 @@ public class FileService {
         }
     }
 
-    /**
-     * 모든 파일 메타데이터 조회 (READ All)
-     */
     @Transactional(readOnly = true)
     public List<FileMetadataResponse> getAllFiles() throws Exception {
         return fileMetadataRepository.findAll().stream()
@@ -118,9 +110,6 @@ public class FileService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 특정 파일 메타데이터 조회 (READ One)
-     */
     @Transactional(readOnly = true)
     public FileMetadataResponse getFileById(Long id) throws Exception {
         FileMetadata fileMetadata = fileMetadataRepository.findById(id)
@@ -129,9 +118,6 @@ public class FileService {
         return FileMetadataResponse.from(fileMetadata, downloadUrl);
     }
 
-    /**
-     * 파일 다운로드
-     */
     @Transactional(readOnly = true)
     public InputStreamResource downloadFile(Long id) throws Exception {
         FileMetadata fileMetadata = fileMetadataRepository.findById(id)
@@ -139,9 +125,6 @@ public class FileService {
         return minioService.downloadFile(fileMetadata.getStoredFileName());
     }
 
-    /**
-     * 파일 메타데이터 업데이트 (UPDATE)
-     */
     @Transactional
     public FileMetadataResponse updateFileDescription(Long id, String newDescription) throws Exception {
         FileMetadata fileMetadata = fileMetadataRepository.findById(id)
@@ -152,9 +135,6 @@ public class FileService {
         return FileMetadataResponse.from(updatedMetadata, downloadUrl);
     }
 
-    /**
-     * 파일 삭제 (DELETE)
-     */
     @Transactional
     public void deleteFile(Long id) throws Exception {
         FileMetadata fileMetadata = fileMetadataRepository.findById(id)
@@ -167,12 +147,10 @@ public class FileService {
         fileMetadataRepository.delete(fileMetadata);
     }
 
-    /**
-     * 파일 검색 (Search)
-     */
     @Transactional(readOnly = true)
     public List<FileMetadataResponse> searchFiles(String keyword) throws Exception {
-        List<FileMetadata> foundFiles = fileMetadataRepository.findByOriginalFileNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+        List<FileMetadata> foundFiles = fileMetadataRepository
+                .findByOriginalFileNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
         return foundFiles.stream()
                 .map(fileMetadata -> {
                     try {
@@ -185,7 +163,6 @@ public class FileService {
                 .collect(Collectors.toList());
     }
 
-    // 파일 확장자를 추출하는 헬퍼 메소드
     private String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex > 0 && dotIndex < fileName.length() - 1) {

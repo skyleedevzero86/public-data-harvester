@@ -28,7 +28,7 @@ public class MemberApplicationService {
     private final MemberDomainService memberDomainService;
     private final AuthTokenService authTokenService;
     private final RateLimitServiceInterface rateLimitService;
-    private final MemberCacheService memberCacheService; // 인터페이스 사용
+    private final MemberCacheService memberCacheService;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -64,17 +64,36 @@ public class MemberApplicationService {
 
     @Transactional
     public MemberLoginResponse login(MemberLoginRequest request, String clientIp) {
+        log.info("로그인 시도: username={}", request.getUsername());
+
         rateLimitService.checkRateLimit(clientIp, "login");
+
         Member member = memberDomainService.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> {
+                    log.warn("존재하지 않는 사용자: {}", request.getUsername());
+                    return new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+                });
+
+        log.info("사용자 조회 성공: username={}, status={}, role={}",
+                member.getUsername(), member.getStatus(), member.getRole());
+        log.debug("저장된 암호화된 비밀번호: {}", member.getPassword());
+        log.debug("입력받은 평문 비밀번호: {}", request.getPassword());
+        log.info("입력받은 평문 비밀번호: {}", request.getPassword());
+
         validateMemberStatus(member);
-        if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
+
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), member.getPassword());
+        log.info("비밀번호 매칭 결과: {}", passwordMatches);
+
+        if (!passwordMatches) {
+            log.warn("비밀번호 불일치: username={}", member.getUsername());
             memberDomainService.handleLoginFailure(member);
             if (memberCacheService != null) {
                 memberCacheService.evictMemberCache(member.getId());
             }
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
+
         memberDomainService.handleLoginSuccess(member);
         MemberResponse memberResponse = MemberResponse.from(member);
         if (memberCacheService != null) {

@@ -24,7 +24,7 @@
                         <div class="alert alert-danger">${errorMessage}</div>
                     </c:if>
 
-                    <form id="loginForm">
+                    <form method="post" action="/members/login">
                         <div class="mb-3">
                             <label for="username" class="form-label">사용자명</label>
                             <input type="text" class="form-control" id="username" name="username" required>
@@ -48,40 +48,5 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const formData = new FormData(this);
-        const loginData = {
-            username: formData.get('username'),
-            password: formData.get('password')
-        };
-
-        try {
-            const response = await fetch('/api/v1/members/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(loginData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert('로그인 성공!');
-                window.location.href = '/members/profile';
-            } else {
-                alert(result.resultMsg || '로그인에 실패했습니다.');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            alert('로그인 중 오류가 발생했습니다.');
-        }
-    });
-</script>
 </body>
 </html>

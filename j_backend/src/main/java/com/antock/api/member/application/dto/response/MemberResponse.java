@@ -5,25 +5,36 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 @Getter
 @Builder
 public class MemberResponse {
-
     private Long id;
     private String username;
     private String nickname;
     private String email;
     private MemberStatus status;
     private Role role;
-    private LocalDateTime createDate;
+    private Date createDate;
     private LocalDateTime modifyDate;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime approvedAt;
+    private Date lastLoginAt;
+    private Date approvedAt;
+    private String apiKey;
 
     public static MemberResponse from(Member member) {
+        Date createDate = member.getCreateDate() != null
+                ? Date.from(member.getCreateDate().atZone(ZoneId.of("Asia/Seoul")).toInstant())
+                : null;
+        Date lastLoginAtDate = member.getLastLoginAt() != null
+                ? Date.from(member.getLastLoginAt().atZone(ZoneId.of("Asia/Seoul")).toInstant())
+                : null;
+        Date approvedAt = member.getApprovedAt() != null
+                ? Date.from(member.getApprovedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant())
+                : null;
+
         return MemberResponse.builder()
                 .id(member.getId())
                 .username(member.getUsername())
@@ -31,10 +42,11 @@ public class MemberResponse {
                 .email(member.getEmail())
                 .status(member.getStatus())
                 .role(member.getRole())
-                .createDate(member.getCreateDate())
+                .createDate(createDate)
                 .modifyDate(member.getModifyDate())
-                .lastLoginAt(member.getLastLoginAt())
-                .approvedAt(member.getApprovedAt())
+                .lastLoginAt(lastLoginAtDate)
+                .approvedAt(approvedAt)
+                .apiKey(member.getApiKey())
                 .build();
     }
 }
