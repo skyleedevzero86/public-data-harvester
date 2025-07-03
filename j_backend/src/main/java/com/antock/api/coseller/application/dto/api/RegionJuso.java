@@ -13,4 +13,6 @@ public class RegionJuso {
     private String admCd;
     private String siNm;
     private String sggNm;
+    private String rnMgtSn;
+    private String corpRegNo;
 }

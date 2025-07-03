@@ -1,11 +1,11 @@
 package com.antock.api.member.application.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
 @Builder
+@Setter
 public class MemberLoginRequest {
 
     @NotBlank(message = "사용자명은 필수입니다.")

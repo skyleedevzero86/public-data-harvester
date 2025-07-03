@@ -1,22 +1,17 @@
 package com.antock.global.security.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthenticatedUser {
-
     private Long id;
     private String username;
     private String nickname;
-    private Collection<? extends GrantedAuthority> authorities;
-
-    public boolean hasRole(String role) {
-        return authorities.stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role));
-    }
+    private String role;
 }
