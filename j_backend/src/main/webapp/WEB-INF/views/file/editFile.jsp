@@ -24,14 +24,7 @@
 <div class="container">
     <h2>파일 정보 수정</h2>
 
-    <% if (request.getAttribute("message") != null) { %>
-    <p class="message"><%= request.getAttribute("message") %></p>
-    <% } %>
-    <% if (request.getAttribute("error") != null) { %>
-    <p class="error"><%= request.getAttribute("error") %></p>
-    <% } %>
-
-    <form action="${pageContext.request.contextPath}/files/update/${file.id}" method="post">
+    <form action="${pageContext.request.contextPath}/web/files/update/${file.id}" method="post">
         <div>
             <label for="originalFileName">원본 파일명:</label>
             <input type="text" id="originalFileName" name="originalFileName" value="${file.originalFileName}" readonly>
@@ -46,7 +39,7 @@
     </form>
 
     <div class="button-group">
-        <a href="${pageContext.request.contextPath}/files">목록으로 돌아가기</a>
+        <a href="${pageContext.request.contextPath}/web/files">목록으로 돌아가기</a>
     </div>
 </div>
 </body>

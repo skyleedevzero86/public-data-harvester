@@ -24,14 +24,7 @@
 <div class="container">
     <h2>파일 업로드</h2>
 
-    <% if (request.getAttribute("message") != null) { %>
-    <p class="message"><%= request.getAttribute("message") %></p>
-    <% } %>
-    <% if (request.getAttribute("error") != null) { %>
-    <p class="error"><%= request.getAttribute("error") %></p>
-    <% } %>
-
-    <form action="${pageContext.request.contextPath}/files/upload" method="post" enctype="multipart/form-data">
+    <form action="${pageContext.request.contextPath}/web/files/upload" method="post" enctype="multipart/form-data">
         <div>
             <label for="file">파일 선택:</label>
             <input type="file" id="file" name="file" required>
@@ -46,7 +39,7 @@
     </form>
 
     <div class="button-group">
-        <a href="${pageContext.request.contextPath}/files">파일 목록 보기</a>
+        <a href="${pageContext.request.contextPath}/web/files">파일 목록 보기</a>
     </div>
 </div>
 </body>

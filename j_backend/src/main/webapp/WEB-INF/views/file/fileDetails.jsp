@@ -31,10 +31,6 @@
         <p class="error">${error}</p>
     </c:if>
 
-    <c:if test="${empty file && empty error}">
-        <p class="error">파일 정보를 찾을 수 없습니다.</p>
-    </c:if>
-
     <c:if test="${not empty file}">
         <div class="detail-item">
             <span class="detail-label">파일 ID:</span>
@@ -50,7 +46,7 @@
         </div>
         <div class="detail-item">
             <span class="detail-label">파일 크기:</span>
-            <span class="detail-value"><fmt:formatNumber value="${file.fileSize / (1024 * 1024)}" maxFractionDigits="2" /> MB</span>
+            <span class="detail-value"><fmt:formatNumber value="${file.fileSizeInMB}" maxFractionDigits="2" /> MB</span>
         </div>
         <div class="detail-item">
             <span class="detail-label">콘텐츠 타입:</span>
@@ -58,7 +54,11 @@
         </div>
         <div class="detail-item">
             <span class="detail-label">업로드 시간:</span>
-            <span class="detail-value"><fmt:formatDateTime value="${file.uploadTime}" pattern="yyyy-MM-dd HH:mm:ss"/></span>
+            <span class="detail-value"><fmt:formatDate value="${file.uploadTimeAsDate}" pattern="yyyy-MM-dd HH:mm:ss"/></span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">수정 시간:</span>
+            <span class="detail-value"><fmt:formatDate value="${file.lastModifiedTimeAsDate}" pattern="yyyy-MM-dd HH:mm:ss"/></span>
         </div>
         <div class="detail-item">
             <span class="detail-label">설명:</span>
@@ -66,12 +66,12 @@
         </div>
 
         <div class="button-group">
-            <a href="${pageContext.request.contextPath}/files" class="back-btn">파일 목록으로</a>
+            <a href="${pageContext.request.contextPath}/web/files" class="back-btn">파일 목록으로</a>
             <c:if test="${not empty file.downloadUrl}">
                 <a href="${file.downloadUrl}" class="download-btn" target="_blank">파일 다운로드</a>
             </c:if>
             <c:if test="${empty file.downloadUrl}">
-                <a href="${pageContext.request.contextPath}/files/download/${file.id}" class="download-btn">파일 다운로드 (서버 경유)</a>
+                <a href="${pageContext.request.contextPath}/web/files/download/${file.id}" class="download-btn">파일 다운로드</a>
             </c:if>
         </div>
     </c:if>
