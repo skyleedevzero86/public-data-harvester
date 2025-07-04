@@ -85,7 +85,7 @@ public class Member extends BaseTimeEntity {
 
     public void changePassword(String newPassword) {
         this.password = newPassword;
-        this.passwordChangedAt = LocalDateTime.now();
+        this.passwordChangedAt = LocalDateTime.now(); // 첫 변경 시 설정됨
 
         LocalDate today = LocalDate.now();
         if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
@@ -113,7 +113,7 @@ public class Member extends BaseTimeEntity {
 
     public boolean isPasswordChangeRecommended() {
         if (this.passwordChangedAt == null) {
-            return true;
+            return this.getCreateDate().isBefore(LocalDateTime.now().minusDays(90));
         }
         return this.passwordChangedAt.isBefore(LocalDateTime.now().minusDays(80));
     }
