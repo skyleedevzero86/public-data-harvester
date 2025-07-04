@@ -2,9 +2,11 @@ package com.antock.api.member.presentation;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
+import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.response.ApiResponse;
@@ -134,6 +136,32 @@ public class MemberApiController {
 
         MemberResponse response = memberApplicationService.changeRole(memberId, role);
         return ApiResponse.of(HttpStatus.OK, "권한이 변경되었습니다.", response);
+    }
+
+    @PostMapping("/me/password")
+    @Operation(summary = "비밀번호 변경", description = "현재 로그인한 사용자의 비밀번호를 변경합니다.")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<String> changePassword(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody @Valid MemberPasswordChangeRequest request) {
+
+        memberApplicationService.changePassword(user.getId(), request);
+        return ApiResponse.of(HttpStatus.OK, "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+    }
+
+    @GetMapping("/me/password/status")
+    @Operation(summary = "비밀번호 상태 조회", description = "비밀번호 변경 필요 여부를 조회합니다.")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<PasswordStatusResponse> getPasswordStatus(@CurrentUser AuthenticatedUser user) {
+
+        PasswordStatusResponse response = PasswordStatusResponse.builder()
+                .isPasswordChangeRequired(memberApplicationService.isPasswordChangeRequired(user.getId()))
+                .isPasswordChangeRecommended(memberApplicationService.isPasswordChangeRecommended(user.getId()))
+                .todayPasswordChangeCount(memberApplicationService.getTodayPasswordChangeCount(user.getId()))
+                .maxDailyPasswordChanges(3)
+                .build();
+
+        return ApiResponse.of(HttpStatus.OK, response);
     }
 
     private String getClientIp(HttpServletRequest request) {

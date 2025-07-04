@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +33,25 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT m FROM Member m WHERE m.accountLockedAt IS NOT NULL AND m.accountLockedAt < :unlockTime")
     List<Member> findLockedMembersBeforeUnlockTime(@Param("unlockTime") LocalDateTime unlockTime);
+
+    @Query("SELECT m FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
+    List<Member> findMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
+
+    @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
+    long countMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
+
+    @Query("SELECT COUNT(mph) FROM MemberPasswordHistory mph WHERE mph.createdAt >= :fromDate")
+    long countPasswordChangesAfter(@Param("fromDate") LocalDateTime fromDate);
+
+    @Query("SELECT m FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
+    List<Member> findMembersWithNullPasswordChangedAt();
+
+    @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
+    long countMembersWithNullPasswordChangedAt();
+
+    @Query("SELECT m FROM Member m WHERE m.lastPasswordChangeDate = :date")
+    List<Member> findMembersByLastPasswordChangeDate(@Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(m) FROM Member m WHERE m.lastPasswordChangeDate = :date AND m.passwordChangeCount >= :count")
+    long countMembersExceedingDailyLimit(@Param("date") LocalDate date, @Param("count") int count);
 }

@@ -119,24 +119,27 @@
                         <div class="mb-3">
                             <label class="form-label">계정 상태</label>
                             <div>
-                                    <span class="badge fs-6
-                                        <c:choose>
-                                            <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
-                                            <c:when test='${member.status == "PENDING"}'>bg-warning</c:when>
-                                            <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
-                                            <c:otherwise>bg-secondary</c:otherwise>
-                                        </c:choose>
-                                    ">
-                                        <i class="bi bi-circle-fill me-1"></i>
-                                        ${member.status.description}
-                                    </span>
+                                <span class="badge fs-6
+                                    <c:choose>
+                                        <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
+                                        <c:when test='${member.status == "PENDING"}'>bg-warning</c:when>
+                                        <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
+                                        <c:otherwise>bg-secondary</c:otherwise>
+                                    </c:choose>
+                                ">
+                                    <i class="bi bi-circle-fill me-1"></i>
+                                    ${member.status.description}
+                                </span>
                             </div>
                         </div>
 
-                        <div class="d-grid">
+                        <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> 프로필 수정
                             </button>
+                            <a href="/members/password/change" class="btn btn-warning">
+                                <i class="bi bi-key"></i> 비밀번호 변경
+                            </a>
                         </div>
                     </form:form>
                 </div>
@@ -166,6 +169,63 @@
                         <small>
                             API Key는 외부 서비스 연동 시 사용됩니다. 타인에게 노출하지 마세요.
                         </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-shield-lock"></i> 비밀번호 보안</h5>
+                </div>
+                <div class="card-body">
+                    <c:choose>
+                        <c:when test="${member.passwordChangedAt == null}">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>초기 설정</strong><br>
+                                <small>보안을 위해 비밀번호를 변경해주세요.</small>
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>마지막 변경:</span>
+                                <span>
+                                    <fmt:formatDate value="${member.passwordChangedAt}" pattern="yyyy-MM-dd HH:mm" />
+                                </span>
+                            </div>
+
+                            <c:set var="now" value="<%= new java.util.Date() %>" />
+                            <c:set var="daysSinceChange" value="${(now.time - member.passwordChangedAt.time) / (1000 * 60 * 60 * 24)}" />
+                            <c:choose>
+                                <c:when test="${daysSinceChange >= 90}">
+                                    <div class="alert alert-danger">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>변경 필요</strong><br>
+                                        <small>90일이 지났습니다. 비밀번호를 변경해주세요.</small>
+                                    </div>
+                                </c:when>
+                                <c:when test="${daysSinceChange >= 80}">
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>변경 권장</strong><br>
+                                        <small>80일이 지났습니다. 비밀번호 변경을 권장합니다.</small>
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="alert alert-success">
+                                        <i class="bi bi-check-circle"></i>
+                                        <strong>안전</strong><br>
+                                        <small>비밀번호가 안전합니다. (${Math.round(daysSinceChange)}일 전 변경)</small>
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
+                        </c:otherwise>
+                    </c:choose>
+
+                    <div class="d-grid">
+                        <a href="/members/password/change" class="btn btn-outline-primary">
+                            <i class="bi bi-key"></i> 비밀번호 변경
+                        </a>
                     </div>
                 </div>
             </div>

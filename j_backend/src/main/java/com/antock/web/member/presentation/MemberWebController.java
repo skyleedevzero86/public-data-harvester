@@ -2,12 +2,15 @@ package com.antock.web.member.presentation;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.AuthTokenService;
 import com.antock.api.member.value.Role;
+import com.antock.global.common.exception.BusinessException;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -153,7 +156,6 @@ public class MemberWebController {
     @GetMapping("/members/profile")
     public String profile(Model model, HttpServletRequest request) {
         try {
-
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
                 log.warn("인증되지 않은 사용자의 프로필 접근 시도");
@@ -171,10 +173,13 @@ public class MemberWebController {
 
             MemberResponse member = memberApplicationService.getMemberInfo(memberId);
             model.addAttribute("member", member);
-            model.addAttribute("memberUpdateRequest", MemberUpdateRequest.builder()
+
+            // memberUpdateRequest 객체를 Model에 추가 (JSP form 바인딩용)
+            MemberUpdateRequest memberUpdateRequest = MemberUpdateRequest.builder()
                     .nickname(member.getNickname())
                     .email(member.getEmail())
-                    .build());
+                    .build();
+            model.addAttribute("memberUpdateRequest", memberUpdateRequest);
 
             return "member/profile";
 
@@ -315,6 +320,68 @@ public class MemberWebController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/members/admin/list";
+    }
+
+    @GetMapping("/members/password/change")
+    public String changePasswordForm(HttpServletRequest request, Model model) {
+        try {
+            Long memberId = extractMemberIdFromToken(request);
+            if (memberId == null) {
+                log.warn("토큰에서 사용자 ID를 찾을 수 없음");
+                return "redirect:/members/login";
+            }
+
+            model.addAttribute("passwordChangeRequest", new MemberPasswordChangeRequest());
+            model.addAttribute("todayChangeCount",
+                    memberApplicationService.getTodayPasswordChangeCount(memberId));
+            model.addAttribute("isPasswordChangeRequired",
+                    memberApplicationService.isPasswordChangeRequired(memberId));
+            model.addAttribute("isPasswordChangeRecommended",
+                    memberApplicationService.isPasswordChangeRecommended(memberId));
+            return "member/password-change";
+        } catch (Exception e) {
+            log.error("비밀번호 변경 폼 로드 중 오류: {}", e.getMessage());
+            return "redirect:/members/login";
+        }
+    }
+
+    @PostMapping("/members/password/change")
+    public String changePassword(HttpServletRequest request,
+                                 @Valid @ModelAttribute MemberPasswordChangeRequest passwordChangeRequest,
+                                 BindingResult bindingResult,
+                                 HttpServletRequest httpRequest,
+                                 RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            return "member/password-change";
+        }
+
+        try {
+            Long memberId = extractMemberIdFromToken(request);
+            if (memberId == null) {
+                log.warn("토큰에서 사용자 ID를 찾을 수 없음");
+                return "redirect:/members/login";
+            }
+
+            memberApplicationService.changePassword(memberId, passwordChangeRequest);
+
+            HttpSession session = httpRequest.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+
+            log.info("비밀번호 변경 후 세션 무효화 완료 - memberId: {}", memberId);
+
+            return "redirect:/members/login";
+
+        } catch (BusinessException e) {
+            log.warn("비밀번호 변경 실패 - error: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/members/password/change";
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {

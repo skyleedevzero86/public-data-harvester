@@ -4,12 +4,13 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.entity.BaseTimeEntity;
 import jakarta.persistence.Entity;
-
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import jakarta.persistence.Column;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -67,7 +68,56 @@ public class Member extends BaseTimeEntity {
     @Column
     private LocalDateTime approvedAt;
 
-    // 비즈니스 메서드들
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
+    @Column(name = "password_change_count")
+    @Builder.Default
+    private int passwordChangeCount = 0;
+
+    @Column(name = "last_password_change_date")
+    private LocalDate lastPasswordChangeDate;
+
+    public void initializePasswordChangeDate() {
+        this.passwordChangedAt = LocalDateTime.now();
+        this.lastPasswordChangeDate = LocalDate.now();
+    }
+
+    public void changePassword(String newPassword) {
+        this.password = newPassword;
+        this.passwordChangedAt = LocalDateTime.now(); // 첫 변경 시 설정됨
+
+        LocalDate today = LocalDate.now();
+        if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
+            this.lastPasswordChangeDate = today;
+            this.passwordChangeCount = 1;
+        } else {
+            this.passwordChangeCount++;
+        }
+    }
+
+    public boolean canChangePassword() {
+        LocalDate today = LocalDate.now();
+        if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
+            return true;
+        }
+        return this.passwordChangeCount < 3; // 하루 최대 3회
+    }
+
+    public boolean isPasswordChangeRequired() {
+        if (this.passwordChangedAt == null) {
+            return true;
+        }
+        return this.passwordChangedAt.isBefore(LocalDateTime.now().minusDays(90));
+    }
+
+    public boolean isPasswordChangeRecommended() {
+        if (this.passwordChangedAt == null) {
+            return this.getCreateDate().isBefore(LocalDateTime.now().minusDays(90));
+        }
+        return this.passwordChangedAt.isBefore(LocalDateTime.now().minusDays(80));
+    }
+
     public String getName() {
         return nickname;
     }
@@ -90,7 +140,6 @@ public class Member extends BaseTimeEntity {
     }
 
     public boolean matchPassword(String rawPassword) {
-        // 실제로는 BCryptPasswordEncoder 사용
         return this.password.equals(rawPassword);
     }
 
