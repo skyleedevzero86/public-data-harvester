@@ -2,6 +2,7 @@ package com.antock.api.member.application.service;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
@@ -30,18 +31,39 @@ public class MemberApplicationService {
     private final RateLimitServiceInterface rateLimitService;
     private final MemberCacheService memberCacheService;
     private final PasswordEncoder passwordEncoder;
+    private final MemberPasswordService memberPasswordService;
 
     @Autowired
     public MemberApplicationService(MemberDomainService memberDomainService,
                                     AuthTokenService authTokenService,
                                     RateLimitServiceInterface rateLimitService,
                                     @Autowired(required = false) MemberCacheService memberCacheService,
-                                    PasswordEncoder passwordEncoder) {
+                                    PasswordEncoder passwordEncoder,
+                                    MemberPasswordService memberPasswordService) {
         this.memberDomainService = memberDomainService;
         this.authTokenService = authTokenService;
         this.rateLimitService = rateLimitService;
         this.memberCacheService = memberCacheService;
         this.passwordEncoder = passwordEncoder;
+        this.memberPasswordService = memberPasswordService;
+    }
+
+    @Transactional
+    public void changePassword(Long memberId, MemberPasswordChangeRequest request) {
+        memberPasswordService.changePassword(memberId, request);
+        log.info("비밀번호 변경 완료 - memberId: {}", memberId);
+    }
+
+    public boolean isPasswordChangeRequired(Long memberId) {
+        return memberPasswordService.isPasswordChangeRequired(memberId);
+    }
+
+    public boolean isPasswordChangeRecommended(Long memberId) {
+        return memberPasswordService.isPasswordChangeRecommended(memberId);
+    }
+
+    public long getTodayPasswordChangeCount(Long memberId) {
+        return memberPasswordService.getTodayPasswordChangeCount(memberId);
     }
 
     @Transactional

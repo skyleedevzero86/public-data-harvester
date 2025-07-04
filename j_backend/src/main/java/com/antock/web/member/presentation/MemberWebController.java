@@ -2,12 +2,17 @@ package com.antock.web.member.presentation;
 
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.AuthTokenService;
 import com.antock.api.member.value.Role;
+import com.antock.global.common.exception.BusinessException;
+import com.antock.global.security.annotation.CurrentUser;
+import com.antock.global.security.dto.AuthenticatedUser;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -315,6 +320,51 @@ public class MemberWebController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/members/admin/list";
+    }
+
+    @GetMapping("/password/change")
+    public String changePasswordForm(@CurrentUser AuthenticatedUser user, Model model) {
+        model.addAttribute("passwordChangeRequest", new MemberPasswordChangeRequest());
+        model.addAttribute("todayChangeCount",
+                memberApplicationService.getTodayPasswordChangeCount(user.getId()));
+        model.addAttribute("isPasswordChangeRequired",
+                memberApplicationService.isPasswordChangeRequired(user.getId()));
+        model.addAttribute("isPasswordChangeRecommended",
+                memberApplicationService.isPasswordChangeRecommended(user.getId()));
+        return "member/password-change";
+    }
+
+    @PostMapping("/password/change")
+    public String changePassword(@CurrentUser AuthenticatedUser user,
+                                 @Valid MemberPasswordChangeRequest request,
+                                 BindingResult bindingResult,
+                                 HttpServletRequest httpRequest,
+                                 RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            return "member/password-change";
+        }
+
+        try {
+            memberApplicationService.changePassword(user.getId(), request);
+
+            HttpSession session = httpRequest.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+
+            log.info("비밀번호 변경 후 세션 무효화 완료 - memberId: {}", user.getId());
+
+            return "redirect:/members/login";
+
+        } catch (BusinessException e) {
+            log.warn("비밀번호 변경 실패 - memberId: {}, error: {}", user.getId(), e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/members/password/change";
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {

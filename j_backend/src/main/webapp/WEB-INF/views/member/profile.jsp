@@ -104,6 +104,16 @@
                                            value="<c:choose><c:when test='${not empty member.lastLoginAt}'><fmt:formatDate value='${member.lastLoginAt}' pattern='yyyy-MM-dd HH:mm' /></c:when><c:otherwise>없음</c:otherwise></c:choose>" readonly>
                                 </div>
                             </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> 프로필 수정
+                                </button>
+                                <a href="/members/password/change" class="btn btn-warning">
+                                    <i class="bi bi-key"></i> 비밀번호 변경
+                                </a>
+                            </div>
+
                         </div>
 
                         <div class="row">
