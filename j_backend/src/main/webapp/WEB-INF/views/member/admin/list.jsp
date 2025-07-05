@@ -5,6 +5,8 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" content="${_csrf.token}"/>
+    <meta name="_csrf_header" content="${_csrf.headerName}"/>
     <title>회원 관리 - Antock System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
@@ -309,16 +311,24 @@
                                                 <ul class="dropdown-menu" style="min-width:200px;">
                                                     <li><h6 class="dropdown-header">권한 변경</h6></li>
                                                     <li>
-                                                        <a class="dropdown-item" href="#"
-                                                           onclick="changeRole(${member.id}, 'USER')">
-                                                            <i class="bi bi-person"></i> 일반 사용자
-                                                        </a>
+                                                        <form method="post" action="/members/admin/${member.id}/role?role=USER" class="d-inline">
+                                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                            <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
+                                                                    onclick="return confirm('해당 회원의 권한을 \\'일반 사용자\\'로 변경하시겠습니까?')"
+                                                                    style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                <i class="bi bi-person"></i> 일반 사용자
+                                                            </button>
+                                                        </form>
                                                     </li>
                                                     <li>
-                                                        <a class="dropdown-item" href="#"
-                                                           onclick="changeRole(${member.id}, 'MANAGER')">
-                                                            <i class="bi bi-person-badge"></i> 관리자
-                                                        </a>
+                                                        <form method="post" action="/members/admin/${member.id}/role?role=MANAGER" class="d-inline">
+                                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                            <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
+                                                                    onclick="return confirm('해당 회원의 권한을 \\'관리자\\'로 변경하시겠습니까?')"
+                                                                    style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                <i class="bi bi-person-badge"></i> 관리자
+                                                            </button>
+                                                        </form>
                                                     </li>
 
                                                     <c:if test="${member.status == 'APPROVED' || member.status == 'SUSPENDED'}">
@@ -327,10 +337,14 @@
 
                                                         <c:if test="${member.status == 'APPROVED'}">
                                                             <li>
-                                                                <a class="dropdown-item text-danger" href="#"
-                                                                   onclick="suspendMember(${member.id})">
-                                                                    <i class="bi bi-person-x"></i> 계정 정지
-                                                                </a>
+                                                                <form method="post" action="/members/admin/${member.id}/suspend" class="d-inline">
+                                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent p-0"
+                                                                            onclick="return confirm('해당 회원의 계정을 정지하시겠습니까?\n\n• 즉시 로그인이 불가능해집니다\n• 관리자가 직접 해제할 때까지 정지됩니다')"
+                                                                            style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                        <i class="bi bi-person-x"></i> 계정 정지
+                                                                    </button>
+                                                                </form>
                                                             </li>
                                                         </c:if>
                                                     </c:if>
@@ -355,7 +369,7 @@
                                             <c:if test="${member.status == 'SUSPENDED' || member.loginFailCount >= 5}">
                                                 <form method="post" action="/members/admin/${member.id}/unlock" class="d-inline">
                                                     <button type="submit" class="btn btn-warning btn-sm"
-                                                            onclick="return confirm('이 회원의 계정 정지를 해제하시겠습니까?\\n\\n• 로그인 실패 횟수가 초기화됩니다\\n• 계정 잠금이 해제됩니다\\n• 상태가 승인됨으로 변경됩니다')"
+                                                            onclick="return confirm('이 회원의 계정 정지를 해제하시겠습니까?\n\n• 로그인 실패 횟수가 초기화됩니다\n• 계정 잠금이 해제됩니다\n• 상태가 승인됨으로 변경됩니다')"
                                                             title="정지 해제">
                                                         <i class="bi bi-unlock"></i> 해제
                                                     </button>
@@ -427,23 +441,35 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function changeRole(memberId, role) {
+
+        console.log('changeRole 호출됨:', 'memberId =', memberId, 'role =', role);
+        console.log('memberId 타입:', typeof memberId);
+
+        if (!memberId || memberId === 'null' || memberId === 'undefined') {
+            alert('회원 ID가 올바르지 않습니다. memberId: ' + memberId);
+            return false;
+        }
+
         if (confirm(`해당 회원의 권한을 '${role}'로 변경하시겠습니까?`)) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/members/admin/${memberId}/role?role=${role}`;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
 
-    function suspendMember(memberId) {
-        if (confirm('해당 회원의 계정을 정지하시겠습니까?\\n\\n• 즉시 로그인이 불가능해집니다\\n• 관리자가 직접 해제할 때까지 정지됩니다')) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/members/admin/${memberId}/suspend`;
+            const csrfToken = document.querySelector('meta[name="_csrf"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_csrf';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+
+            console.log('권한 변경 요청 URL:', form.action);
+
             document.body.appendChild(form);
             form.submit();
         }
+        return false;
     }
 
     function filterByStatus(status) {
