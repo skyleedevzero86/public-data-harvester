@@ -26,8 +26,6 @@ public class MemberResponse {
     private LocalDateTime accountLockedAt;
     private Long approvedBy;
     private LocalDateTime approvedAt;
-
-    // 비밀번호 관련 필드 추가
     private LocalDateTime passwordChangedAt;
     private Integer passwordChangeCount;
     private LocalDateTime lastPasswordChangeDate;

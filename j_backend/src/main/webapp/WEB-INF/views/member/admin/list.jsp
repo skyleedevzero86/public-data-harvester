@@ -32,11 +32,25 @@
             vertical-align: middle;
         }
         .table th:last-child, .table td:last-child {
-            min-width: 180px;
+            min-width: 220px;
         }
 
         .table-responsive {
             overflow: visible !important;
+        }
+
+        .btn-group-sm .btn {
+            margin-right: 2px;
+        }
+
+        .locked-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .login-fail-count {
+            color: #fd7e14;
+            font-weight: bold;
         }
     </style>
 
@@ -73,7 +87,6 @@
         </div>
     </div>
 
-
     <c:if test="${not empty successMessage}">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle"></i> ${successMessage}
@@ -87,7 +100,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     </c:if>
-
 
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6">
@@ -198,21 +210,22 @@
                             <thead class="table-dark">
                             <tr>
                                 <th width="5%">ID</th>
-                                <th width="15%">사용자명</th>
-                                <th width="15%">닉네임</th>
-                                <th width="20%">이메일</th>
-                                <th width="10%">권한</th>
-                                <th width="10%">상태</th>
-                                <th width="10%">가입일</th>
-                                <th width="10%">최근 로그인</th>
-                                <th style="min-width:180px;">작업</th>
-                                <th width="10%"></th>
+                                <th width="12%">사용자명</th>
+                                <th width="12%">닉네임</th>
+                                <th width="15%">이메일</th>
+                                <th width="8%">권한</th>
+                                <th width="8%">상태</th>
+                                <th width="8%">실패횟수</th>
+                                <th width="8%">가입일</th>
+                                <th width="8%">최근 로그인</th>
+                                <th width="12%">작업</th>
+                                <th width="4%"></th>
                             </tr>
                             </thead>
                             <tbody>
                             <c:forEach var="memberView" items="${memberViewList}">
                                 <c:set var="member" value="${memberView.member}" />
-                                <tr>
+                                <tr class="${member.status == 'SUSPENDED' ? 'table-danger' : ''}">
                                     <td>
                                         <strong>${member.id}</strong>
                                     </td>
@@ -222,6 +235,9 @@
                                             <c:if test="${member.role == 'ADMIN'}">
                                                 <i class="bi bi-shield-fill text-danger ms-1" title="시스템 관리자"></i>
                                             </c:if>
+                                            <c:if test="${member.loginFailCount >= 5}">
+                                                <i class="bi bi-lock-fill locked-indicator ms-1" title="계정 잠금됨"></i>
+                                            </c:if>
                                         </div>
                                     </td>
                                     <td>${member.nickname}</td>
@@ -229,24 +245,37 @@
                                         <small class="text-muted">${member.email}</small>
                                     </td>
                                     <td>
-                                                <span class="badge
-                                                    <c:choose>
-                                                        <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
-                                                        <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
-                                                        <c:otherwise>bg-info</c:otherwise>
-                                                    </c:choose>
-                                                ">${member.role.description}</span>
+                                        <span class="badge
+                                            <c:choose>
+                                                <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
+                                                <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
+                                                <c:otherwise>bg-info</c:otherwise>
+                                            </c:choose>
+                                        ">${member.role.description}</span>
                                     </td>
                                     <td>
-                                                <span class="badge
-                                                    <c:choose>
-                                                        <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
-                                                        <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
-                                                        <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
-                                                        <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
-                                                        <c:otherwise>bg-light text-dark</c:otherwise>
-                                                    </c:choose>
-                                                ">${member.status.description}</span>
+                                        <span class="badge
+                                            <c:choose>
+                                                <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
+                                                <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
+                                                <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
+                                                <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
+                                                <c:otherwise>bg-light text-dark</c:otherwise>
+                                            </c:choose>
+                                        ">${member.status.description}</span>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${member.loginFailCount > 0}">
+                                                <span class="login-fail-count">${member.loginFailCount}/5</span>
+                                                <c:if test="${member.loginFailCount >= 5}">
+                                                    <br><small class="text-danger">잠금됨</small>
+                                                </c:if>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="text-muted">0</span>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </td>
                                     <td>
                                         <small>
@@ -270,7 +299,7 @@
                                             </c:choose>
                                         </small>
                                     </td>
-                                    <td  style="min-width:180px;">
+                                    <td style="min-width:220px;">
                                         <div class="btn-group btn-group-sm" role="group">
                                             <div class="dropdown custom-dropdown">
                                                 <button class="btn btn-outline-primary btn-sm dropdown-toggle"
@@ -291,14 +320,19 @@
                                                             <i class="bi bi-person-badge"></i> 관리자
                                                         </a>
                                                     </li>
-                                                    <c:if test="${member.status == 'APPROVED'}">
+
+                                                    <c:if test="${member.status == 'APPROVED' || member.status == 'SUSPENDED'}">
                                                         <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <a class="dropdown-item text-danger" href="#"
-                                                               onclick="suspendMember(${member.id})">
-                                                                <i class="bi bi-person-x"></i> 계정 정지
-                                                            </a>
-                                                        </li>
+                                                        <li><h6 class="dropdown-header">계정 관리</h6></li>
+
+                                                        <c:if test="${member.status == 'APPROVED'}">
+                                                            <li>
+                                                                <a class="dropdown-item text-danger" href="#"
+                                                                   onclick="suspendMember(${member.id})">
+                                                                    <i class="bi bi-person-x"></i> 계정 정지
+                                                                </a>
+                                                            </li>
+                                                        </c:if>
                                                     </c:if>
                                                 </ul>
                                             </div>
@@ -317,13 +351,23 @@
                                                     </button>
                                                 </form>
                                             </c:if>
+
+                                            <c:if test="${member.status == 'SUSPENDED' || member.loginFailCount >= 5}">
+                                                <form method="post" action="/members/admin/${member.id}/unlock" class="d-inline">
+                                                    <button type="submit" class="btn btn-warning btn-sm"
+                                                            onclick="return confirm('이 회원의 계정 정지를 해제하시겠습니까?\\n\\n• 로그인 실패 횟수가 초기화됩니다\\n• 계정 잠금이 해제됩니다\\n• 상태가 승인됨으로 변경됩니다')"
+                                                            title="정지 해제">
+                                                        <i class="bi bi-unlock"></i> 해제
+                                                    </button>
+                                                </form>
+                                            </c:if>
                                         </div>
                                     </td>
                                     <td>
                                         <c:if test="${member.role != 'ADMIN' && member.username != pageContext.request.userPrincipal.name}">
                                             <form action="/members/admin/${member.id}/delete" method="post" style="display:inline;" onsubmit="return confirm('정말로 삭제(탈퇴) 처리하시겠습니까?');">
                                                 <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="bi bi-person-x"></i> 삭제
+                                                    <i class="bi bi-person-x"></i>
                                                 </button>
                                             </form>
                                         </c:if>
@@ -393,7 +437,7 @@
     }
 
     function suspendMember(memberId) {
-        if (confirm('해당 회원의 계정을 정지하시겠습니까?')) {
+        if (confirm('해당 회원의 계정을 정지하시겠습니까?\\n\\n• 즉시 로그인이 불가능해집니다\\n• 관리자가 직접 해제할 때까지 정지됩니다')) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/members/admin/${memberId}/suspend`;
@@ -426,7 +470,6 @@
 
     document.querySelectorAll('tbody tr').forEach(row => {
         row.addEventListener('click', function(e) {
-
             if (e.target.closest('button') || e.target.closest('a') || e.target.closest('form')) {
                 return;
             }
@@ -434,6 +477,13 @@
             document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('table-active'));
             this.classList.add('table-active');
         });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const suspendedRows = document.querySelectorAll('tr.table-danger');
+        if (suspendedRows.length > 0) {
+            console.log(`정지된 회원 ${suspendedRows.length}명 발견`);
+        }
     });
 </script>
 </body>

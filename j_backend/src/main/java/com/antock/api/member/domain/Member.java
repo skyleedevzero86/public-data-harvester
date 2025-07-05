@@ -200,19 +200,43 @@ public class Member extends BaseTimeEntity {
     }
 
     public void increaseLoginFailCount() {
+        log.info("increaseLoginFailCount 호출 - memberId: {}, 현재 값: {}", getId(), this.loginFailCount);
+
+        Integer beforeCount = this.loginFailCount;
+        MemberStatus beforeStatus = this.status;
+        LocalDateTime beforeLockedAt = this.accountLockedAt;
+
         this.loginFailCount++;
+
+        log.info("실패 횟수 증가 완료 - Before: {}, After: {}", beforeCount, this.loginFailCount);
+
         if (this.loginFailCount >= 5) {
             this.accountLockedAt = LocalDateTime.now();
             this.status = MemberStatus.SUSPENDED;
+
+            log.error("5회 실패로 계정 정지 - memberId: {}, 실패 횟수: {}, 정지 시간: {}, 상태 변경: {} -> {}",
+                    getId(), this.loginFailCount, this.accountLockedAt, beforeStatus, this.status);
         }
     }
 
     public void resetLoginFailCount() {
+        log.info("resetLoginFailCount 호출 - memberId: {}, 현재 실패 횟수: {}, 현재 상태: {}",
+                getId(), this.loginFailCount, this.status);
+
+        Integer beforeCount = this.loginFailCount;
+        MemberStatus beforeStatus = this.status;
+        LocalDateTime beforeLockedAt = this.accountLockedAt;
+
         this.loginFailCount = 0;
         this.accountLockedAt = null;
+
         if (this.status == MemberStatus.SUSPENDED) {
             this.status = MemberStatus.APPROVED;
+            log.info("정지 상태에서 승인 상태로 복구 - memberId: {}", getId());
         }
+
+        log.info("로그인 실패 횟수 초기화 완료 - memberId: {}, Before: {}, After: {}, 상태: {} -> {}, 정지시간: {} -> {}",
+                getId(), beforeCount, this.loginFailCount, beforeStatus, this.status, beforeLockedAt, this.accountLockedAt);
     }
 
     public void updateLastLoginAt() {

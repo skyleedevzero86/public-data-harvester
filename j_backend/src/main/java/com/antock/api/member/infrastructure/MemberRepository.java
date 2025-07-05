@@ -6,6 +6,7 @@ import com.antock.api.member.value.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
@@ -54,4 +55,18 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT COUNT(m) FROM Member m WHERE m.lastPasswordChangeDate = :date AND m.passwordChangeCount >= :count")
     long countMembersExceedingDailyLimit(@Param("date") LocalDate date, @Param("count") int count);
+
+    @Modifying
+    @Query(value = "UPDATE members SET login_fail_count = :failCount, status = :status, account_locked_at = :lockedAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+    int updateLoginFailBySql(@Param("memberId") Long memberId,
+                             @Param("failCount") Integer failCount,
+                             @Param("status") String status,
+                             @Param("lockedAt") LocalDateTime lockedAt);
+
+    @Modifying
+    @Query(value = "UPDATE members SET login_fail_count = :failCount, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+    int updateLoginFailCountOnly(@Param("memberId") Long memberId, @Param("failCount") Integer failCount);
+
+    @Query(value = "SELECT login_fail_count FROM members WHERE id = :memberId", nativeQuery = true)
+    Integer getCurrentLoginFailCount(@Param("memberId") Long memberId);
 }

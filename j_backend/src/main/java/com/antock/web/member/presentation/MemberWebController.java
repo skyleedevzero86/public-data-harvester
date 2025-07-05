@@ -382,6 +382,52 @@ public class MemberWebController {
         return "redirect:/members/admin/list";
     }
 
+    @PostMapping("/members/admin/{memberId}/unlock")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public String unlockMember(@PathVariable Long memberId,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            log.info("관리자 계정 정지 해제 요청 - memberId: {}", memberId);
+
+            MemberResponse member = memberApplicationService.unlockMember(memberId);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    String.format("회원 '%s'의 계정 정지가 해제되었습니다.", member.getUsername()));
+
+            log.info("관리자 계정 정지 해제 완료 - memberId: {}, username: {}",
+                    memberId, member.getUsername());
+
+        } catch (Exception e) {
+            log.error("계정 정지 해제 실패 - memberId: {}, error: {}", memberId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "계정 정지 해제 중 오류가 발생했습니다: " + e.getMessage());
+        }
+        return "redirect:/members/admin/list";
+    }
+
+    @PostMapping("/members/admin/{memberId}/suspend")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public String suspendMemberManual(@PathVariable Long memberId,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            log.info("관리자 수동 회원 정지 요청 - memberId: {}", memberId);
+
+            MemberResponse member = memberApplicationService.suspendMember(memberId);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    String.format("회원 '%s'이(가) 정지되었습니다.", member.getUsername()));
+
+            log.warn("관리자 수동 회원 정지 완료 - memberId: {}, username: {}",
+                    memberId, member.getUsername());
+
+        } catch (Exception e) {
+            log.error("회원 정지 실패 - memberId: {}, error: {}", memberId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "회원 정지 중 오류가 발생했습니다: " + e.getMessage());
+        }
+        return "redirect:/members/admin/list";
+    }
+
     @GetMapping("/members/password/change")
     public String changePasswordForm(HttpServletRequest request, Model model) {
         try {
@@ -556,5 +602,4 @@ public class MemberWebController {
             return "redirect:/members/profile";
         }
     }
-
 }
