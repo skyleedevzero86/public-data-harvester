@@ -55,7 +55,7 @@
                         </div>
                     </c:if>
 
-                    <form:form modelAttribute="memberUpdateRequest" method="post">
+                    <form:form modelAttribute="memberUpdateRequest" method="post" action="/members/profile">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -137,11 +137,20 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> 프로필 수정
                             </button>
-                            <a href="/members/password/change" class="btn btn-warning">
-                                <i class="bi bi-key"></i> 비밀번호 변경
-                            </a>
                         </div>
                     </form:form>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/members/password/change" class="btn btn-warning">
+                            <i class="bi bi-key"></i> 비밀번호 변경
+                        </a>
+
+                        <form id="withdrawForm" action="/members/withdraw" method="post" style="margin: 0;">
+                            <button type="button" class="btn btn-danger w-100" onclick="confirmWithdraw()">
+                                <i class="bi bi-person-x"></i> 회원 탈퇴
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -180,10 +189,10 @@
                 <div class="card-body">
                     <c:set var="now" value="<%= new java.util.Date() %>" />
                     <c:choose>
-                    <c:when test="${member.passwordChangedAt == null}">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>가입일 기준:</span>
-                            <span>
+                        <c:when test="${member.passwordChangedAt == null}">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>가입일 기준:</span>
+                                <span>
                                    <c:choose>
                                        <c:when test="${not empty createDateFormatted}">
                                            <fmt:formatDate value="${createDateFormatted}" pattern="yyyy-MM-dd HH:mm" />
@@ -191,35 +200,35 @@
                                        <c:otherwise>없음</c:otherwise>
                                    </c:choose>
                                </span>
-                        </div>
+                            </div>
 
-                        <c:if test="${not empty createDateFormatted}">
-                            <c:set var="daysSinceJoin" value="${(now.time - createDateFormatted.time) / (1000 * 60 * 60 * 24)}" />
-                            <c:choose>
-                                <c:when test="${daysSinceJoin >= 90}">
-                                    <div class="alert alert-danger">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                        <strong>변경 필요</strong><br>
-                                        <small>가입한지 90일이 지났습니다. 비밀번호를 변경해주세요.</small>
-                                    </div>
-                                </c:when>
-                                <c:when test="${daysSinceJoin >= 80}">
-                                    <div class="alert alert-warning">
-                                        <i class="bi bi-info-circle"></i>
-                                        <strong>변경 권장</strong><br>
-                                        <small>가입한지 80일이 지났습니다. 비밀번호 변경을 권장합니다.</small>
-                                    </div>
-                                </c:when>
-                                <c:otherwise>
-                                    <div class="alert alert-info">
-                                        <i class="bi bi-info-circle"></i>
-                                        <strong>초기 상태</strong><br>
-                                        <small>아직 비밀번호를 변경하지 않았습니다. (가입 ${Math.round(daysSinceJoin)}일 경과)</small>
-                                    </div>
-                                </c:otherwise>
-                            </c:choose>
-                        </c:if>
-                    </c:when>
+                            <c:if test="${not empty createDateFormatted}">
+                                <c:set var="daysSinceJoin" value="${(now.time - createDateFormatted.time) / (1000 * 60 * 60 * 24)}" />
+                                <c:choose>
+                                    <c:when test="${daysSinceJoin >= 90}">
+                                        <div class="alert alert-danger">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <strong>변경 필요</strong><br>
+                                            <small>가입한지 90일이 지났습니다. 비밀번호를 변경해주세요.</small>
+                                        </div>
+                                    </c:when>
+                                    <c:when test="${daysSinceJoin >= 80}">
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>변경 권장</strong><br>
+                                            <small>가입한지 80일이 지났습니다. 비밀번호 변경을 권장합니다.</small>
+                                        </div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>초기 상태</strong><br>
+                                            <small>아직 비밀번호를 변경하지 않았습니다. (가입 ${Math.round(daysSinceJoin)}일 경과)</small>
+                                        </div>
+                                    </c:otherwise>
+                                </c:choose>
+                            </c:if>
+                        </c:when>
                         <c:otherwise>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>마지막 변경:</span>
@@ -336,6 +345,12 @@
         }).catch(function() {
             alert('API Key가 클립보드에 복사되었습니다.');
         });
+    }
+
+    function confirmWithdraw() {
+        if (confirm('정말로 탈퇴하시겠습니까?\n\n탈퇴 시:\n- 계정 복구가 불가능합니다\n- 즉시 로그아웃됩니다')) {
+            document.getElementById('withdrawForm').submit();
+        }
     }
 </script>
 </body>

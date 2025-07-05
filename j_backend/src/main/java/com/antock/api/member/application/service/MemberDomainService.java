@@ -119,6 +119,13 @@ public class MemberDomainService {
         memberRepository.save(member);
     }
 
+    public Member unlockMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        member.resetLoginFailCount();
+        return memberRepository.save(member);
+    }
+
     public void handleLoginFailure(Member member) {
         member.increaseLoginFailCount();
         memberRepository.save(member);
@@ -142,5 +149,9 @@ public class MemberDomainService {
 
     private String generateApiKey() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    public void save(Member member) {
+        memberRepository.save(member);
     }
 }

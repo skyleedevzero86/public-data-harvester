@@ -206,6 +206,7 @@
                                 <th width="10%">가입일</th>
                                 <th width="10%">최근 로그인</th>
                                 <th style="min-width:180px;">작업</th>
+                                <th width="10%"></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -317,6 +318,15 @@
                                                 </form>
                                             </c:if>
                                         </div>
+                                    </td>
+                                    <td>
+                                        <c:if test="${member.role != 'ADMIN' && member.username != pageContext.request.userPrincipal.name}">
+                                            <form action="/members/admin/${member.id}/delete" method="post" style="display:inline;" onsubmit="return confirm('정말로 삭제(탈퇴) 처리하시겠습니까?');">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-person-x"></i> 삭제
+                                                </button>
+                                            </form>
+                                        </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>

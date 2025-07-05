@@ -178,8 +178,7 @@ public class Member extends BaseTimeEntity {
     }
 
     public boolean isLocked() {
-        return accountLockedAt != null &&
-                accountLockedAt.isAfter(LocalDateTime.now().minusHours(24));
+        return accountLockedAt != null && accountLockedAt.isAfter(LocalDateTime.now().minusHours(24));
     }
 
     public boolean matchPassword(String rawPassword) {
@@ -204,12 +203,16 @@ public class Member extends BaseTimeEntity {
         this.loginFailCount++;
         if (this.loginFailCount >= 5) {
             this.accountLockedAt = LocalDateTime.now();
+            this.status = MemberStatus.SUSPENDED;
         }
     }
 
     public void resetLoginFailCount() {
         this.loginFailCount = 0;
         this.accountLockedAt = null;
+        if (this.status == MemberStatus.SUSPENDED) {
+            this.status = MemberStatus.APPROVED;
+        }
     }
 
     public void updateLastLoginAt() {
@@ -236,5 +239,18 @@ public class Member extends BaseTimeEntity {
         return authorities.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
+    }
+
+    public void withdraw() {
+        this.status = MemberStatus.WITHDRAWN;
+        this.email = maskEmail(this.email);
+    }
+
+    private String maskEmail(String email) {
+        int idx = email.indexOf("@");
+        if (idx > 1) {
+            return email.charAt(0) + "***" + email.substring(idx);
+        }
+        return "***";
     }
 }

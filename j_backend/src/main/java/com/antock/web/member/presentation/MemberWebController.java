@@ -8,6 +8,7 @@ import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.AuthTokenService;
+import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import jakarta.servlet.http.HttpSession;
@@ -28,7 +29,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
@@ -186,6 +186,14 @@ public class MemberWebController {
             }
 
             MemberResponse member = memberApplicationService.getMemberInfo(memberId);
+
+            if (member.getStatus() == MemberStatus.WITHDRAWN) {
+                log.warn("탈퇴된 회원의 프로필 접근 시도 - memberId: {}", memberId);
+                request.getSession().invalidate();
+                SecurityContextHolder.clearContext();
+                return "redirect:/";
+            }
+
             model.addAttribute("member", member);
 
             model.addAttribute("createDateFormatted", convertToDate(member.getCreateDate()));
@@ -487,4 +495,66 @@ public class MemberWebController {
 
         return request.getRemoteAddr();
     }
+
+    @PostMapping("/members/admin/{memberId}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteMember(@PathVariable Long memberId, RedirectAttributes redirectAttributes) {
+        try {
+            memberApplicationService.deleteMember(memberId);
+            redirectAttributes.addFlashAttribute("successMessage", "회원이 삭제되었습니다.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/members/admin/list";
+    }
+
+    @PostMapping("/members/withdraw")
+    public String withdraw(HttpServletRequest request,
+                           HttpServletResponse response,
+                           RedirectAttributes redirectAttributes) {
+        try {
+            Long memberId = extractMemberIdFromToken(request);
+            if (memberId == null) {
+                log.warn("탈퇴 시도 - 토큰에서 사용자 ID를 찾을 수 없음");
+                redirectAttributes.addFlashAttribute("errorMessage", "인증 정보를 찾을 수 없습니다.");
+                return "redirect:/members/login";
+            }
+
+            log.info("회원 탈퇴 요청 - memberId: {}", memberId);
+
+            memberApplicationService.deleteMember(memberId);
+
+            log.info("회원 탈퇴 처리 완료 - memberId: {}", memberId);
+
+            Cookie accessTokenCookie = new Cookie("accessToken", null);
+            accessTokenCookie.setPath("/");
+            accessTokenCookie.setMaxAge(0);
+            accessTokenCookie.setHttpOnly(true);
+            response.addCookie(accessTokenCookie);
+
+            Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+            refreshTokenCookie.setPath("/");
+            refreshTokenCookie.setMaxAge(0);
+            refreshTokenCookie.setHttpOnly(true);
+            response.addCookie(refreshTokenCookie);
+
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+
+            SecurityContextHolder.clearContext();
+
+            log.info("회원 탈퇴 완료 및 로그아웃 처리 - memberId: {}", memberId);
+
+            redirectAttributes.addFlashAttribute("successMessage", "회원 탈퇴가 완료되었습니다.");
+            return "redirect:/";
+
+        } catch (Exception e) {
+            log.error("회원 탈퇴 처리 중 오류: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/members/profile";
+        }
+    }
+
 }

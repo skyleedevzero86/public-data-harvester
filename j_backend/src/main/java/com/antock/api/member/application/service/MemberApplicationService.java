@@ -290,4 +290,12 @@ public class MemberApplicationService {
             }
         }
     }
+
+    @Transactional
+    public void deleteMember(Long memberId) {
+        Member member = memberDomainService.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        member.withdraw();
+        memberDomainService.save(member);
+    }
 }
