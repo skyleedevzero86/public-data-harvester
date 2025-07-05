@@ -29,6 +29,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Controller
 @RequiredArgsConstructor
 @Slf4j
@@ -36,6 +43,13 @@ public class MemberWebController {
 
     private final MemberApplicationService memberApplicationService;
     private final AuthTokenService authTokenService;
+
+    private Date convertToDate(java.time.LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return null;
+        }
+        return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
 
     @GetMapping("/members/join")
     public String joinForm(Model model) {
@@ -174,7 +188,11 @@ public class MemberWebController {
             MemberResponse member = memberApplicationService.getMemberInfo(memberId);
             model.addAttribute("member", member);
 
-            // memberUpdateRequest 객체를 Model에 추가 (JSP form 바인딩용)
+            model.addAttribute("createDateFormatted", convertToDate(member.getCreateDate()));
+            model.addAttribute("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
+            model.addAttribute("approvedAtFormatted", convertToDate(member.getApprovedAt()));
+            model.addAttribute("passwordChangedAtFormatted", convertToDate(member.getPasswordChangedAt()));
+
             MemberUpdateRequest memberUpdateRequest = MemberUpdateRequest.builder()
                     .nickname(member.getNickname())
                     .email(member.getEmail())
@@ -220,6 +238,10 @@ public class MemberWebController {
                 if (memberId != null) {
                     MemberResponse member = memberApplicationService.getMemberInfo(memberId);
                     model.addAttribute("member", member);
+                    model.addAttribute("createDateFormatted", convertToDate(member.getCreateDate()));
+                    model.addAttribute("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
+                    model.addAttribute("approvedAtFormatted", convertToDate(member.getApprovedAt()));
+                    model.addAttribute("passwordChangedAtFormatted", convertToDate(member.getPasswordChangedAt()));
                 }
             } catch (Exception e) {
                 log.error("프로필 업데이트 에러 처리 중 오류: {}", e.getMessage());
@@ -247,6 +269,10 @@ public class MemberWebController {
                 if (memberId != null) {
                     MemberResponse member = memberApplicationService.getMemberInfo(memberId);
                     model.addAttribute("member", member);
+                    model.addAttribute("createDateFormatted", convertToDate(member.getCreateDate()));
+                    model.addAttribute("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
+                    model.addAttribute("approvedAtFormatted", convertToDate(member.getApprovedAt()));
+                    model.addAttribute("passwordChangedAtFormatted", convertToDate(member.getPasswordChangedAt()));
                 }
             } catch (Exception ex) {
                 log.error("프로필 업데이트 에러 처리 중 오류: {}", ex.getMessage());
@@ -260,6 +286,19 @@ public class MemberWebController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String memberList(@PageableDefault(size = 20) Pageable pageable, Model model) {
         Page<MemberResponse> members = memberApplicationService.getMembers(pageable);
+
+        List<Map<String, Object>> memberViewList = members.getContent().stream()
+                .map(member -> {
+                    Map<String, Object> memberView = new HashMap<>();
+                    memberView.put("member", member);
+                    memberView.put("createDateFormatted", convertToDate(member.getCreateDate()));
+                    memberView.put("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
+                    memberView.put("approvedAtFormatted", convertToDate(member.getApprovedAt()));
+                    return memberView;
+                })
+                .collect(Collectors.toList());
+
+        model.addAttribute("memberViewList", memberViewList);
         model.addAttribute("members", members);
         return "member/admin/list";
     }
@@ -268,6 +307,19 @@ public class MemberWebController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String pendingMembers(@PageableDefault(size = 20) Pageable pageable, Model model) {
         Page<MemberResponse> pendingMembers = memberApplicationService.getPendingMembers(pageable);
+
+        List<Map<String, Object>> pendingMemberViewList = pendingMembers.getContent().stream()
+                .map(member -> {
+                    Map<String, Object> memberView = new HashMap<>();
+                    memberView.put("member", member);
+                    memberView.put("createDateFormatted", convertToDate(member.getCreateDate()));
+                    memberView.put("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
+                    memberView.put("approvedAtFormatted", convertToDate(member.getApprovedAt()));
+                    return memberView;
+                })
+                .collect(Collectors.toList());
+
+        model.addAttribute("pendingMemberViewList", pendingMemberViewList);
         model.addAttribute("pendingMembers", pendingMembers);
         return "member/admin/pending";
     }
@@ -350,19 +402,39 @@ public class MemberWebController {
                                  @Valid @ModelAttribute MemberPasswordChangeRequest passwordChangeRequest,
                                  BindingResult bindingResult,
                                  HttpServletRequest httpRequest,
-                                 RedirectAttributes redirectAttributes) {
+                                 RedirectAttributes redirectAttributes,
+                                 Model model) {
 
-        if (bindingResult.hasErrors()) {
-            return "member/password-change";
-        }
-
+        Long memberId = null;
         try {
-            Long memberId = extractMemberIdFromToken(request);
+            memberId = extractMemberIdFromToken(request);
             if (memberId == null) {
                 log.warn("토큰에서 사용자 ID를 찾을 수 없음");
                 return "redirect:/members/login";
             }
+        } catch (Exception e) {
+            log.error("토큰 파싱 실패: {}", e.getMessage());
+            return "redirect:/members/login";
+        }
 
+        if (bindingResult.hasErrors()) {
+            try {
+                model.addAttribute("passwordChangeRequest", passwordChangeRequest);
+                model.addAttribute("todayChangeCount",
+                        memberApplicationService.getTodayPasswordChangeCount(memberId));
+                model.addAttribute("isPasswordChangeRequired",
+                        memberApplicationService.isPasswordChangeRequired(memberId));
+                model.addAttribute("isPasswordChangeRecommended",
+                        memberApplicationService.isPasswordChangeRecommended(memberId));
+                return "member/password-change";
+            } catch (Exception e) {
+                log.error("비밀번호 변경 폼 에러 처리 중 오류: {}", e.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", "오류가 발생했습니다. 다시 시도해주세요.");
+                return "redirect:/members/profile";
+            }
+        }
+
+        try {
             memberApplicationService.changePassword(memberId, passwordChangeRequest);
 
             HttpSession session = httpRequest.getSession(false);
@@ -379,8 +451,26 @@ public class MemberWebController {
 
         } catch (BusinessException e) {
             log.warn("비밀번호 변경 실패 - error: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/members/password/change";
+
+            try {
+                model.addAttribute("passwordChangeRequest", passwordChangeRequest);
+                model.addAttribute("todayChangeCount",
+                        memberApplicationService.getTodayPasswordChangeCount(memberId));
+                model.addAttribute("isPasswordChangeRequired",
+                        memberApplicationService.isPasswordChangeRequired(memberId));
+                model.addAttribute("isPasswordChangeRecommended",
+                        memberApplicationService.isPasswordChangeRecommended(memberId));
+                model.addAttribute("errorMessage", e.getMessage());
+                return "member/password-change";
+            } catch (Exception ex) {
+                log.error("비밀번호 변경 에러 처리 중 오류: {}", ex.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+                return "redirect:/members/profile";
+            }
+        } catch (Exception e) {
+            log.error("비밀번호 변경 중 예상치 못한 오류: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "비밀번호 변경 중 오류가 발생했습니다.");
+            return "redirect:/members/profile";
         }
     }
 

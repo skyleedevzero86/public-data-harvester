@@ -30,11 +30,11 @@ public enum ErrorCode {
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "S003", "요청 한도를 초과했습니다."),
 
     // 비밀번호 변경 관련 에러 코드
-    INVALID_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4001", "현재 비밀번호가 올바르지 않습니다."),
-    PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, "MEMBER_4002", "새 비밀번호와 비밀번호 확인이 일치하지 않습니다."),
-    SAME_AS_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4003", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
-    RECENTLY_USED_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4004", "최근에 사용한 비밀번호는 재사용할 수 없습니다."),
-    DAILY_PASSWORD_CHANGE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "MEMBER_4005", "일일 비밀번호 변경 횟수를 초과했습니다."),
+    INVALID_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "P001", "현재 비밀번호가 일치하지 않습니다."),
+    PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, "P002", "새 비밀번호와 확인 비밀번호가 일치하지 않습니다."),
+    SAME_AS_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "P003", "새 비밀번호는 현재 비밀번호와 다르게 설정해주세요."),
+    RECENTLY_USED_PASSWORD(HttpStatus.BAD_REQUEST, "P004", "최근에 사용한 비밀번호는 재사용할 수 없습니다."),
+    DAILY_PASSWORD_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "P005", "일일 비밀번호 변경 한도를 초과했습니다. 내일 다시 시도해주세요."),
     PASSWORD_CHANGE_REQUIRED(HttpStatus.FORBIDDEN, "MEMBER_4006", "비밀번호 변경이 필요합니다."),
     WEAK_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4007", "비밀번호가 보안 정책을 만족하지 않습니다.");
 

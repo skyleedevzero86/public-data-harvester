@@ -54,14 +54,17 @@ public class MemberApplicationService {
         log.info("비밀번호 변경 완료 - memberId: {}", memberId);
     }
 
+    @Transactional(readOnly = true)
     public boolean isPasswordChangeRequired(Long memberId) {
         return memberPasswordService.isPasswordChangeRequired(memberId);
     }
 
+    @Transactional(readOnly = true)
     public boolean isPasswordChangeRecommended(Long memberId) {
         return memberPasswordService.isPasswordChangeRecommended(memberId);
     }
 
+    @Transactional(readOnly = true)
     public long getTodayPasswordChangeCount(Long memberId) {
         return memberPasswordService.getTodayPasswordChangeCount(memberId);
     }

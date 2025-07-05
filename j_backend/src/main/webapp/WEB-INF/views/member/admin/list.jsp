@@ -8,9 +8,41 @@
     <title>회원 관리 - Antock System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        .dropdown-menu {
+            min-width: 180px !important;
+            padding: 10px 0;
+        }
+
+        .dropdown-menu .dropdown-item {
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .dropdown-menu .dropdown-header {
+            font-size: 1.05rem;
+            font-weight: bold;
+            padding: 10px 20px 5px 20px;
+        }
+
+        .custom-dropdown .dropdown-menu { min-width: 200px !important; }
+
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .table th:last-child, .table td:last-child {
+            min-width: 180px;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+    </style>
+
 </head>
 <body>
-<!-- 네비게이션 바 -->
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
@@ -23,7 +55,7 @@
             <a class="nav-link" href="/members/admin/pending">
                 <i class="bi bi-clock"></i> 승인 대기
             </a>
-            <a class="nav-link" href="/api/v1/members/logout">
+            <a class="nav-link" href="/members/logout">
                 <i class="bi bi-box-arrow-right"></i> 로그아웃
             </a>
         </div>
@@ -31,7 +63,7 @@
 </nav>
 
 <div class="container-fluid mt-4">
-    <!-- 헤더 -->
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-people-fill"></i> 전체 회원 관리</h2>
         <div>
@@ -41,7 +73,7 @@
         </div>
     </div>
 
-    <!-- 알림 메시지 -->
+
     <c:if test="${not empty successMessage}">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle"></i> ${successMessage}
@@ -56,7 +88,7 @@
         </div>
     </c:if>
 
-    <!-- 통계 카드들 -->
+
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="card bg-primary text-white mb-4">
@@ -79,8 +111,8 @@
                             <div class="text-white-50 small">승인된 회원</div>
                             <div class="text-lg font-weight-bold">
                                 <c:set var="approvedCount" value="0" />
-                                <c:forEach var="member" items="${members.content}">
-                                    <c:if test="${member.status == 'APPROVED'}">
+                                <c:forEach var="memberView" items="${memberViewList}">
+                                    <c:if test="${memberView.member.status == 'APPROVED'}">
                                         <c:set var="approvedCount" value="${approvedCount + 1}" />
                                     </c:if>
                                 </c:forEach>
@@ -100,8 +132,8 @@
                             <div class="text-white-50 small">승인 대기</div>
                             <div class="text-lg font-weight-bold">
                                 <c:set var="pendingCount" value="0" />
-                                <c:forEach var="member" items="${members.content}">
-                                    <c:if test="${member.status == 'PENDING'}">
+                                <c:forEach var="memberView" items="${memberViewList}">
+                                    <c:if test="${memberView.member.status == 'PENDING'}">
                                         <c:set var="pendingCount" value="${pendingCount + 1}" />
                                     </c:if>
                                 </c:forEach>
@@ -121,8 +153,8 @@
                             <div class="text-white-50 small">정지된 회원</div>
                             <div class="text-lg font-weight-bold">
                                 <c:set var="suspendedCount" value="0" />
-                                <c:forEach var="member" items="${members.content}">
-                                    <c:if test="${member.status == 'SUSPENDED'}">
+                                <c:forEach var="memberView" items="${memberViewList}">
+                                    <c:if test="${memberView.member.status == 'SUSPENDED'}">
                                         <c:set var="suspendedCount" value="${suspendedCount + 1}" />
                                     </c:if>
                                 </c:forEach>
@@ -136,7 +168,6 @@
         </div>
     </div>
 
-    <!-- 회원 목록 테이블 -->
     <div class="card">
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
@@ -161,7 +192,7 @@
         </div>
         <div class="card-body p-0">
             <c:choose>
-                <c:when test="${not empty members.content}">
+                <c:when test="${not empty memberViewList}">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-dark">
@@ -174,11 +205,12 @@
                                 <th width="10%">상태</th>
                                 <th width="10%">가입일</th>
                                 <th width="10%">최근 로그인</th>
-                                <th width="15%">작업</th>
+                                <th style="min-width:180px;">작업</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <c:forEach var="member" items="${members.content}">
+                            <c:forEach var="memberView" items="${memberViewList}">
+                                <c:set var="member" value="${memberView.member}" />
                                 <tr>
                                     <td>
                                         <strong>${member.id}</strong>
@@ -217,14 +249,19 @@
                                     </td>
                                     <td>
                                         <small>
-                                            <fmt:formatDate value="${member.createDate}" pattern="yyyy-MM-dd" />
+                                            <c:choose>
+                                                <c:when test="${not empty memberView.createDateFormatted}">
+                                                    <fmt:formatDate value="${memberView.createDateFormatted}" pattern="yyyy-MM-dd" />
+                                                </c:when>
+                                                <c:otherwise>없음</c:otherwise>
+                                            </c:choose>
                                         </small>
                                     </td>
                                     <td>
                                         <small>
                                             <c:choose>
-                                                <c:when test="${not empty member.lastLoginAt}">
-                                                    <fmt:formatDate value="${member.lastLoginAt}" pattern="MM-dd HH:mm" />
+                                                <c:when test="${not empty memberView.lastLoginAtFormatted}">
+                                                    <fmt:formatDate value="${memberView.lastLoginAtFormatted}" pattern="MM-dd HH:mm" />
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="text-muted">없음</span>
@@ -232,15 +269,14 @@
                                             </c:choose>
                                         </small>
                                     </td>
-                                    <td>
+                                    <td  style="min-width:180px;">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <!-- 권한 변경 드롭다운 (ADMIN만 가능) -->
-                                            <div class="dropdown">
+                                            <div class="dropdown custom-dropdown">
                                                 <button class="btn btn-outline-primary btn-sm dropdown-toggle"
                                                         type="button" data-bs-toggle="dropdown">
                                                     <i class="bi bi-gear"></i>
                                                 </button>
-                                                <ul class="dropdown-menu">
+                                                <ul class="dropdown-menu" style="min-width:200px;">
                                                     <li><h6 class="dropdown-header">권한 변경</h6></li>
                                                     <li>
                                                         <a class="dropdown-item" href="#"
@@ -266,7 +302,6 @@
                                                 </ul>
                                             </div>
 
-                                            <!-- 상태별 액션 버튼들 -->
                                             <c:if test="${member.status == 'PENDING'}">
                                                 <form method="post" action="/members/admin/${member.id}/approve" class="d-inline">
                                                     <button type="submit" class="btn btn-success btn-sm"
@@ -289,7 +324,6 @@
                         </table>
                     </div>
 
-                    <!-- 페이징 -->
                     <c:if test="${members.totalPages > 1}">
                         <div class="card-footer">
                             <nav aria-label="Page navigation">
@@ -365,7 +399,7 @@
         } else {
             url.searchParams.delete('status');
         }
-        url.searchParams.delete('page'); // 필터 변경 시 첫 페이지로
+        url.searchParams.delete('page');
         window.location.href = url.toString();
     }
 
@@ -376,19 +410,17 @@
         } else {
             url.searchParams.delete('role');
         }
-        url.searchParams.delete('page'); // 필터 변경 시 첫 페이지로
+        url.searchParams.delete('page');
         window.location.href = url.toString();
     }
 
-    // 테이블 행 클릭 시 상세 정보 표시 (선택사항)
     document.querySelectorAll('tbody tr').forEach(row => {
         row.addEventListener('click', function(e) {
-            // 버튼이나 링크 클릭 시에는 동작하지 않음
+
             if (e.target.closest('button') || e.target.closest('a') || e.target.closest('form')) {
                 return;
             }
 
-            // 행이 선택되었음을 표시
             document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('table-active'));
             this.classList.add('table-active');
         });
