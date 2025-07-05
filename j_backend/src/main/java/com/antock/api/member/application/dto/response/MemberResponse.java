@@ -5,48 +5,51 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import lombok.Builder;
 import lombok.Getter;
+
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 
 @Getter
 @Builder
 public class MemberResponse {
+
     private Long id;
     private String username;
     private String nickname;
     private String email;
+    private String apiKey;
     private MemberStatus status;
     private Role role;
-    private Date createDate;
+    private LocalDateTime createDate;
     private LocalDateTime modifyDate;
-    private Date lastLoginAt;
-    private Date approvedAt;
-    private String apiKey;
+    private LocalDateTime lastLoginAt;
+    private Integer loginFailCount;
+    private LocalDateTime accountLockedAt;
+    private Long approvedBy;
+    private LocalDateTime approvedAt;
+    private LocalDateTime passwordChangedAt;
+    private Integer passwordChangeCount;
+    private LocalDateTime lastPasswordChangeDate;
 
     public static MemberResponse from(Member member) {
-        Date createDate = member.getCreateDate() != null
-                ? Date.from(member.getCreateDate().atZone(ZoneId.of("Asia/Seoul")).toInstant())
-                : null;
-        Date lastLoginAtDate = member.getLastLoginAt() != null
-                ? Date.from(member.getLastLoginAt().atZone(ZoneId.of("Asia/Seoul")).toInstant())
-                : null;
-        Date approvedAt = member.getApprovedAt() != null
-                ? Date.from(member.getApprovedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant())
-                : null;
-
         return MemberResponse.builder()
                 .id(member.getId())
                 .username(member.getUsername())
                 .nickname(member.getNickname())
                 .email(member.getEmail())
+                .apiKey(member.getApiKey())
                 .status(member.getStatus())
                 .role(member.getRole())
-                .createDate(createDate)
+                .createDate(member.getCreateDate())
                 .modifyDate(member.getModifyDate())
-                .lastLoginAt(lastLoginAtDate)
-                .approvedAt(approvedAt)
-                .apiKey(member.getApiKey())
+                .lastLoginAt(member.getLastLoginAt())
+                .loginFailCount(member.getLoginFailCount())
+                .accountLockedAt(member.getAccountLockedAt())
+                .approvedBy(member.getApprovedBy())
+                .approvedAt(member.getApprovedAt())
+                .passwordChangedAt(member.getPasswordChangedAt())
+                .passwordChangeCount(member.getPasswordChangeCount())
+                .lastPasswordChangeDate(member.getLastPasswordChangeDate() != null ?
+                        member.getLastPasswordChangeDate().atStartOfDay() : null)
                 .build();
     }
 }
