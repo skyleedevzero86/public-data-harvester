@@ -15,4 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileUploadCommand {
     private MultipartFile file;
     private String description;
+    private Long uploaderId;
+    private String uploaderName;
 }

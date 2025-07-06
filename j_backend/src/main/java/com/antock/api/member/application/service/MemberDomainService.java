@@ -349,4 +349,30 @@ public class MemberDomainService {
             throw e;
         }
     }
+
+    @Transactional(readOnly = true)
+    public Page<Member> findMembersByStatusAndRole(String statusStr, String roleStr, Pageable pageable) {
+        MemberStatus status = null;
+        Role role = null;
+
+
+        if (statusStr != null && !statusStr.isEmpty()) {
+            try {
+                status = MemberStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("잘못된 상태 값: {}", statusStr);
+            }
+        }
+
+        if (roleStr != null && !roleStr.isEmpty()) {
+            try {
+                role = Role.valueOf(roleStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("잘못된 권한 값: {}", roleStr);
+            }
+        }
+
+        return memberRepository.findByStatusAndRole(status, role, pageable);
+    }
+
 }

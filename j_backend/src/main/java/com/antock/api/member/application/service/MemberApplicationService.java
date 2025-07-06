@@ -379,4 +379,14 @@ public class MemberApplicationService {
     public long countMembersByStatus(MemberStatus status) {
         return memberDomainService.countMembersByStatus(status);
     }
+
+    @Transactional(readOnly = true)
+    public Page<MemberResponse> getMembersByStatusAndRole(String status, String role, Pageable pageable) {
+        log.debug("회원 목록 조회 - status: {}, role: {}", status, role);
+
+        Page<Member> members = memberDomainService.findMembersByStatusAndRole(status, role, pageable);
+
+        return members.map(MemberResponse::from);
+    }
+
 }

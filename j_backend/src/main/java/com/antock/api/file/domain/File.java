@@ -3,6 +3,7 @@ package com.antock.api.file.domain;
 import com.antock.api.file.domain.vo.FileDescription;
 import com.antock.api.file.domain.vo.FileMetadata;
 import com.antock.api.file.domain.vo.FileContent;
+import com.antock.api.member.domain.Member;
 import com.antock.global.common.entity.BaseTimeEntity;
 import lombok.Getter;
 import lombok.Builder;
@@ -34,6 +35,13 @@ public class File extends BaseTimeEntity {
 
     @Column(nullable = false)
     private LocalDateTime lastModifiedTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploader_id")
+    private Member uploader;
+
+    @Column(length = 50)
+    private String uploaderName;
 
     public static File create(String originalFileName, String contentType,
                               Long fileSize, String description) {
