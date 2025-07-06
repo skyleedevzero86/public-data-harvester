@@ -40,6 +40,7 @@
 
     <div class="button-group">
         <a href="${pageContext.request.contextPath}/web/files">파일 목록 보기</a>
+        <a href="/api/v1/files/template" class="btn btn-info" download>CSV 양식 다운로드</a>
     </div>
 </div>
 </body>

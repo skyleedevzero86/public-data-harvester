@@ -4,6 +4,8 @@ import com.antock.api.file.application.dto.FileResponse;
 import com.antock.api.file.application.dto.FileUpdateCommand;
 import com.antock.api.file.application.dto.FileUploadCommand;
 import com.antock.api.file.application.service.FileApplicationService;
+import com.antock.global.security.annotation.CurrentUser;
+import com.antock.global.security.dto.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -37,14 +39,22 @@ public class FileWebController {
     @PostMapping("/upload")
     public String uploadFile(
             @RequestParam("file") MultipartFile file,
+            @CurrentUser AuthenticatedUser user,
             @RequestParam(value = "description", required = false) String description,
             RedirectAttributes redirectAttributes) {
         try {
+
+            if (user == null) {
+                redirectAttributes.addFlashAttribute("error", "로그인 후 이용해 주세요.");
+                return "redirect:/members/login";
+            }
+
             FileUploadCommand command = FileUploadCommand.builder()
                     .file(file)
                     .description(description)
+                    .uploaderId(user.getId())
+                    .uploaderName(user.getUsername())
                     .build();
-
             fileApplicationService.uploadFile(command);
             redirectAttributes.addFlashAttribute("message", "파일 업로드 성공!");
         } catch (Exception e) {

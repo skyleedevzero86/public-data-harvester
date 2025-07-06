@@ -4,9 +4,13 @@ import com.antock.api.file.application.dto.FileResponse;
 import com.antock.api.file.application.dto.FileUpdateCommand;
 import com.antock.api.file.application.dto.FileUploadCommand;
 import com.antock.api.file.application.service.FileApplicationService;
+import com.antock.global.config.CsvTemplateConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +28,9 @@ import java.util.List;
 public class FileApiController {
 
     private final FileApplicationService fileApplicationService;
+
+    @Autowired
+    private CsvTemplateConfig csvTemplateConfig;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<FileResponse> uploadFile(
@@ -114,5 +121,17 @@ public class FileApiController {
             log.error("파일 삭제 실패: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/template")
+    public ResponseEntity<Resource> downloadCsvTemplate() {
+        Resource resource = new ClassPathResource("CSVFile/" + csvTemplateConfig.getTemplateName());
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + csvTemplateConfig.getTemplateName() + "\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(resource);
     }
 }

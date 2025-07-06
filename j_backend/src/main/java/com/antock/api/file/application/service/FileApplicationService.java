@@ -4,14 +4,24 @@ import com.antock.api.file.application.dto.FileResponse;
 import com.antock.api.file.application.dto.FileUpdateCommand;
 import com.antock.api.file.application.dto.FileUploadCommand;
 import com.antock.api.file.domain.File;
+import com.antock.api.file.domain.vo.FileContent;
+import com.antock.api.file.domain.vo.FileDescription;
+import com.antock.api.file.domain.vo.FileMetadata;
 import com.antock.api.file.infrastructure.FileRepository;
 import com.antock.api.file.infrastructure.storage.FileStorageStrategy;
+import com.antock.api.member.domain.Member;
+import com.antock.api.member.infrastructure.MemberRepository;
+import com.antock.global.common.exception.BusinessException;
+import com.antock.global.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -22,6 +32,7 @@ public class FileApplicationService {
     private final FileRepository fileRepository;
     private final FileValidationService fileValidationService;
     private final FileStorageStrategy fileStorageStrategy;
+    private final MemberRepository memberRepository;
 
     @Transactional
     public FileResponse uploadFile(FileUploadCommand command) {
@@ -30,16 +41,33 @@ public class FileApplicationService {
 
             fileValidationService.validateUploadFile(command.getFile());
 
-            File file = File.create(
-                    command.getFile().getOriginalFilename(),
-                    command.getFile().getContentType(),
-                    command.getFile().getSize(),
-                    command.getDescription()
-            );
+            String storedFileName = UUID.randomUUID().toString() + "_" + command.getFile().getOriginalFilename();
 
-            String storedFileName = fileStorageStrategy.uploadFile(
+            Member uploader = null;
+            if (command.getUploaderId() != null) {
+                uploader = memberRepository.findById(command.getUploaderId())
+                        .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+            }
+
+            File file = File.builder()
+                    .metadata(FileMetadata.of(
+                            command.getFile().getOriginalFilename(),
+                            storedFileName,
+                            command.getFile().getContentType()
+                    ))
+                    .content(FileContent.of(command.getFile().getSize()))
+                    .description(FileDescription.of(command.getDescription()))
+                    .uploaderName(command.getUploaderName())
+                    .uploader(uploader)
+                    .uploadTime(LocalDateTime.now())
+                    .lastModifiedTime(LocalDateTime.now())
+                    .build();
+
+            fileRepository.save(file);
+
+            fileStorageStrategy.uploadFile(
                     command.getFile(),
-                    file.getMetadata().getStoredFileName()
+                    storedFileName
             );
 
             File savedFile = fileRepository.save(file);
