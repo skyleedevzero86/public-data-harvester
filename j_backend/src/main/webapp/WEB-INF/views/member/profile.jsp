@@ -141,10 +141,6 @@
                     </form:form>
 
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/members/password/change" class="btn btn-warning">
-                            <i class="bi bi-key"></i> 비밀번호 변경
-                        </a>
-
                         <form id="withdrawForm" action="/members/withdraw" method="post" style="margin: 0;">
                             <button type="button" class="btn btn-danger w-100" onclick="confirmWithdraw()">
                                 <i class="bi bi-person-x"></i> 회원 탈퇴
