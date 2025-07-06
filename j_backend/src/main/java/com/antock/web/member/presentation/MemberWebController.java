@@ -305,7 +305,11 @@ public class MemberWebController {
                     return memberView;
                 })
                 .collect(Collectors.toList());
+        long rejectedCount = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
+        long withdrawnCount = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
 
+        model.addAttribute("rejectedCount", rejectedCount);
+        model.addAttribute("withdrawnCount", withdrawnCount);
         model.addAttribute("memberViewList", memberViewList);
         model.addAttribute("members", members);
         return "member/admin/list";

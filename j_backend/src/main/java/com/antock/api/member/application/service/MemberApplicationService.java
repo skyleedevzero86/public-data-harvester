@@ -375,4 +375,8 @@ public class MemberApplicationService {
 
         log.info("회원 탈퇴 처리 완료 - memberId: {}", memberId);
     }
+    @Transactional(readOnly = true)
+    public long countMembersByStatus(MemberStatus status) {
+        return memberDomainService.countMembersByStatus(status);
+    }
 }

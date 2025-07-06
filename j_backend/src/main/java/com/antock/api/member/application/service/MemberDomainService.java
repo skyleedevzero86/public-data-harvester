@@ -88,7 +88,7 @@ public class MemberDomainService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if (member.getStatus() != MemberStatus.PENDING) {
+        if (member.getStatus() != MemberStatus.PENDING && member.getStatus() != MemberStatus.REJECTED) {
             throw new BusinessException(ErrorCode.INVALID_MEMBER_STATUS);
         }
 
