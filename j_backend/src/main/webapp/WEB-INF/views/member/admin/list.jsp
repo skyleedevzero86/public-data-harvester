@@ -54,6 +54,18 @@
             color: #fd7e14;
             font-weight: bold;
         }
+
+        .filter-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-active {
+            background: #e3f2fd !important;
+            border-color: #2196f3 !important;
+        }
     </style>
 
 </head>
@@ -102,6 +114,50 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     </c:if>
+
+    <!-- 필터 영역 개선 -->
+    <div class="filter-container">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <h6 class="mb-0"><i class="bi bi-filter"></i> 필터</h6>
+            </div>
+            <div class="col-auto">
+                <select class="form-select ${not empty selectedStatus ? 'filter-active' : ''}"
+                        onchange="filterByStatus(this.value)" id="statusFilter">
+                    <option value="">전체 상태</option>
+                    <option value="APPROVED" ${selectedStatus == 'APPROVED' ? 'selected' : ''}>승인됨</option>
+                    <option value="PENDING" ${selectedStatus == 'PENDING' ? 'selected' : ''}>승인 대기</option>
+                    <option value="SUSPENDED" ${selectedStatus == 'SUSPENDED' ? 'selected' : ''}>정지됨</option>
+                    <option value="REJECTED" ${selectedStatus == 'REJECTED' ? 'selected' : ''}>거부됨</option>
+                    <option value="WITHDRAWN" ${selectedStatus == 'WITHDRAWN' ? 'selected' : ''}>탈퇴됨</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select class="form-select ${not empty selectedRole ? 'filter-active' : ''}"
+                        onchange="filterByRole(this.value)" id="roleFilter">
+                    <option value="">전체 권한</option>
+                    <option value="USER" ${selectedRole == 'USER' ? 'selected' : ''}>일반 사용자</option>
+                    <option value="MANAGER" ${selectedRole == 'MANAGER' ? 'selected' : ''}>관리자</option>
+                    <option value="ADMIN" ${selectedRole == 'ADMIN' ? 'selected' : ''}>시스템 관리자</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <c:if test="${not empty selectedStatus or not empty selectedRole}">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                        <i class="bi bi-x-lg"></i> 필터 초기화
+                    </button>
+                </c:if>
+            </div>
+            <div class="col-auto ms-auto">
+                <small class="text-muted">
+                    총 ${members.totalElements}명
+                    <c:if test="${not empty selectedStatus or not empty selectedRole}">
+                        (필터링됨)
+                    </c:if>
+                </small>
+            </div>
+        </div>
+    </div>
 
     <div class="row mb-4">
         <div class="col-xl-2 col-md-4">
@@ -212,22 +268,6 @@
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-table"></i> 회원 목록</h5>
-                <div class="d-flex gap-2">
-                    <!-- 검색 필터 -->
-                    <select class="form-select form-select-sm" onchange="filterByStatus(this.value)">
-                        <option value="">전체 상태</option>
-                        <option value="APPROVED">승인됨</option>
-                        <option value="PENDING">승인 대기</option>
-                        <option value="SUSPENDED">정지됨</option>
-                        <option value="REJECTED">거부됨</option>
-                    </select>
-                    <select class="form-select form-select-sm" onchange="filterByRole(this.value)">
-                        <option value="">전체 권한</option>
-                        <option value="USER">일반 사용자</option>
-                        <option value="MANAGER">관리자</option>
-                        <option value="ADMIN">시스템 관리자</option>
-                    </select>
-                </div>
             </div>
         </div>
         <div class="card-body p-0">
@@ -253,158 +293,178 @@
                             <tbody>
                             <c:forEach var="memberView" items="${memberViewList}">
                                 <c:set var="member" value="${memberView.member}" />
-                                <c:if test="${member.status != 'PENDING'}">
-                                    <tr class="${member.status == 'SUSPENDED' ? 'table-danger' : ''}">
-                                        <td>
-                                            <strong>${member.id}</strong>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <strong>${member.username}</strong>
-                                                <c:if test="${member.role == 'ADMIN'}">
-                                                    <i class="bi bi-shield-fill text-danger ms-1" title="시스템 관리자"></i>
-                                                </c:if>
-                                                <c:if test="${member.loginFailCount >= 5}">
-                                                    <i class="bi bi-lock-fill locked-indicator ms-1" title="계정 잠금됨"></i>
-                                                </c:if>
-                                            </div>
-                                        </td>
-                                        <td>${member.nickname}</td>
-                                        <td>
-                                            <small class="text-muted">${member.email}</small>
-                                        </td>
-                                        <td>
-                                            <span class="badge
-                                                <c:choose>
-                                                    <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
-                                                    <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
-                                                    <c:otherwise>bg-info</c:otherwise>
-                                                </c:choose>
-                                            ">${member.role.description}</span>
-                                        </td>
-                                        <td class="status-cell">
-                                            <span class="badge
-                                                <c:choose>
-                                                    <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
-                                                    <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
-                                                    <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
-                                                    <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
-                                                    <c:otherwise>bg-light text-dark</c:otherwise>
-                                                </c:choose>
-                                            ">${member.status.description}</span>
-                                        </td>
-                                        <td>
+                                <tr class="${member.status == 'SUSPENDED' ? 'table-danger' : ''}">
+                                    <td>
+                                        <strong>${member.id}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <strong>${member.username}</strong>
+                                            <c:if test="${member.role == 'ADMIN'}">
+                                                <i class="bi bi-shield-fill text-danger ms-1" title="시스템 관리자"></i>
+                                            </c:if>
+                                            <c:if test="${member.loginFailCount >= 5}">
+                                                <i class="bi bi-lock-fill locked-indicator ms-1" title="계정 잠금됨"></i>
+                                            </c:if>
+                                        </div>
+                                    </td>
+                                    <td>${member.nickname}</td>
+                                    <td>
+                                        <small class="text-muted">${member.email}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge
                                             <c:choose>
-                                                <c:when test="${member.loginFailCount > 0}">
-                                                    <span class="login-fail-count">${member.loginFailCount}/5</span>
-                                                    <c:if test="${member.loginFailCount >= 5}">
-                                                        <br><small class="text-danger">잠금됨</small>
-                                                    </c:if>
+                                                <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
+                                                <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
+                                                <c:otherwise>bg-info</c:otherwise>
+                                            </c:choose>
+                                        ">${member.role.description}</span>
+                                    </td>
+                                    <td class="status-cell">
+                                        <span class="badge
+                                            <c:choose>
+                                                <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
+                                                <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
+                                                <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
+                                                <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
+                                                <c:when test='${member.status == "WITHDRAWN"}'>bg-dark</c:when>
+                                                <c:otherwise>bg-light text-dark</c:otherwise>
+                                            </c:choose>
+                                        ">${member.status.description}</span>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${member.loginFailCount > 0}">
+                                                <span class="login-fail-count">${member.loginFailCount}/5</span>
+                                                <c:if test="${member.loginFailCount >= 5}">
+                                                    <br><small class="text-danger">잠금됨</small>
+                                                </c:if>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="text-muted">0</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <c:choose>
+                                                <c:when test="${not empty memberView.createDateFormatted}">
+                                                    <fmt:formatDate value="${memberView.createDateFormatted}" pattern="yyyy-MM-dd" />
+                                                </c:when>
+                                                <c:otherwise>없음</c:otherwise>
+                                            </c:choose>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <c:choose>
+                                                <c:when test="${not empty memberView.lastLoginAtFormatted}">
+                                                    <fmt:formatDate value="${memberView.lastLoginAtFormatted}" pattern="MM-dd HH:mm" />
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <span class="text-muted">0</span>
+                                                    <span class="text-muted">없음</span>
                                                 </c:otherwise>
                                             </c:choose>
-                                        </td>
-                                        <td>
-                                            <small>
-                                                <c:choose>
-                                                    <c:when test="${not empty memberView.createDateFormatted}">
-                                                        <fmt:formatDate value="${memberView.createDateFormatted}" pattern="yyyy-MM-dd" />
-                                                    </c:when>
-                                                    <c:otherwise>없음</c:otherwise>
-                                                </c:choose>
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <small>
-                                                <c:choose>
-                                                    <c:when test="${not empty memberView.lastLoginAtFormatted}">
-                                                        <fmt:formatDate value="${memberView.lastLoginAtFormatted}" pattern="MM-dd HH:mm" />
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <span class="text-muted">없음</span>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </small>
-                                        </td>
-                                        <td style="min-width:220px;">
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <div class="dropdown custom-dropdown">
-                                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle"
-                                                            type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-gear"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu" style="min-width:200px;">
-                                                        <li><h6 class="dropdown-header">권한 변경</h6></li>
-                                                        <li>
-                                                            <form method="post" action="/members/admin/${member.id}/role?role=USER" class="d-inline">
-                                                                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                                <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
-                                                                        onclick="return confirm('해당 회원의 권한을 \'일반 사용자\'로 변경하시겠습니까?')"
-                                                                        style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                    <i class="bi bi-person"></i> 일반 사용자
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                        <li>
-                                                            <form method="post" action="/members/admin/${member.id}/role?role=MANAGER" class="d-inline">
-                                                                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                                <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
-                                                                        onclick="return confirm('해당 회원의 권한을 \'관리자\'로 변경하시겠습니까?')"
-                                                                        style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                    <i class="bi bi-person-badge"></i> 관리자
-                                                                </button>
-                                                            </form>
-                                                        </li>
+                                        </small>
+                                    </td>
+                                    <td style="min-width:220px;">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <div class="dropdown custom-dropdown">
+                                                <button class="btn btn-outline-primary btn-sm dropdown-toggle"
+                                                        type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-gear"></i>
+                                                </button>
+                                                <ul class="dropdown-menu" style="min-width:200px;">
+                                                    <li><h6 class="dropdown-header">권한 변경</h6></li>
+                                                    <li>
+                                                        <form method="post" action="/members/admin/${member.id}/role?role=USER" class="d-inline">
+                                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                            <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
+                                                                    onclick="return confirm('해당 회원의 권한을 \'일반 사용자\'로 변경하시겠습니까?')"
+                                                                    style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                <i class="bi bi-person"></i> 일반 사용자
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <form method="post" action="/members/admin/${member.id}/role?role=MANAGER" class="d-inline">
+                                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                            <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
+                                                                    onclick="return confirm('해당 회원의 권한을 \'관리자\'로 변경하시겠습니까?')"
+                                                                    style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                <i class="bi bi-person-badge"></i> 관리자
+                                                            </button>
+                                                        </form>
+                                                    </li>
 
-                                                        <c:if test="${member.status == 'APPROVED' || member.status == 'SUSPENDED'}">
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li><h6 class="dropdown-header">계정 관리</h6></li>
+                                                    <c:if test="${member.status == 'APPROVED' || member.status == 'SUSPENDED'}">
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><h6 class="dropdown-header">계정 관리</h6></li>
 
-                                                            <c:if test="${member.status == 'APPROVED'}">
-                                                                <li>
-                                                                    <form method="post" action="/members/admin/${member.id}/suspend" class="d-inline">
-                                                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                                        <button type="submit" class="dropdown-item text-danger border-0 bg-transparent p-0"
-                                                                                onclick="return confirm('해당 회원의 계정을 정지하시겠습니까?\n\n• 즉시 로그인이 불가능해집니다\n• 관리자가 직접 해제할 때까지 정지됩니다')"
-                                                                                style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                            <i class="bi bi-person-x"></i> 계정 정지
-                                                                        </button>
-                                                                    </form>
-                                                                </li>
-                                                            </c:if>
+                                                        <c:if test="${member.status == 'APPROVED'}">
+                                                            <li>
+                                                                <form method="post" action="/members/admin/${member.id}/suspend" class="d-inline">
+                                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent p-0"
+                                                                            onclick="return confirm('해당 회원의 계정을 정지하시겠습니까?\n\n• 즉시 로그인이 불가능해집니다\n• 관리자가 직접 해제할 때까지 정지됩니다')"
+                                                                            style="width: 100%; text-align: left; padding: 10px 20px !important;">
+                                                                        <i class="bi bi-person-x"></i> 계정 정지
+                                                                    </button>
+                                                                </form>
+                                                            </li>
                                                         </c:if>
-                                                    </ul>
-                                                </div>
-
-                                                <c:if test="${member.status == 'SUSPENDED' || member.loginFailCount >= 5}">
-                                                    <form method="post" action="/members/admin/${member.id}/unlock" class="d-inline">
-                                                        <button type="submit" class="btn btn-warning btn-sm"
-                                                                onclick="return confirm('이 회원의 계정 정지를 해제하시겠습니까?\n\n• 로그인 실패 횟수가 초기화됩니다\n• 계정 잠금이 해제됩니다\n• 상태가 승인됨으로 변경됩니다')"
-                                                                title="정지 해제">
-                                                            <i class="bi bi-unlock"></i> 해제
-                                                        </button>
-                                                    </form>
-                                                </c:if>
+                                                    </c:if>
+                                                </ul>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <c:if test="${member.role != 'ADMIN' && member.username != pageContext.request.userPrincipal.name}">
-                                                <c:if test="${member.status != 'WITHDRAWN'}">
-                                                    <form action="/members/admin/${member.id}/delete" method="post" style="display:inline;" onsubmit="return confirm('정말로 삭제(탈퇴) 처리하시겠습니까?');">
-                                                        <button type="submit" class="btn btn-danger btn-sm">
-                                                            <i class="bi bi-person-x"></i>
-                                                        </button>
-                                                    </form>
-                                                </c:if>
+
+                                            <c:if test="${member.status == 'SUSPENDED' || member.loginFailCount >= 5}">
+                                                <form method="post" action="/members/admin/${member.id}/unlock" class="d-inline">
+                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                    <button type="submit" class="btn btn-warning btn-sm"
+                                                            onclick="return confirm('이 회원의 계정 정지를 해제하시겠습니까?\n\n• 로그인 실패 횟수가 초기화됩니다\n• 계정 잠금이 해제됩니다\n• 상태가 승인됨으로 변경됩니다')"
+                                                            title="정지 해제">
+                                                        <i class="bi bi-unlock"></i> 해제
+                                                    </button>
+                                                </form>
                                             </c:if>
+
+                                            <c:if test="${member.status == 'PENDING'}">
+                                                <form method="post" action="/members/admin/${member.id}/approve" class="d-inline">
+                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                            onclick="return confirm('이 회원을 승인하시겠습니까?')"
+                                                            title="승인">
+                                                        <i class="bi bi-check"></i> 승인
+                                                    </button>
+                                                </form>
+                                            </c:if>
+
                                             <c:if test="${member.status == 'REJECTED'}">
-                                                <button type="button" class="btn btn-success btn-sm" onclick="approveMember(${member.id}, this)">승인</button>
+                                                <form method="post" action="/members/admin/${member.id}/approve" class="d-inline">
+                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                            onclick="return confirm('거부된 회원을 승인하시겠습니까?')"
+                                                            title="승인">
+                                                        <i class="bi bi-check"></i> 승인
+                                                    </button>
+                                                </form>
                                             </c:if>
-                                        </td>
-                                    </tr>
-                                </c:if>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <c:if test="${member.role != 'ADMIN' && member.username != pageContext.request.userPrincipal.name}">
+                                            <c:if test="${member.status != 'WITHDRAWN'}">
+                                                <form action="/members/admin/${member.id}/delete" method="post" style="display:inline;" onsubmit="return confirm('정말로 삭제(탈퇴) 처리하시겠습니까?');">
+                                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="bi bi-person-x"></i>
+                                                    </button>
+                                                </form>
+                                            </c:if>
+                                        </c:if>
+                                    </td>
+                                </tr>
                             </c:forEach>
                             </tbody>
                         </table>
@@ -416,7 +476,7 @@
                                 <ul class="pagination justify-content-center mb-0">
                                     <c:if test="${members.hasPrevious()}">
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=${members.number - 1}&size=${members.size}">
+                                            <a class="page-link" href="?page=${members.number - 1}&size=${members.size}<c:if test='${not empty selectedStatus}'>&status=${selectedStatus}</c:if><c:if test='${not empty selectedRole}'>&role=${selectedRole}</c:if>">
                                                 <i class="bi bi-chevron-left"></i> 이전
                                             </a>
                                         </li>
@@ -425,14 +485,14 @@
                                     <c:forEach var="i" begin="0" end="${members.totalPages - 1}">
                                         <c:if test="${i >= members.number - 2 && i <= members.number + 2}">
                                             <li class="page-item ${i == members.number ? 'active' : ''}">
-                                                <a class="page-link" href="?page=${i}&size=${members.size}">${i + 1}</a>
+                                                <a class="page-link" href="?page=${i}&size=${members.size}<c:if test='${not empty selectedStatus}'>&status=${selectedStatus}</c:if><c:if test='${not empty selectedRole}'>&role=${selectedRole}</c:if>">${i + 1}</a>
                                             </li>
                                         </c:if>
                                     </c:forEach>
 
                                     <c:if test="${members.hasNext()}">
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=${members.number + 1}&size=${members.size}">
+                                            <a class="page-link" href="?page=${members.number + 1}&size=${members.size}<c:if test='${not empty selectedStatus}'>&status=${selectedStatus}</c:if><c:if test='${not empty selectedRole}'>&role=${selectedRole}</c:if>">
                                                 다음 <i class="bi bi-chevron-right"></i>
                                             </a>
                                         </li>
@@ -445,10 +505,20 @@
                 <c:otherwise>
                     <div class="text-center py-5">
                         <i class="bi bi-people fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">등록된 회원이 없습니다.</p>
-                        <a href="/members/join" class="btn btn-primary">
-                            <i class="bi bi-person-plus"></i> 첫 번째 회원 추가하기
-                        </a>
+                        <c:choose>
+                            <c:when test="${not empty selectedStatus or not empty selectedRole}">
+                                <p class="text-muted mt-3">필터 조건에 맞는 회원이 없습니다.</p>
+                                <button type="button" class="btn btn-primary" onclick="clearFilters()">
+                                    <i class="bi bi-x-lg"></i> 필터 초기화
+                                </button>
+                            </c:when>
+                            <c:otherwise>
+                                <p class="text-muted mt-3">등록된 회원이 없습니다.</p>
+                                <a href="/members/join" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> 첫 번째 회원 추가하기
+                                </a>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
                 </c:otherwise>
             </c:choose>
@@ -458,8 +528,39 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function changeRole(memberId, role) {
+    // 필터링 함수들 개선
+    function filterByStatus(status) {
+        const url = new URL(window.location);
+        if (status) {
+            url.searchParams.set('status', status);
+        } else {
+            url.searchParams.delete('status');
+        }
+        url.searchParams.delete('page'); // 페이지 초기화
+        window.location.href = url.toString();
+    }
 
+    function filterByRole(role) {
+        const url = new URL(window.location);
+        if (role) {
+            url.searchParams.set('role', role);
+        } else {
+            url.searchParams.delete('role');
+        }
+        url.searchParams.delete('page'); // 페이지 초기화
+        window.location.href = url.toString();
+    }
+
+    // 필터 초기화 함수
+    function clearFilters() {
+        const url = new URL(window.location);
+        url.searchParams.delete('status');
+        url.searchParams.delete('role');
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
+    }
+
+    function changeRole(memberId, role) {
         console.log('changeRole 호출됨:', 'memberId =', memberId, 'role =', role);
         console.log('memberId 타입:', typeof memberId);
 
@@ -490,28 +591,7 @@
         return false;
     }
 
-    function filterByStatus(status) {
-        const url = new URL(window.location);
-        if (status) {
-            url.searchParams.set('status', status);
-        } else {
-            url.searchParams.delete('status');
-        }
-        url.searchParams.delete('page');
-        window.location.href = url.toString();
-    }
-
-    function filterByRole(role) {
-        const url = new URL(window.location);
-        if (role) {
-            url.searchParams.set('role', role);
-        } else {
-            url.searchParams.delete('role');
-        }
-        url.searchParams.delete('page');
-        window.location.href = url.toString();
-    }
-
+    // 테이블 행 클릭 효과
     document.querySelectorAll('tbody tr').forEach(row => {
         row.addEventListener('click', function(e) {
             if (e.target.closest('button') || e.target.closest('a') || e.target.closest('form')) {
@@ -525,27 +605,57 @@
 
     function approveMember(memberId, btn) {
         if (!confirm('정말 승인하시겠습니까?')) return;
+
         fetch('/members/admin/' + memberId + '/approve', {
             method: 'POST',
-            headers: {'X-Requested-With': 'XMLHttpRequest'}
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
+            }
         })
             .then(res => {
                 if (res.ok) {
                     btn.disabled = true;
                     btn.innerText = '승인됨';
                     const row = btn.closest('tr');
-                    row.querySelector('.status-cell').innerText = '승인됨';
+                    row.querySelector('.status-cell').innerHTML = '<span class="badge bg-success">승인됨</span>';
                     location.reload();
                 } else {
                     alert('승인 실패');
                 }
+            })
+            .catch(err => {
+                console.error('승인 처리 중 오류:', err);
+                alert('승인 처리 중 오류가 발생했습니다.');
             });
     }
 
+    // 페이지 로드 시 필터 상태 표시
     document.addEventListener('DOMContentLoaded', function() {
         const suspendedRows = document.querySelectorAll('tr.table-danger');
         if (suspendedRows.length > 0) {
             console.log(`정지된 회원 ${suspendedRows.length}명 발견`);
+        }
+
+        // 필터 활성화 상태 시각적 표시
+        const statusFilter = document.getElementById('statusFilter');
+        const roleFilter = document.getElementById('roleFilter');
+
+        if (statusFilter.value) {
+            statusFilter.classList.add('filter-active');
+        }
+
+        if (roleFilter.value) {
+            roleFilter.classList.add('filter-active');
+        }
+
+        // URL 파라미터 확인 (디버깅용)
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const role = urlParams.get('role');
+
+        if (status || role) {
+            console.log('현재 필터:', { status, role });
         }
     });
 </script>

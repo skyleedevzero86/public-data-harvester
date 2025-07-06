@@ -69,4 +69,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query(value = "SELECT login_fail_count FROM members WHERE id = :memberId", nativeQuery = true)
     Integer getCurrentLoginFailCount(@Param("memberId") Long memberId);
+
+    @Query("SELECT m FROM Member m WHERE (:status IS NULL OR m.status = :status) AND (:role IS NULL OR m.role = :role)")
+    Page<Member> findByStatusAndRole(@Param("status") MemberStatus status,
+                                     @Param("role") Role role,
+                                     Pageable pageable);
+
 }

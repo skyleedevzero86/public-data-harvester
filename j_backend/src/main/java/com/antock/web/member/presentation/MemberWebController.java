@@ -292,8 +292,21 @@ public class MemberWebController {
 
     @GetMapping("/members/admin/list")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public String memberList(@PageableDefault(size = 20) Pageable pageable, Model model) {
-        Page<MemberResponse> members = memberApplicationService.getMembers(pageable);
+    public String memberList(@PageableDefault(size = 20) Pageable pageable,
+                             @RequestParam(value = "status", required = false) String status,
+                             @RequestParam(value = "role", required = false) String role,
+                             Model model) {
+
+        log.info("회원 목록 조회 - status: {}, role: {}", status, role);
+
+        Page<MemberResponse> members;
+        if (status != null || role != null) {
+            members = memberApplicationService.getMembersByStatusAndRole(status, role, pageable);
+            log.info("필터링 조회 결과: {} 건", members.getTotalElements());
+        } else {
+            members = memberApplicationService.getMembers(pageable);
+            log.info("전체 조회 결과: {} 건", members.getTotalElements());
+        }
 
         List<Map<String, Object>> memberViewList = members.getContent().stream()
                 .map(member -> {
@@ -305,6 +318,7 @@ public class MemberWebController {
                     return memberView;
                 })
                 .collect(Collectors.toList());
+
         long rejectedCount = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
         long withdrawnCount = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
 
@@ -312,6 +326,9 @@ public class MemberWebController {
         model.addAttribute("withdrawnCount", withdrawnCount);
         model.addAttribute("memberViewList", memberViewList);
         model.addAttribute("members", members);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("selectedRole", role);
+
         return "member/admin/list";
     }
 
