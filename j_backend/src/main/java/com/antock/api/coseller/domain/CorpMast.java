@@ -38,6 +38,9 @@ public class CorpMast {
     @Column(nullable = false)
     private String sggNm;
 
+    @Column(nullable = false)
+    private String username;
+
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
     }
@@ -60,5 +63,9 @@ public class CorpMast {
 
     public void setSggNm(String sggNm) {
         this.sggNm = sggNm;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

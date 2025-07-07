@@ -17,6 +17,7 @@ public class CorpMastCreateDTO {
     private String regionCd;
     private String siNm;
     private String sggNm;
+    private String username;
 
     public CorpMast toEntity() {
         return CorpMast.builder()
@@ -27,6 +28,7 @@ public class CorpMastCreateDTO {
                 .regionCd(this.regionCd)
                 .siNm(this.siNm)
                 .sggNm(this.sggNm)
+                .username(this.username)
                 .build();
     }
 }
