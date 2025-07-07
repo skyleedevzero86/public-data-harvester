@@ -25,7 +25,7 @@ public class CsvFileWriter {
         return Files.exists(Paths.get(getFilePath(city, district)));
     }
 
-    public void writeCsv(String city, String district, List<String> headers, List<Map<String, Object>> data) throws IOException {
+    public void writeCsv(String city, String district, List<String> headers, List<Map<String, Object>> data, Map<String, String> headerToApiField) throws IOException {
         String path = getFilePath(city, district);
         try (OutputStreamWriter writer = new OutputStreamWriter(
                 new FileOutputStream(path), StandardCharsets.UTF_8)) {
@@ -34,7 +34,11 @@ public class CsvFileWriter {
             writer.write("\n");
             for (Map<String, Object> row : data) {
                 List<String> values = headers.stream()
-                        .map(h -> String.valueOf(row.getOrDefault(h, "")))
+                        .map(h -> {
+                            String apiField = headerToApiField.getOrDefault(h, h);
+                            Object v = row.get(apiField);
+                            return v == null ? "" : v.toString().replaceAll("[\r\n,]", " ");
+                        })
                         .toList();
                 writer.write(String.join(",", values));
                 writer.write("\n");

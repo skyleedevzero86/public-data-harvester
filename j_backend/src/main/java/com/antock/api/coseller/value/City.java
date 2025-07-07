@@ -24,14 +24,10 @@ public enum City {
 
     private final String value;
 
-    City(String value) {
-        this.value = value;
-    }
+    City(String value) { this.value = value; }
 
     @JsonValue
-    public String getValue() {
-        return value;
-    }
+    public String getValue() { return value; }
 
     @JsonCreator
     public static City fromValue(String value) {

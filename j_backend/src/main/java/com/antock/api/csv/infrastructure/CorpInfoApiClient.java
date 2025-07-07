@@ -27,23 +27,22 @@ public class CorpInfoApiClient {
         this.serviceKey = serviceKey;
     }
 
-    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> fetchAll(String city, String district) {
         List<Map<String, Object>> result = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
         for (int page = 1; page <= 49; page++) {
-
             String apiUrl = String.format("%s%s?serviceKey=%s&pageNo=%d&numOfRows=1000&resultType=json&ctpvNm=%s&signguNm=%s",
                     url, endpoint, serviceKey, page, encode(city), encode(district));
+            log.info("API 호출 URL: {}", apiUrl);
             String responseStr = restTemplate.getForObject(apiUrl, String.class);
             if (responseStr == null || responseStr.trim().isEmpty()) break;
             if (responseStr.trim().startsWith("<")) {
-                log.error("API returned HTML/XML instead of JSON: " + responseStr);
+                log.error("API 파싱에러 확인: " + responseStr);
                 break;
             }
             try {
                 Map<String, Object> response = mapper.readValue(responseStr, Map.class);
-                Object itemsObj = ((Map<String, Object>) response).get("items");
+                Object itemsObj = response.get("items");
                 if (itemsObj instanceof List<?> items) {
                     if (items.isEmpty()) break;
                     for (Object item : items) {
@@ -62,7 +61,7 @@ public class CorpInfoApiClient {
         return result;
     }
 
-    private String encode(String s) {
+    private static String encode(String s) {
         try {
             return java.net.URLEncoder.encode(s, "UTF-8");
         } catch (Exception e) {
