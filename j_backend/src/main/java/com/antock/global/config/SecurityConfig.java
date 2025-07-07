@@ -62,7 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/members/join", "/members/login").permitAll()
                         .requestMatchers("/api/v1/members/join", "/api/v1/members/login").permitAll()
-                        .requestMatchers("/coseller/save").permitAll()
+                        .requestMatchers("/coseller/save").authenticated()
                         .requestMatchers("/web/files/**").permitAll()
                         .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/members/profile", "/members/admin/**").authenticated()
