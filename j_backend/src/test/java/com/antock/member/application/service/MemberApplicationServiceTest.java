@@ -2,11 +2,7 @@ package com.antock.member.application.service;
 
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberResponse;
-import com.antock.api.member.application.service.AuthTokenService;
-import com.antock.api.member.application.service.MemberApplicationService;
-import com.antock.api.member.application.service.MemberCacheService;
-import com.antock.api.member.application.service.MemberDomainService;
-import com.antock.api.member.application.service.RateLimitServiceInterface;
+import com.antock.api.member.application.service.*;
 import com.antock.api.member.domain.Member;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
@@ -44,6 +40,8 @@ class MemberApplicationServiceTest {
 
     private MemberApplicationService memberApplicationService;
 
+    private MemberPasswordService memberPasswordService;
+
     @BeforeEach
     void setUp() {
         memberApplicationService = new MemberApplicationService(
@@ -51,7 +49,8 @@ class MemberApplicationServiceTest {
                 authTokenService,
                 rateLimitService,
                 memberCacheService,
-                passwordEncoder
+                passwordEncoder,
+                memberPasswordService
         );
     }
 
