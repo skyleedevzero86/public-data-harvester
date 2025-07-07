@@ -28,6 +28,7 @@ public class CoSellerRestControllerTest {
     private MockMvc mockMvc;
     @Autowired
     private CoSellerService coSellerService;
+
     @Test
     @DisplayName("Endpoint 에 요청")
     void saveCoSeller_success() throws Exception {
@@ -39,7 +40,8 @@ public class CoSellerRestControllerTest {
 
         String requestJson = new ObjectMapper().writeValueAsString(requestDto);
 
-        when(coSellerService.saveCoSeller(any())).thenReturn(1);
+        // 두 개의 파라미터로 변경
+        when(coSellerService.saveCoSeller(any(RegionRequestDto.class), anyString())).thenReturn(1);
 
         // when & then
         mockMvc.perform(post("/coseller/save")
@@ -50,6 +52,7 @@ public class CoSellerRestControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andDo(print());
 
-        verify(coSellerService, times(1)).saveCoSeller(any());
+        // 두 개의 파라미터로 변경
+        verify(coSellerService, times(1)).saveCoSeller(any(RegionRequestDto.class), anyString());
     }
 }
