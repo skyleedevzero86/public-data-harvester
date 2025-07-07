@@ -26,7 +26,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         String acceptHeader = request.getHeader("Accept");
 
         boolean isApiRequest = requestURI.startsWith("/api/") ||
-                (acceptHeader != null && acceptHeader.contains("application/json"));
+                (acceptHeader != null && acceptHeader.contains("application/json"))||
+                requestURI.startsWith("/coseller/");
 
         if (isApiRequest) {
             response.setContentType("application/json;charset=UTF-8");

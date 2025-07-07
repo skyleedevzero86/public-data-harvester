@@ -106,7 +106,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/favicon.ico") ||
                 path.equals("/robots.txt") ||
                 path.startsWith("/h2-console/") ||
-                path.startsWith("/coseller/save") ||
                 path.startsWith("/swagger-ui/") ||
                 path.startsWith("/v3/api-docs/") ||
                 path.equals("/actuator/health") ||
