@@ -313,25 +313,25 @@
                                         <small class="text-muted">${member.email}</small>
                                     </td>
                                     <td>
-                                        <span class="badge
-                                            <c:choose>
-                                                <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
-                                                <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
-                                                <c:otherwise>bg-info</c:otherwise>
-                                            </c:choose>
-                                        ">${member.role.description}</span>
+                                                <span class="badge
+                                                    <c:choose>
+                                                        <c:when test='${member.role == "ADMIN"}'>bg-danger</c:when>
+                                                        <c:when test='${member.role == "MANAGER"}'>bg-warning text-dark</c:when>
+                                                        <c:otherwise>bg-info</c:otherwise>
+                                                    </c:choose>
+                                                ">${member.role.description}</span>
                                     </td>
                                     <td class="status-cell">
-                                        <span class="badge
-                                            <c:choose>
-                                                <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
-                                                <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
-                                                <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
-                                                <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
+                                                <span class="badge
+                                                    <c:choose>
+                                                        <c:when test='${member.status == "APPROVED"}'>bg-success</c:when>
+                                                        <c:when test='${member.status == "PENDING"}'>bg-warning text-dark</c:when>
+                                                        <c:when test='${member.status == "SUSPENDED"}'>bg-danger</c:when>
+                                                        <c:when test='${member.status == "REJECTED"}'>bg-secondary</c:when>
                                                 <c:when test='${member.status == "WITHDRAWN"}'>bg-dark</c:when>
-                                                <c:otherwise>bg-light text-dark</c:otherwise>
-                                            </c:choose>
-                                        ">${member.status.description}</span>
+                                                        <c:otherwise>bg-light text-dark</c:otherwise>
+                                                    </c:choose>
+                                                ">${member.status.description}</span>
                                     </td>
                                     <td>
                                         <c:choose>
@@ -383,7 +383,7 @@
                                                             <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
                                                                     onclick="return confirm('해당 회원의 권한을 \'일반 사용자\'로 변경하시겠습니까?')"
                                                                     style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                <i class="bi bi-person"></i> 일반 사용자
+                                                            <i class="bi bi-person"></i> 일반 사용자
                                                             </button>
                                                         </form>
                                                     </li>
@@ -393,7 +393,7 @@
                                                             <button type="submit" class="dropdown-item border-0 bg-transparent p-0"
                                                                     onclick="return confirm('해당 회원의 권한을 \'관리자\'로 변경하시겠습니까?')"
                                                                     style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                <i class="bi bi-person-badge"></i> 관리자
+                                                            <i class="bi bi-person-badge"></i> 관리자
                                                             </button>
                                                         </form>
                                                     </li>
@@ -409,10 +409,10 @@
                                                                     <button type="submit" class="dropdown-item text-danger border-0 bg-transparent p-0"
                                                                             onclick="return confirm('해당 회원의 계정을 정지하시겠습니까?\n\n• 즉시 로그인이 불가능해집니다\n• 관리자가 직접 해제할 때까지 정지됩니다')"
                                                                             style="width: 100%; text-align: left; padding: 10px 20px !important;">
-                                                                        <i class="bi bi-person-x"></i> 계정 정지
+                                                                <i class="bi bi-person-x"></i> 계정 정지
                                                                     </button>
                                                                 </form>
-                                                            </li>
+                                                        </li>
                                                         </c:if>
                                                     </c:if>
                                                 </ul>
@@ -513,10 +513,10 @@
                                 </button>
                             </c:when>
                             <c:otherwise>
-                                <p class="text-muted mt-3">등록된 회원이 없습니다.</p>
-                                <a href="/members/join" class="btn btn-primary">
-                                    <i class="bi bi-person-plus"></i> 첫 번째 회원 추가하기
-                                </a>
+                        <p class="text-muted mt-3">등록된 회원이 없습니다.</p>
+                        <a href="/members/join" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> 첫 번째 회원 추가하기
+                        </a>
                             </c:otherwise>
                         </c:choose>
                     </div>

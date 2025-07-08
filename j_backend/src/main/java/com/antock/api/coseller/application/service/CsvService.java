@@ -27,12 +27,6 @@ public class CsvService {
         this.csvFileReadStrategy = csvFileReadStrategy;
     }
 
-    /**
-     * 지정된 도시와 구역의 CSV 파일을 읽어 통신 판매 정보를 반환합니다.
-     * @param city 시/도 명
-     * @param district 구/군 명
-     * @return 파싱된 BizCsvInfoDto 리스트
-     */
     public List<BizCsvInfoDto> readBizCsv(String city, String district) {
         String fileName = String.format(fileTemplate, mapCityToFileName(city), district);
 
