@@ -4,13 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class CorpMastSearchRequest {
 
     private String bizNm;       // 법인명
@@ -25,39 +23,35 @@ public class CorpMastSearchRequest {
     private String sort = "id,desc";
 
     public String getBizNmForSearch() {
-        return isNotEmpty(bizNm) ? bizNm.trim() : null;
+        return bizNm != null ? bizNm.trim() : null;
     }
 
     public String getBizNoForSearch() {
-        return isNotEmpty(bizNo) ? bizNo.trim().replaceAll("-", "") : null;
+        return bizNo != null ? bizNo.trim().replaceAll("-", "") : null;
     }
 
     public String getSellerIdForSearch() {
-        return isNotEmpty(sellerId) ? sellerId.trim() : null;
+        return sellerId != null ? sellerId.trim() : null;
     }
 
     public String getCorpRegNoForSearch() {
-        return isNotEmpty(corpRegNo) ? corpRegNo.trim() : null;
+        return corpRegNo != null ? corpRegNo.trim() : null;
     }
 
     public String getCityForSearch() {
-        return isNotEmpty(city) ? city.trim() : null;
+        return city != null ? city.trim() : null;
     }
 
     public String getDistrictForSearch() {
-        return isNotEmpty(district) ? district.trim() : null;
+        return district != null ? district.trim() : null;
     }
 
     public boolean hasSearchCondition() {
-        return isNotEmpty(bizNm) ||
-                isNotEmpty(bizNo) ||
-                isNotEmpty(sellerId) ||
-                isNotEmpty(corpRegNo) ||
-                isNotEmpty(city) ||
-                isNotEmpty(district);
-    }
-
-    private boolean isNotEmpty(String value) {
-        return value != null && !value.trim().isEmpty();
+        return (bizNm != null && !bizNm.trim().isEmpty()) ||
+                (bizNo != null && !bizNo.trim().isEmpty()) ||
+                (sellerId != null && !sellerId.trim().isEmpty()) ||
+                (corpRegNo != null && !corpRegNo.trim().isEmpty()) ||
+                (city != null && !city.trim().isEmpty()) ||
+                (district != null && !district.trim().isEmpty());
     }
 }
