@@ -466,7 +466,7 @@ public class CorpMastSearchApiControllerTest {
                 .andExpect(jsonPath("$.resultMsg").value("Bad Request"))
                 .andExpect(jsonPath("$.errorMessage").exists());
     }
-    
+
     @Test
     @DisplayName("검색 API - 서비스 예외 처리")
     void searchApi_WithServiceException_ShouldReturnErrorResponse() throws Exception {
