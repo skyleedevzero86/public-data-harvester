@@ -11,4 +11,5 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long> {
 
     //사업자 번호로 데이터 확인
     Optional<CorpMast> findByBizNo(@Param("bizNo") String bizNo );
+
 }

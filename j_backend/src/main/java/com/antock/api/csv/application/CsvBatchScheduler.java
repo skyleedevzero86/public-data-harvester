@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class CsvBatchScheduler {
     private final CsvBatchService batchService;
 
-    //@Scheduled(cron = "0 0 6 ? * MON")
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 6 ? * MON")
+    //@Scheduled(cron = "0 * * * * ?")
     public void runCsvBatch() {
         log.info("CSV 배치 작업 시작");
         batchService.runBatch();
