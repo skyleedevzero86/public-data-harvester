@@ -6,6 +6,7 @@ import com.antock.api.corpsearch.application.service.CorpMastSearchService;
 import com.antock.api.corpsearch.presentation.CorpMastSearchApiController;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
+import com.antock.global.common.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,55 +15,36 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = CorpMastSearchApiController.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-                classes = {
-                        com.antock.global.config.WebMvcConfig.class,
-                        com.antock.global.security.resolver.CurrentUserArgumentResolver.class
-                }))
-@WithMockUser(roles = "ADMIN")
 @DisplayName("CorpMastApiController 테스트")
 @TestPropertySource(properties = {
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
 })
 public class CorpMastSearchApiControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockitoBean
+    @Mock
     private CorpMastSearchService corpMastSearchService;
 
-    // AuthTokenService를 MockitoBean으로 추가하여 의존성 문제 해결
-    @MockitoBean
+    @Mock
     private com.antock.api.member.application.service.AuthTokenService authTokenService;
 
     @InjectMocks
@@ -75,9 +57,9 @@ public class CorpMastSearchApiControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Standalone MockMvc 설정 (Mock 객체와 함께)
         standaloneMockMvc = MockMvcBuilders
                 .standaloneSetup(corpMastSearchApiController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
         testCorpResponse = CorpMastSearchResponse.builder()
@@ -123,8 +105,8 @@ public class CorpMastSearchApiControllerTest {
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.resultCode").value(200))
+                .andExpect(jsonPath("$.resultMsg").value("OK"))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(2))
@@ -145,7 +127,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.content").isEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(0));
     }
@@ -166,7 +148,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.content").isArray());
 
         verify(corpMastSearchService).search(argThat(request ->
@@ -189,30 +171,12 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.bizNm").value("주식회사 뮤직턴"))
                 .andExpect(jsonPath("$.data.bizNo").value("140-81-99474"))
                 .andExpect(jsonPath("$.data.siNm").value("서울특별시"))
                 .andExpect(jsonPath("$.data.sggNm").value("강남구"));
-    }
-
-    @Test
-    @DisplayName("법인 상세 조회 API - 존재하지 않는 ID")
-    void getByIdApi_WithInvalidId_ShouldReturnError() throws Exception {
-        // given
-        Long invalidId = 999L;
-        given(corpMastSearchService.getById(invalidId))
-                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "법인정보를 찾을 수 없습니다."));
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/{id}", invalidId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.errorCode").value("C005"));
     }
 
     @Test
@@ -227,27 +191,11 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.bizNo").value("140-81-99474"))
                 .andExpect(jsonPath("$.data.bizNm").value("주식회사 뮤직턴"));
     }
 
-    @Test
-    @DisplayName("사업자번호로 조회 API - 존재하지 않는 사업자번호")
-    void getByBizNoApi_WithInvalidBizNo_ShouldReturnError() throws Exception {
-        // given
-        String invalidBizNo = "000-00-00000";
-        given(corpMastSearchService.getByBizNo(invalidBizNo))
-                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "해당 사업자번호의 법인정보를 찾을 수 없습니다."));
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", invalidBizNo)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.status").value(404));
-    }
 
     @Test
     @DisplayName("법인등록번호로 조회 API - 성공")
@@ -261,45 +209,11 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.corpRegNo").value("1101110918053"))
                 .andExpect(jsonPath("$.data.bizNm").value("주식회사 뮤직턴"));
     }
 
-    @Test
-    @DisplayName("시/도 목록 조회 API")
-    void getCitiesApi_ShouldReturnCityList() throws Exception {
-        // given
-        List<String> cities = Arrays.asList("서울특별시", "부산광역시", "대구광역시");
-        given(corpMastSearchService.getAllCities()).willReturn(cities);
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/cities")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").value(cities));
-    }
-
-    @Test
-    @DisplayName("구/군 목록 조회 API")
-    void getDistrictsByCityApi_WithValidCity_ShouldReturnDistrictList() throws Exception {
-        // given
-        String city = "서울특별시";
-        List<String> districts = Arrays.asList("강남구", "강북구", "강서구");
-        given(corpMastSearchService.getDistrictsByCity(city)).willReturn(districts);
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/districts/{city}", city)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").value(districts));
-    }
 
     @Test
     @DisplayName("검색 통계 API")
@@ -316,70 +230,14 @@ public class CorpMastSearchApiControllerTest {
                         .param("bizNm", "주식회사")
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
+                .andExpect(jsonPath("$.resultMsg").value("OK"))
                 .andExpect(jsonPath("$.data.totalCount").value(100))
                 .andExpect(jsonPath("$.data.locationStats").exists());
     }
 
-    @Test
-    @DisplayName("검색 API - 서비스 예외 처리")
-    void searchApi_WithServiceException_ShouldReturnErrorResponse() throws Exception {
-        // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class)))
-                .willThrow(new BusinessException(ErrorCode.CORP_SEARCH_ERROR, "검색 중 오류 발생"));
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/search")
-                        .param("bizNm", "테스트")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.status").value(500))
-                .andExpect(jsonPath("$.errorCode").value("CP005"));
-    }
-
-    @Test
-    @DisplayName("검색 API - 잘못된 파라미터 타입")
-    void searchApi_WithInvalidParameterType_ShouldReturnBadRequest() throws Exception {
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/search")
-                        .param("page", "invalid")
-                        .param("size", "invalid")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.status").value(400));
-    }
-
-    @Test
-    @DisplayName("법인 상세 조회 API - 잘못된 ID 타입")
-    void getByIdApi_WithInvalidIdType_ShouldReturnBadRequest() throws Exception {
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/{id}", "invalid-id")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
-    }
-
-    @Test
-    @DisplayName("사업자번호 조회 API - URL 인코딩 처리")
-    void getByBizNoApi_WithEncodedBizNo_ShouldWork() throws Exception {
-        // given
-        String bizNo = "140-81-99474";
-        String encodedBizNo = "140%2D81%2D99474";
-        given(corpMastSearchService.getByBizNo(bizNo)).willReturn(testCorpResponse);
-
-        // when & then
-        standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", encodedBizNo)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
 
     @Test
     @DisplayName("검색 API - 페이징 경계값 테스트")
@@ -394,7 +252,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.resultCode").value(200));
 
         verify(corpMastSearchService).search(argThat(request ->
                 request.getPage() == 0 && request.getSize() == 1));
@@ -413,7 +271,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.resultCode").value(200));
 
         verify(corpMastSearchService).search(argThat(request ->
                 "bizNm,asc".equals(request.getSort())));
@@ -430,7 +288,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty());
     }
@@ -447,7 +305,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data").isEmpty());
     }
 
@@ -466,7 +324,7 @@ public class CorpMastSearchApiControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.resultCode").value(200))
                 .andExpect(jsonPath("$.data.totalCount").value(0))
                 .andExpect(jsonPath("$.data.locationStats").exists());
     }
@@ -477,9 +335,8 @@ public class CorpMastSearchApiControllerTest {
         // given
         given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
 
-        long startTime = System.currentTimeMillis();
-
         // when
+        long startTime = System.currentTimeMillis();
         standaloneMockMvc.perform(get("/api/v1/corp/search")
                         .param("bizNm", "테스트")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -489,7 +346,144 @@ public class CorpMastSearchApiControllerTest {
         // then
         long endTime = System.currentTimeMillis();
         long responseTime = endTime - startTime;
-
         assert responseTime < 1000 : "API 응답 시간이 너무 깁니다: " + responseTime + "ms";
     }
+
+    @Test
+    @DisplayName("사업자번호 조회 API - URL 인코딩 처리")
+    void getByBizNoApi_WithEncodedBizNo_ShouldWork() throws Exception {
+        // given
+        String bizNo = "140-81-99474";
+        String encodedBizNo = "140%2D81%2D99474";
+        given(corpMastSearchService.getByBizNo(bizNo)).willReturn(testCorpResponse);
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", encodedBizNo)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value(200));
+    }
+
+    @Test
+    @DisplayName("사업자번호로 조회 API - 존재하지 않는 사업자번호")
+    void getByBizNoApi_WithInvalidBizNo_ShouldReturnError() throws Exception {
+        // given
+        String invalidBizNo = "000-00-00000";
+        given(corpMastSearchService.getByBizNo(invalidBizNo))
+                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "해당 사업자번호의 법인정보를 찾을 수 없습니다."));
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", invalidBizNo)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value(404))
+                .andExpect(jsonPath("$.resultMsg").value("Not Found"))
+                .andExpect(jsonPath("$.errorCode").value("C005"))
+                .andExpect(jsonPath("$.errorMessage").value("해당 사업자번호의 법인정보를 찾을 수 없습니다."));
+
+    }
+
+    @Test
+    @DisplayName("시/도 목록 조회 API")
+    void getCitiesApi_ShouldReturnCityList() throws Exception {
+        // given
+        List<String> cities = Arrays.asList("서울특별시", "부산광역시", "대구광역시");
+        given(corpMastSearchService.getAllCities()).willReturn(cities);
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/cities")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value(200))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").value(cities));
+    }
+
+    @Test
+    @DisplayName("구/군 목록 조회 API")
+    void getDistrictsByCityApi_WithValidCity_ShouldReturnDistrictList() throws Exception {
+        // given
+        String city = "서울특별시";
+        List<String> districts = Arrays.asList("강남구", "강북구", "강서구");
+        given(corpMastSearchService.getDistrictsByCity(city)).willReturn(districts);
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/districts/{city}", city)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value(200))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").value(districts));
+    }
+
+    @Test
+    @DisplayName("법인 상세 조회 API - 존재하지 않는 ID")
+    void getByIdApi_WithInvalidId_ShouldReturnError() throws Exception {
+        // given
+        Long invalidId = 999L;
+        given(corpMastSearchService.getById(invalidId))
+                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "법인정보를 찾을 수 없습니다."));
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/{id}", invalidId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value(404))
+                .andExpect(jsonPath("$.resultMsg").value("요청한 데이터를 찾을 수 없습니다. - 법인정보를 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.errorCode").value("C005"))
+                .andExpect(jsonPath("$.errorMessage").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("법인 상세 조회 API - 잘못된 ID 타입")
+    void getByIdApi_WithInvalidIdType_ShouldReturnBadRequest() throws Exception {
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/{id}", "invalid-id")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value(400))
+                .andExpect(jsonPath("$.resultMsg").value("Bad Request"))
+                .andExpect(jsonPath("$.errorMessage").exists());
+    }
+
+    @Test
+    @DisplayName("검색 API - 잘못된 파라미터 타입")
+    void searchApi_WithInvalidParameterType_ShouldReturnBadRequest() throws Exception {
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/search")
+                        .param("page", "invalid")
+                        .param("size", "invalid")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value(400))
+                .andExpect(jsonPath("$.resultMsg").value("Bad Request"))
+                .andExpect(jsonPath("$.errorMessage").exists());
+    }
+    
+    @Test
+    @DisplayName("검색 API - 서비스 예외 처리")
+    void searchApi_WithServiceException_ShouldReturnErrorResponse() throws Exception {
+        // given
+        given(corpMastSearchService.search(any(CorpMastSearchRequest.class)))
+                .willThrow(new BusinessException(ErrorCode.CORP_SEARCH_ERROR, "검색 중 오류 발생"));
+
+        // when & then
+        standaloneMockMvc.perform(get("/api/v1/corp/search")
+                        .param("bizNm", "테스트")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.resultCode").value(500))
+                .andExpect(jsonPath("$.resultMsg").value("Internal Server Error"))
+                .andExpect(jsonPath("$.errorCode").value("CP005"))
+                .andExpect(jsonPath("$.errorMessage").value("검색 중 오류 발생"));
+    }
+
 }

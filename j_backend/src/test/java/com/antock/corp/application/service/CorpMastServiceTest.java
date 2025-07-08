@@ -124,7 +124,8 @@ class CorpMastServiceTest {
         request.setSize(20);
 
         Page<CorpMast> mockPage = new PageImpl<>(Arrays.asList(testCorp1), PageRequest.of(0, 20), 1);
-        given(corpMastRepository.findBySearchConditions(isNull(), eq("14081994"), isNull(), //1408199474 일경우 통과처리됨..
+
+        given(corpMastRepository.findBySearchConditions(isNull(), eq("1408199474"), isNull(),
                 isNull(), isNull(), isNull(), any(Pageable.class)))
                 .willReturn(mockPage);
 

@@ -1,25 +1,31 @@
-package com.antock.global.config;
+package com.antock.corp;
 
-import com.antock.api.corpsearch.application.service.CorpMastSearchService;
-import com.antock.web.corpsearch.presentation.CorpMastSearchWebController;
-import org.mockito.Mockito;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.test.context.TestPropertySource;
 
-@Configuration
+@TestConfiguration
+@EntityScan(basePackages = {
+        "com.antock.api.coseller.domain",
+        "com.antock.api.member.domain",
+        "com.antock.api.file.domain",
+        "com.antock.api.csv.domain"
+})
+@EnableJpaRepositories(basePackages = {
+        "com.antock.api.coseller.infrastructure",
+        "com.antock.api.member.infrastructure",
+        "com.antock.api.file.infrastructure",
+        "com.antock.api.csv.infrastructure"
+})
+@TestPropertySource(properties = {
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.show-sql=true",
+        "spring.jpa.properties.hibernate.format_sql=true"
+})
 public class TestConfig {
-    @Bean
-    public CorpMastSearchService corpMastSearchService() {
-        return Mockito.mock(CorpMastSearchService.class);
-    }
-
-    @Bean
-    public CorpMastSearchWebController corpMastSearchWebController(CorpMastSearchService corpMastSearchService) {
-        return new CorpMastSearchWebController(corpMastSearchService);
-    }
-
-    @Bean
-    public TestExceptionHandler testExceptionHandler(CorpMastSearchService corpMastSearchService) {
-        return new TestExceptionHandler(corpMastSearchService);
-    }
 }
