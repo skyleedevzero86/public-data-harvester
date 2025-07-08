@@ -4,11 +4,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class CorpMastSearchRequest {
 
     private String bizNm;       // 법인명
@@ -23,35 +25,39 @@ public class CorpMastSearchRequest {
     private String sort = "id,desc";
 
     public String getBizNmForSearch() {
-        return bizNm != null ? bizNm.trim() : null;
+        return isNotEmpty(bizNm) ? bizNm.trim() : null;
     }
 
     public String getBizNoForSearch() {
-        return bizNo != null ? bizNo.trim().replaceAll("-", "") : null;
+        return isNotEmpty(bizNo) ? bizNo.trim().replaceAll("-", "") : null;
     }
 
     public String getSellerIdForSearch() {
-        return sellerId != null ? sellerId.trim() : null;
+        return isNotEmpty(sellerId) ? sellerId.trim() : null;
     }
 
     public String getCorpRegNoForSearch() {
-        return corpRegNo != null ? corpRegNo.trim() : null;
+        return isNotEmpty(corpRegNo) ? corpRegNo.trim() : null;
     }
 
     public String getCityForSearch() {
-        return city != null ? city.trim() : null;
+        return isNotEmpty(city) ? city.trim() : null;
     }
 
     public String getDistrictForSearch() {
-        return district != null ? district.trim() : null;
+        return isNotEmpty(district) ? district.trim() : null;
     }
 
     public boolean hasSearchCondition() {
-        return (bizNm != null && !bizNm.trim().isEmpty()) ||
-                (bizNo != null && !bizNo.trim().isEmpty()) ||
-                (sellerId != null && !sellerId.trim().isEmpty()) ||
-                (corpRegNo != null && !corpRegNo.trim().isEmpty()) ||
-                (city != null && !city.trim().isEmpty()) ||
-                (district != null && !district.trim().isEmpty());
+        return isNotEmpty(bizNm) ||
+                isNotEmpty(bizNo) ||
+                isNotEmpty(sellerId) ||
+                isNotEmpty(corpRegNo) ||
+                isNotEmpty(city) ||
+                isNotEmpty(district);
+    }
+
+    private boolean isNotEmpty(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
