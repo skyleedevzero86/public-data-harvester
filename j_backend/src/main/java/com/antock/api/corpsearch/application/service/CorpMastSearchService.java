@@ -25,9 +25,13 @@ public class CorpMastSearchService {
 
     private final CorpMastSearchRepository corpMastRepository;
 
-
     public Page<CorpMastSearchResponse> search(CorpMastSearchRequest request) {
         log.debug("법인 검색 요청: {}", request);
+
+        if (!request.hasSearchCondition()) {
+            log.debug("검색 조건이 없어 빈 결과 반환");
+            return Page.empty();
+        }
 
         Pageable pageable = createPageable(request);
 
@@ -85,6 +89,13 @@ public class CorpMastSearchService {
     }
 
     public Map<String, Object> getSearchStatistics(CorpMastSearchRequest request) {
+        if (!request.hasSearchCondition()) {
+            return Map.of(
+                    "totalCount", 0L,
+                    "locationStats", Map.of()
+            );
+        }
+
         Page<CorpMast> result = corpMastRepository.findBySearchConditions(
                 request.getBizNmForSearch(),
                 request.getBizNoForSearch(),
@@ -97,14 +108,11 @@ public class CorpMastSearchService {
 
         long totalCount = result.getTotalElements();
 
-        Map<String, Long> locationStats = null;
-        if (request.hasSearchCondition()) {
-            locationStats = Map.of("검색결과", totalCount);
-        }
+        Map<String, Long> locationStats = Map.of("검색결과", totalCount);
 
         return Map.of(
                 "totalCount", totalCount,
-                "locationStats", locationStats != null ? locationStats : Map.of()
+                "locationStats", locationStats
         );
     }
 
@@ -128,6 +136,23 @@ public class CorpMastSearchService {
                 Math.max(0, request.getPage()),
                 Math.min(100, Math.max(1, request.getSize())),
                 sort
+        );
+    }
+
+    public List<CorpMast> getAllEntitiesForExcel(CorpMastSearchRequest request) {
+        log.debug("Excel용 전체 엔티티 조회: {}", request);
+
+        if (!request.hasSearchCondition()) {
+            return List.of();
+        }
+
+        return corpMastRepository.findBySearchConditionsForExcel(
+                request.getBizNmForSearch(),
+                request.getBizNoForSearch(),
+                request.getSellerIdForSearch(),
+                request.getCorpRegNoForSearch(),
+                request.getCityForSearch(),
+                request.getDistrictForSearch()
         );
     }
 }

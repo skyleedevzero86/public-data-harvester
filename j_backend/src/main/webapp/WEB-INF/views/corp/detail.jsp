@@ -173,7 +173,6 @@
 
 <div class="container mt-4">
 
-    <!-- 브레드크럼 -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">홈</a></li>
@@ -182,7 +181,6 @@
         </ol>
     </nav>
 
-    <!-- 에러 메시지 -->
     <c:if test="${not empty errorMessage}">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="bi bi-exclamation-triangle"></i> ${errorMessage}
@@ -190,11 +188,9 @@
         </div>
     </c:if>
 
-    <!-- 법인 상세 정보 -->
     <c:if test="${not empty corp}">
         <div class="detail-container">
 
-            <!-- 헤더 -->
             <div class="detail-header">
                 <h3>
                     <i class="bi bi-building"></i> ${corp.bizNm}
@@ -202,10 +198,8 @@
                 <div class="subtitle">법인 상세 정보</div>
             </div>
 
-            <!-- 본문 -->
             <div class="detail-body">
 
-                <!-- 기본 정보 섹션 -->
                 <div class="info-section">
                     <h5><i class="bi bi-info-circle"></i> 기본 정보</h5>
 
@@ -258,7 +252,6 @@
                     </div>
                 </div>
 
-                <!-- 위치 정보 섹션 -->
                 <div class="info-section">
                     <h5><i class="bi bi-geo-alt"></i> 위치 정보</h5>
 
@@ -307,7 +300,6 @@
                     </div>
                 </div>
 
-                <!-- 관리 정보 섹션 -->
                 <div class="info-section">
                     <h5><i class="bi bi-gear"></i> 관리 정보</h5>
 
@@ -330,7 +322,6 @@
                     </div>
                 </div>
 
-                <!-- 요약 정보 카드 -->
                 <div class="row mt-4">
                     <div class="col-md-12">
                         <div class="region-info">
@@ -344,7 +335,6 @@
                     </div>
                 </div>
 
-                <!-- 액션 버튼 -->
                 <div class="action-buttons">
                     <button type="button" class="btn btn-secondary btn-back" onclick="goBack()">
                         <i class="bi bi-arrow-left"></i> 목록으로
@@ -363,7 +353,6 @@
             </div>
         </div>
 
-        <!-- 관련 정보 섹션 (추가 확장 가능) -->
         <div class="mt-4">
             <div class="card">
                 <div class="card-header">
@@ -401,17 +390,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 클립보드 복사 기능
+
     function copyToClipboard(text, button) {
         navigator.clipboard.writeText(text).then(function() {
-            // 복사 성공 시 버튼 스타일 변경
+
             const icon = button.querySelector('i');
             const originalClass = icon.className;
 
             icon.className = 'bi bi-check';
             button.classList.add('copy-success');
 
-            // 1초 후 원래 상태로 복원
             setTimeout(() => {
                 icon.className = originalClass;
                 button.classList.remove('copy-success');
@@ -423,38 +411,33 @@
         });
     }
 
-    // 뒤로 가기
     function goBack() {
-        // 이전 페이지가 검색 페이지라면 해당 페이지로
+
         if (document.referrer && document.referrer.includes('/corp/search')) {
             window.history.back();
         } else {
-            // 아니면 검색 페이지로
+
             window.location.href = '/corp/search';
         }
     }
 
-    // 법인 수정 (권한이 있는 경우)
     function editCorp(corpId) {
-        // TODO: 수정 페이지로 이동 또는 모달 표시
+
         alert('법인 수정 기능은 개발 중입니다.');
-        // window.location.href = '/corp/edit/' + corpId;
+
     }
 
-    // 유사 법인 검색
     function searchSimilar() {
         const corpName = '${corp.bizNm}';
         const city = '${corp.siNm}';
         const district = '${corp.sggNm}';
 
-        // 같은 지역의 법인들을 검색
         const searchUrl = '/corp/search?city=' + encodeURIComponent(city) +
             '&district=' + encodeURIComponent(district);
 
         window.location.href = searchUrl;
     }
 
-    // 법인 정보 내보내기
     function exportCorpInfo() {
         const corpInfo = {
             id: '${corp.id}',
@@ -467,7 +450,6 @@
             username: '${corp.username}'
         };
 
-        // JSON 형태로 다운로드
         const dataStr = JSON.stringify(corpInfo, null, 2);
         const dataBlob = new Blob([dataStr], {type: 'application/json'});
 
@@ -477,22 +459,20 @@
         link.click();
     }
 
-    // 키보드 단축키
     document.addEventListener('keydown', function(e) {
-        // ESC: 뒤로 가기
+
         if (e.key === 'Escape') {
             goBack();
         }
-        // Ctrl+C: 법인명 복사
+
         if (e.ctrlKey && e.key === 'c' && !window.getSelection().toString()) {
             e.preventDefault();
             copyToClipboard('${corp.bizNm}', document.querySelector('.copy-button'));
         }
     });
 
-    // 페이지 로드 시 애니메이션
     document.addEventListener('DOMContentLoaded', function() {
-        // 부드러운 등장 효과
+
         const container = document.querySelector('.detail-container');
         container.style.opacity = '0';
         container.style.transform = 'translateY(20px)';
@@ -504,10 +484,6 @@
         }, 100);
     });
 
-    // 우클릭 메뉴 비활성화 (선택사항)
-    // document.addEventListener('contextmenu', function(e) {
-    //     e.preventDefault();
-    // });
 </script>
 
 </body>
