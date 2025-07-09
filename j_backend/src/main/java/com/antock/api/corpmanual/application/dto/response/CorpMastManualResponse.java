@@ -1,4 +1,4 @@
-package com.antock.api.corpsearch.application.dto.response;
+package com.antock.api.corpmanual.application.dto.response;
 
 import com.antock.api.coseller.domain.CorpMast;
 import lombok.Builder;
@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class CorpMastSearchResponse {
+public class CorpMastManualResponse {
 
     private Long id;
     private String sellerId;
@@ -29,8 +29,8 @@ public class CorpMastSearchResponse {
         return siNm + " " + sggNm;
     }
 
-    public static CorpMastSearchResponse from(CorpMast entity) {
-        return CorpMastSearchResponse.builder()
+    public static CorpMastManualResponse from(CorpMast entity) {
+        return CorpMastManualResponse.builder()
                 .id(entity.getId())
                 .sellerId(entity.getSellerId())
                 .bizNm(entity.getBizNm())

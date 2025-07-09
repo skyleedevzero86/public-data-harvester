@@ -1,12 +1,12 @@
 package com.antock.corp.presentation;
 
-import com.antock.api.corpsearch.application.dto.request.CorpMastSearchRequest;
-import com.antock.api.corpsearch.application.dto.response.CorpMastSearchResponse;
-import com.antock.api.corpsearch.application.service.CorpMastSearchService;
+import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
+import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
+import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import com.antock.global.config.TestExceptionHandler;
-import com.antock.web.corpsearch.presentation.CorpMastSearchWebController;
+import com.antock.web.corpmanual.presentation.CorpMastSearchWebController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,28 +44,28 @@ public class SearchControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private CorpMastSearchService corpMastService;
+    private CorpMastManualService corpMastService;
 
     @Configuration
     static class TestConfig {
         @Bean
-        public CorpMastSearchService corpMastSearchService() {
-            return Mockito.mock(CorpMastSearchService.class);
+        public CorpMastManualService corpMastSearchService() {
+            return Mockito.mock(CorpMastManualService.class);
         }
 
         @Bean
-        public CorpMastSearchWebController corpMastSearchWebController(CorpMastSearchService corpMastSearchService) {
+        public CorpMastSearchWebController corpMastSearchWebController(CorpMastManualService corpMastSearchService) {
             return new CorpMastSearchWebController(corpMastSearchService);
         }
     }
 
-    private CorpMastSearchResponse testCorpResponse;
-    private List<CorpMastSearchResponse> testCorpList;
-    private Page<CorpMastSearchResponse> testCorpPage;
+    private CorpMastManualResponse testCorpResponse;
+    private List<CorpMastManualResponse> testCorpList;
+    private Page<CorpMastManualResponse> testCorpPage;
 
     @BeforeEach
     void setUp() {
-        testCorpResponse = CorpMastSearchResponse.builder()
+        testCorpResponse = CorpMastManualResponse.builder()
                 .id(1L)
                 .sellerId("2025-서울강남-01714")
                 .bizNm("주식회사 뮤직턴")
@@ -77,7 +77,7 @@ public class SearchControllerTest {
                 .username("admin")
                 .build();
 
-        CorpMastSearchResponse testCorpResponse2 = CorpMastSearchResponse.builder()
+        CorpMastManualResponse testCorpResponse2 = CorpMastManualResponse.builder()
                 .id(2L)
                 .sellerId("2025-서울강남-01726")
                 .bizNm("주식회사 뷰타민")
@@ -120,8 +120,8 @@ public class SearchControllerTest {
         Map<String, Object> statistics = Map.of("totalCount", 2L, "locationStats", Map.of());
 
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")
@@ -144,8 +144,8 @@ public class SearchControllerTest {
 
         given(corpMastService.getAllCities()).willReturn(cities);
         given(corpMastService.getDistrictsByCity("서울특별시")).willReturn(districts);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")
@@ -167,8 +167,8 @@ public class SearchControllerTest {
         Map<String, Object> statistics = Map.of("totalCount", 2L, "locationStats", Map.of());
 
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")
@@ -258,7 +258,7 @@ public class SearchControllerTest {
         // given
         List<String> cities = Arrays.asList("서울특별시");
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class)))
+        given(corpMastService.search(any(CorpMastManualRequest.class)))
                 .willThrow(new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "검색 중 오류 발생"));
 
         // when & then
@@ -283,8 +283,8 @@ public class SearchControllerTest {
         Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")
@@ -304,8 +304,8 @@ public class SearchControllerTest {
         Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")
@@ -325,8 +325,8 @@ public class SearchControllerTest {
         Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
         given(corpMastService.getAllCities()).willReturn(cities);
-        given(corpMastService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
-        given(corpMastService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
+        given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         mockMvc.perform(get("/corp/search")

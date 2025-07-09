@@ -1,8 +1,8 @@
-package com.antock.api.corpsearch.presentation;
+package com.antock.api.corpmanual.presentation;
 
-import com.antock.api.corpsearch.application.dto.request.CorpMastSearchRequest;
-import com.antock.api.corpsearch.application.dto.response.CorpMastSearchResponse;
-import com.antock.api.corpsearch.application.service.CorpMastSearchService;
+import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
+import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
+import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import com.antock.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,47 +16,47 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/corp")
 @RequiredArgsConstructor
-public class CorpMastSearchApiController {
+public class CorpMastManualApiController {
 
-    private final CorpMastSearchService corpMastService;
+    private final CorpMastManualService corpMastService;
 
     @GetMapping("/search")
-    public ApiResponse<Page<CorpMastSearchResponse>> search(
-            @ModelAttribute CorpMastSearchRequest searchRequest) {
+    public ApiResponse<Page<CorpMastManualResponse>> search(
+            @ModelAttribute CorpMastManualRequest searchRequest) {
 
         log.debug("API 법인 검색 요청: {}", searchRequest);
 
-        Page<CorpMastSearchResponse> result = corpMastService.search(searchRequest);
+        Page<CorpMastManualResponse> result = corpMastService.search(searchRequest);
 
         return ApiResponse.of(HttpStatus.OK, result);
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<CorpMastSearchResponse> getById(@PathVariable Long id) {
+    public ApiResponse<CorpMastManualResponse> getById(@PathVariable Long id) {
 
         log.debug("API 법인 상세 조회 요청: ID = {}", id);
 
-        CorpMastSearchResponse result = corpMastService.getById(id);
+        CorpMastManualResponse result = corpMastService.getById(id);
 
         return ApiResponse.of(HttpStatus.OK, result);
     }
 
     @GetMapping("/bizno/{bizNo}")
-    public ApiResponse<CorpMastSearchResponse> getByBizNo(@PathVariable String bizNo) {
+    public ApiResponse<CorpMastManualResponse> getByBizNo(@PathVariable String bizNo) {
 
         log.debug("API 사업자번호 조회 요청: bizNo = {}", bizNo);
 
-        CorpMastSearchResponse result = corpMastService.getByBizNo(bizNo);
+        CorpMastManualResponse result = corpMastService.getByBizNo(bizNo);
 
         return ApiResponse.of(HttpStatus.OK, result);
     }
 
     @GetMapping("/regno/{corpRegNo}")
-    public ApiResponse<CorpMastSearchResponse> getByCorpRegNo(@PathVariable String corpRegNo) {
+    public ApiResponse<CorpMastManualResponse> getByCorpRegNo(@PathVariable String corpRegNo) {
 
         log.debug("API 법인등록번호 조회 요청: corpRegNo = {}", corpRegNo);
 
-        CorpMastSearchResponse result = corpMastService.getByCorpRegNo(corpRegNo);
+        CorpMastManualResponse result = corpMastService.getByCorpRegNo(corpRegNo);
 
         return ApiResponse.of(HttpStatus.OK, result);
     }
@@ -83,7 +83,7 @@ public class CorpMastSearchApiController {
 
     @GetMapping("/statistics")
     public ApiResponse<Map<String, Object>> getSearchStatistics(
-            @ModelAttribute CorpMastSearchRequest searchRequest) {
+            @ModelAttribute CorpMastManualRequest searchRequest) {
 
         log.debug("API 검색 통계 조회 요청: {}", searchRequest);
 

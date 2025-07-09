@@ -8,10 +8,16 @@ import java.time.LocalDateTime;
 import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Getter
 @Setter
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CorpMastHistory extends BaseEntity {
     private String username;
     private String action;

@@ -1,9 +1,9 @@
 package com.antock.corp.presentation;
 
-import com.antock.api.corpsearch.application.dto.request.CorpMastSearchRequest;
-import com.antock.api.corpsearch.application.dto.response.CorpMastSearchResponse;
-import com.antock.api.corpsearch.application.service.CorpMastSearchService;
-import com.antock.api.corpsearch.presentation.CorpMastSearchApiController;
+import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
+import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
+import com.antock.api.corpmanual.application.service.CorpMastManualService;
+import com.antock.api.corpmanual.presentation.CorpMastManualApiController;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import com.antock.global.common.exception.GlobalExceptionHandler;
@@ -42,18 +42,18 @@ public class CorpMastSearchApiControllerTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private CorpMastSearchService corpMastSearchService;
+    private CorpMastManualService corpMastSearchService;
 
     @Mock
     private com.antock.api.member.application.service.AuthTokenService authTokenService;
 
     @InjectMocks
-    private CorpMastSearchApiController corpMastSearchApiController;
+    private CorpMastManualApiController corpMastSearchApiController;
 
     private MockMvc standaloneMockMvc;
-    private CorpMastSearchResponse testCorpResponse;
-    private List<CorpMastSearchResponse> testCorpList;
-    private Page<CorpMastSearchResponse> testCorpPage;
+    private CorpMastManualResponse testCorpResponse;
+    private List<CorpMastManualResponse> testCorpList;
+    private Page<CorpMastManualResponse> testCorpPage;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +62,7 @@ public class CorpMastSearchApiControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        testCorpResponse = CorpMastSearchResponse.builder()
+        testCorpResponse = CorpMastManualResponse.builder()
                 .id(1L)
                 .sellerId("2025-서울강남-01714")
                 .bizNm("주식회사 뮤직턴")
@@ -74,7 +74,7 @@ public class CorpMastSearchApiControllerTest {
                 .username("admin")
                 .build();
 
-        CorpMastSearchResponse testCorpResponse2 = CorpMastSearchResponse.builder()
+        CorpMastManualResponse testCorpResponse2 = CorpMastManualResponse.builder()
                 .id(2L)
                 .sellerId("2025-서울강남-01726")
                 .bizNm("주식회사 뷰타민")
@@ -94,7 +94,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("법인 검색 API - 성공")
     void searchApi_WithValidRequest_ShouldReturnSuccessResponse() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/search")
@@ -118,8 +118,8 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("법인 검색 API - 빈 결과")
     void searchApi_WithNoResults_ShouldReturnEmptyPage() throws Exception {
         // given
-        Page<CorpMastSearchResponse> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(emptyPage);
+        Page<CorpMastManualResponse> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(emptyPage);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/search")
@@ -136,7 +136,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("법인 검색 API - 복합 조건")
     void searchApi_WithMultipleConditions_ShouldWork() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/search")
@@ -223,7 +223,7 @@ public class CorpMastSearchApiControllerTest {
                 "totalCount", 100L,
                 "locationStats", Map.of("서울특별시", 50L, "부산광역시", 30L)
         );
-        given(corpMastSearchService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastSearchService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/statistics")
@@ -243,7 +243,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("검색 API - 페이징 경계값 테스트")
     void searchApi_WithBoundaryPageValues_ShouldHandleCorrectly() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/search")
@@ -262,7 +262,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("검색 API - 정렬 파라미터")
     void searchApi_WithSortParameter_ShouldWork() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/search")
@@ -317,7 +317,7 @@ public class CorpMastSearchApiControllerTest {
                 "totalCount", 0L,
                 "locationStats", Map.of()
         );
-        given(corpMastSearchService.getSearchStatistics(any(CorpMastSearchRequest.class))).willReturn(statistics);
+        given(corpMastSearchService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
         // when & then
         standaloneMockMvc.perform(get("/api/v1/corp/statistics")
@@ -333,7 +333,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("검색 API - 응답 시간 검증")
     void searchApi_ResponseTime_ShouldBeReasonable() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class))).willReturn(testCorpPage);
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class))).willReturn(testCorpPage);
 
         // when
         long startTime = System.currentTimeMillis();
@@ -471,7 +471,7 @@ public class CorpMastSearchApiControllerTest {
     @DisplayName("검색 API - 서비스 예외 처리")
     void searchApi_WithServiceException_ShouldReturnErrorResponse() throws Exception {
         // given
-        given(corpMastSearchService.search(any(CorpMastSearchRequest.class)))
+        given(corpMastSearchService.search(any(CorpMastManualRequest.class)))
                 .willThrow(new BusinessException(ErrorCode.CORP_SEARCH_ERROR, "검색 중 오류 발생"));
 
         // when & then

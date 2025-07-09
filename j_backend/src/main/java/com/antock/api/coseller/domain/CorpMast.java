@@ -65,6 +65,10 @@ public class CorpMast {
         this.sggNm = sggNm;
     }
 
+    public void setBizNo(String bizNo) {
+        this.bizNo = bizNo;
+    }
+
     public void setUsername(String username) {
         this.username = username;
     }

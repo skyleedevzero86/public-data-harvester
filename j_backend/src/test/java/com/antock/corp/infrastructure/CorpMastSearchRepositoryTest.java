@@ -1,6 +1,6 @@
 package com.antock.corp.infrastructure;
 
-import com.antock.api.corpsearch.infrastructure.CorpMastSearchRepository;
+import com.antock.api.corpmanual.infrastructure.CorpMastManualRepository;
 import com.antock.api.coseller.domain.CorpMast;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +24,7 @@ public class CorpMastSearchRepositoryTest {
     private TestEntityManager entityManager;
 
     @Autowired
-    private CorpMastSearchRepository corpMastRepository;
+    private CorpMastManualRepository corpMastRepository;
 
     private CorpMast testCorp1;
     private CorpMast testCorp2;

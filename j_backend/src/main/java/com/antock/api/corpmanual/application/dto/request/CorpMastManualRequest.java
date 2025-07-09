@@ -1,4 +1,4 @@
-package com.antock.api.corpsearch.application.dto.request;
+package com.antock.api.corpmanual.application.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CorpMastSearchRequest {
+public class CorpMastManualRequest {
 
     private String bizNm;       // 법인명
     private String bizNo;       // 사업자번호

@@ -1,9 +1,9 @@
 package com.antock.corp.application.service;
 
-import com.antock.api.corpsearch.application.dto.request.CorpMastSearchRequest;
-import com.antock.api.corpsearch.application.dto.response.CorpMastSearchResponse;
-import com.antock.api.corpsearch.application.service.CorpMastSearchService;
-import com.antock.api.corpsearch.infrastructure.CorpMastSearchRepository;
+import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
+import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
+import com.antock.api.corpmanual.application.service.CorpMastManualService;
+import com.antock.api.corpmanual.infrastructure.CorpMastManualRepository;
 import com.antock.api.coseller.domain.CorpMast;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
@@ -31,10 +31,10 @@ import static org.mockito.BDDMockito.*;
 class CorpMastServiceTest {
 
     @InjectMocks
-    private CorpMastSearchService corpMastService;
+    private CorpMastManualService corpMastService;
 
     @Mock
-    private CorpMastSearchRepository corpMastRepository;
+    private CorpMastManualRepository corpMastRepository;
 
     private CorpMast testCorp1;
     private CorpMast testCorp2;
@@ -73,7 +73,7 @@ class CorpMastServiceTest {
     @DisplayName("검색 조건이 없을 때 전체 조회")
     void search_WithoutCondition_ShouldReturnAllCorps() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setPage(0);
         request.setSize(20);
 
@@ -83,7 +83,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastSearchResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request);
 
         // then
         assertThat(result.getContent()).hasSize(2);
@@ -96,7 +96,7 @@ class CorpMastServiceTest {
     @DisplayName("법인명으로 검색")
     void search_WithBizNm_ShouldReturnFilteredResult() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setBizNm("뮤직턴");
         request.setPage(0);
         request.setSize(20);
@@ -107,7 +107,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastSearchResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request);
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -118,7 +118,7 @@ class CorpMastServiceTest {
     @DisplayName("사업자번호로 검색")
     void search_WithBizNo_ShouldReturnFilteredResult() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setBizNo("140-81-99474");
         request.setPage(0);
         request.setSize(20);
@@ -130,7 +130,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastSearchResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request);
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -141,7 +141,7 @@ class CorpMastServiceTest {
     @DisplayName("지역으로 검색")
     void search_WithLocation_ShouldReturnFilteredResult() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setCity("서울특별시");
         request.setDistrict("강남구");
         request.setPage(0);
@@ -153,7 +153,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastSearchResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request);
 
         // then
         assertThat(result.getContent()).hasSize(2);
@@ -169,7 +169,7 @@ class CorpMastServiceTest {
         given(corpMastRepository.findById(corpId)).willReturn(Optional.of(testCorp1));
 
         // when
-        CorpMastSearchResponse result = corpMastService.getById(corpId);
+        CorpMastManualResponse result = corpMastService.getById(corpId);
 
         // then
         assertThat(result.getId()).isEqualTo(1L);
@@ -200,7 +200,7 @@ class CorpMastServiceTest {
         given(corpMastRepository.findByBizNo(bizNo)).willReturn(Optional.of(testCorp1));
 
         // when
-        CorpMastSearchResponse result = corpMastService.getByBizNo(bizNo);
+        CorpMastManualResponse result = corpMastService.getByBizNo(bizNo);
 
         // then
         assertThat(result.getBizNo()).isEqualTo("140-81-99474");
@@ -230,7 +230,7 @@ class CorpMastServiceTest {
         given(corpMastRepository.findByCorpRegNo(corpRegNo)).willReturn(Optional.of(testCorp1));
 
         // when
-        CorpMastSearchResponse result = corpMastService.getByCorpRegNo(corpRegNo);
+        CorpMastManualResponse result = corpMastService.getByCorpRegNo(corpRegNo);
 
         // then
         assertThat(result.getCorpRegNo()).isEqualTo("1101110918053");
@@ -286,7 +286,7 @@ class CorpMastServiceTest {
     @DisplayName("검색 통계 정보 조회")
     void getSearchStatistics_WithSearchCondition_ShouldReturnStats() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setBizNm("테스트");
 
         Page<CorpMast> mockPage = new PageImpl<>(testCorpList, PageRequest.of(0, 1), 2);
@@ -306,7 +306,7 @@ class CorpMastServiceTest {
     @DisplayName("페이지 크기 제한 테스트")
     void search_WithLargePageSize_ShouldLimitPageSize() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setSize(200); // 제한을 초과하는 크기
         request.setPage(0);
 
@@ -327,7 +327,7 @@ class CorpMastServiceTest {
     @DisplayName("음수 페이지 번호 처리")
     void search_WithNegativePage_ShouldUseZero() {
         // given
-        CorpMastSearchRequest request = new CorpMastSearchRequest();
+        CorpMastManualRequest request = new CorpMastManualRequest();
         request.setPage(-1);
         request.setSize(20);
 

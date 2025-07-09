@@ -75,47 +75,51 @@ public class CoSellerService {
                 if (existingEntity.isPresent()) {
                     log.debug("이미 존재하는 bizNo로 인해 저장 스킵: {}", entity.getBizNo());
                     duplicatedBizNos.add(entity.getBizNo());
-                    CorpMastHistory history = new CorpMastHistory();
-                    history.setUsername(user);
-                    history.setAction("INSERT");
-                    history.setBizNo(entity.getBizNo());
-                    history.setResult("DUPLICATE");
-                    history.setMessage("중복 bizNo, 저장 스킵");
-                    history.setTimestamp(java.time.LocalDateTime.now());
+                    CorpMastHistory history = CorpMastHistory.builder()
+                            .username(user)
+                            .action("INSERT")
+                            .bizNo(entity.getBizNo())
+                            .result("DUPLICATE")
+                            .message("중복 bizNo, 저장 스킵")
+                            .timestamp(java.time.LocalDateTime.now())
+                            .build();
                     corpMastHistoryStore.save(history);
                 } else {
                     corpMastStore.save(entity);
                     savedCount++;
-                    CorpMastHistory history = new CorpMastHistory();
-                    history.setUsername(user);
-                    history.setAction("INSERT");
-                    history.setBizNo(entity.getBizNo());
-                    history.setResult("SUCCESS");
-                    history.setMessage("정상 저장");
-                    history.setTimestamp(java.time.LocalDateTime.now());
+                    CorpMastHistory history = CorpMastHistory.builder()
+                            .username(user)
+                            .action("INSERT")
+                            .bizNo(entity.getBizNo())
+                            .result("SUCCESS")
+                            .message("정상 저장")
+                            .timestamp(java.time.LocalDateTime.now())
+                            .build();
                     corpMastHistoryStore.save(history);
                 }
             } catch (DataIntegrityViolationException ex) {
                 log.warn("데이터베이스 저장 실패 (bizNo 중복): bizNo={}, 오류: {}", entity.getBizNo(), ex.getMessage());
                 duplicatedBizNos.add(entity.getBizNo());
-                CorpMastHistory history = new CorpMastHistory();
-                history.setUsername(user);
-                history.setAction("INSERT");
-                history.setBizNo(entity.getBizNo());
-                history.setResult("FAIL");
-                history.setMessage("DataIntegrityViolationException: " + ex.getMessage());
-                history.setTimestamp(java.time.LocalDateTime.now());
+                CorpMastHistory history = CorpMastHistory.builder()
+                        .username(user)
+                        .action("INSERT")
+                        .bizNo(entity.getBizNo())
+                        .result("FAIL")
+                        .message("DataIntegrityViolationException: " + ex.getMessage())
+                        .timestamp(java.time.LocalDateTime.now())
+                        .build();
                 corpMastHistoryStore.save(history);
             } catch (Exception ex) {
                 log.error("데이터베이스 저장 중 예상치 못한 오류 발생: bizNo={}, 오류: {}", entity.getBizNo(), ex.getMessage(), ex);
                 duplicatedBizNos.add(entity.getBizNo());
-                CorpMastHistory history = new CorpMastHistory();
-                history.setUsername(user);
-                history.setAction("INSERT");
-                history.setBizNo(entity.getBizNo());
-                history.setResult("FAIL");
-                history.setMessage("Exception: " + ex.getMessage());
-                history.setTimestamp(java.time.LocalDateTime.now());
+                CorpMastHistory history = CorpMastHistory.builder()
+                        .username(user)
+                        .action("INSERT")
+                        .bizNo(entity.getBizNo())
+                        .result("FAIL")
+                        .message("Exception: " + ex.getMessage())
+                        .timestamp(java.time.LocalDateTime.now())
+                        .build();
                 corpMastHistoryStore.save(history);
             }
         }
