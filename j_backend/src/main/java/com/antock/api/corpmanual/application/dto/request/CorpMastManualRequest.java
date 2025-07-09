@@ -22,30 +22,12 @@ public class CorpMastManualRequest {
     private int size = 20;
     private String sort = "id,desc";
 
-    public String getBizNmForSearch() {
-        return bizNm != null ? bizNm.trim() : null;
-    }
-
-    public String getBizNoForSearch() {
-        return bizNo != null ? bizNo.trim().replaceAll("-", "") : null;
-    }
-
-    public String getSellerIdForSearch() {
-        return sellerId != null ? sellerId.trim() : null;
-    }
-
-    public String getCorpRegNoForSearch() {
-        return corpRegNo != null ? corpRegNo.trim() : null;
-    }
-
-    public String getCityForSearch() {
-        return city != null ? city.trim() : null;
-    }
-
-    public String getDistrictForSearch() {
-        return district != null ? district.trim() : null;
-    }
-
+    public String getBizNmForSearch() { return bizNm != null ? bizNm.trim() : null; }
+    public String getBizNoForSearch() { return bizNo != null ? bizNo.trim().replaceAll("-", "") : null; }
+    public String getSellerIdForSearch() { return sellerId != null ? sellerId.trim() : null; }
+    public String getCorpRegNoForSearch() { return corpRegNo != null ? corpRegNo.trim() : null; }
+    public String getCityForSearch() { return (city != null && !city.trim().isEmpty()) ? city.trim() : null; }
+    public String getDistrictForSearch() { return (district != null && !district.trim().isEmpty()) ? district.trim() : null; }
     public boolean hasSearchCondition() {
         return (bizNm != null && !bizNm.trim().isEmpty()) ||
                 (bizNo != null && !bizNo.trim().isEmpty()) ||

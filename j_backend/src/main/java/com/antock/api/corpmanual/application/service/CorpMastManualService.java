@@ -30,25 +30,20 @@ public class CorpMastManualService {
     private final CorpMastHistoryRepository corpMastHistoryRepository;
 
     public Page<CorpMastManualResponse> search(CorpMastManualRequest request) {
-        log.debug("법인 검색 요청: {}", request);
-
         Pageable pageable = createPageable(request);
-
         Page<CorpMast> corpPage = corpMastSearchRepository.findBySearchConditions(
-                request.getBizNmForSearch(),
-                request.getBizNoForSearch(),
-                request.getSellerIdForSearch(),
-                request.getCorpRegNoForSearch(),
-                request.getCityForSearch(),
-                request.getDistrictForSearch(),
+                nullIfEmpty(request.getBizNmForSearch()),
+                nullIfEmpty(request.getBizNoForSearch()),
+                nullIfEmpty(request.getSellerIdForSearch()),
+                nullIfEmpty(request.getCorpRegNoForSearch()),
+                nullIfEmpty(request.getCityForSearch()),
+                nullIfEmpty(request.getDistrictForSearch()),
                 pageable);
+        return corpPage.map(CorpMastManualResponse::from);
+    }
 
-        Page<CorpMastManualResponse> result = corpPage.map(CorpMastManualResponse::from);
-
-        log.debug("검색 결과: 총 {}건, 현재 페이지 {}건",
-                result.getTotalElements(), result.getNumberOfElements());
-
-        return result;
+    private String nullIfEmpty(String s) {
+        return (s == null || s.trim().isEmpty()) ? null : s.trim();
     }
 
     public CorpMastManualResponse getById(Long id) {
@@ -110,21 +105,17 @@ public class CorpMastManualService {
 
     private Pageable createPageable(CorpMastManualRequest request) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
-
         if (request.getSort() != null && !request.getSort().isEmpty()) {
             String[] sortParts = request.getSort().split(",");
             if (sortParts.length == 2) {
                 String property = sortParts[0];
                 String direction = sortParts[1];
-
                 Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction)
                         ? Sort.Direction.ASC
                         : Sort.Direction.DESC;
-
                 sort = Sort.by(sortDirection, property);
             }
         }
-
         return PageRequest.of(
                 Math.max(0, request.getPage()),
                 Math.min(100, Math.max(1, request.getSize())),
@@ -136,7 +127,7 @@ public class CorpMastManualService {
         Page<CorpMast> page = corpMastSearchRepository.searchCorpMast(
                 isAdmin, username,
                 form.getBizNm(), form.getBizNo(), form.getCorpRegNo(),
-                form.getSiNm(), form.getSggNm(), pageable);
+                form.getSiNmForSearch(), form.getSggNmForSearch(), pageable);
         return page.map(CorpMastManualResponse::from);
     }
 
@@ -144,13 +135,14 @@ public class CorpMastManualService {
     @Transactional
     public CorpMast save(CorpMastForm form, String username) {
         CorpMast entity = CorpMast.builder()
-                .sellerId(form.getSellerId())
-                .bizNm(form.getBizNm())
-                .bizNo(form.getBizNo())
-                .corpRegNo(form.getCorpRegNo())
-                .regionCd(form.getRegionCd())
-                .siNm(form.getSiNm())
-                .sggNm(form.getSggNm())
+                .sellerId(form.getSellerId() != null ? form.getSellerId() : "")
+                .bizNm(form.getBizNm() != null ? form.getBizNm() : "")
+                .bizNo(form.getBizNo() != null ? form.getBizNo() : "")
+                .corpRegNo(form.getCorpRegNo() != null ? form.getCorpRegNo() : "")
+                .regionCd(form.getRegionCd() != null ? form.getRegionCd() : "") // NULL 처리
+                .siNm(form.getSiNm() != null ? form.getSiNm() : "")
+                .sggNm(form.getSggNm() != null ? form.getSggNm() : "")
+                .description(form.getDescription() != null ? form.getDescription() : "")
                 .username(username)
                 .build();
         CorpMast saved = corpMastSearchRepository.save(entity);

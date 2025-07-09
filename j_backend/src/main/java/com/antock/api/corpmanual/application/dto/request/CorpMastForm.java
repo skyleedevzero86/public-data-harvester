@@ -16,4 +16,12 @@ public class CorpMastForm {
     private String sggNm;
     private String description;
     private String username;
+
+    public String getSiNmForSearch() {
+        return (siNm != null && !siNm.trim().isEmpty()) ? siNm.trim() : null;
+    }
+
+    public String getSggNmForSearch() {
+        return (sggNm != null && !sggNm.trim().isEmpty()) ? sggNm.trim() : null;
+    }
 }

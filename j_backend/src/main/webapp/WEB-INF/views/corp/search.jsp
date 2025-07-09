@@ -180,17 +180,15 @@
 
 <div class="container-fluid mt-4">
 
-    <!-- 페이지 헤더 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-building"></i> 법인 정보 검색</h2>
         <div>
-            <a href="/corp/export?${pageContext.request.queryString}" class="btn btn-success">
+            <a href="/api/v1/corp/export?${pageContext.request.queryString}" class="btn btn-success">
                 <i class="bi bi-file-earmark-excel"></i> Excel 다운로드
             </a>
         </div>
     </div>
 
-    <!-- 메시지 표시 -->
     <c:if test="${not empty message}">
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="bi bi-info-circle"></i> ${message}
@@ -198,7 +196,6 @@
         </div>
     </c:if>
 
-    <!-- 검색 폼 -->
     <div class="search-container">
         <h5 class="search-title">
             <i class="bi bi-search"></i> 검색 조건
@@ -261,11 +258,9 @@
         </form>
     </div>
 
-    <!-- 검색 결과 -->
     <c:if test="${corpList != null}">
         <div class="results-container">
 
-            <!-- 결과 헤더 -->
             <div class="results-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
@@ -277,7 +272,6 @@
                 </div>
             </div>
 
-            <!-- 통계 정보 -->
             <c:if test="${statistics != null && statistics.totalCount > 0}">
                 <div class="results-summary">
                     <div class="row">
@@ -309,7 +303,6 @@
                 </div>
             </c:if>
 
-            <!-- 결과 테이블 -->
             <c:choose>
                 <c:when test="${not empty corpList.content}">
                     <div class="table-responsive">
@@ -364,33 +357,27 @@
                         </table>
                     </div>
 
-                    <!-- 페이징 -->
-                    <c:if test="${corpList.totalPages > 1}">
+                    <c:if test="${corpList != null && corpList.totalPages > 1}">
                         <div class="pagination-container">
                             <nav aria-label="검색 결과 페이징">
                                 <ul class="pagination justify-content-center mb-0">
-                                    <!-- 이전 페이지 -->
                                     <c:if test="${corpList.hasPrevious()}">
                                         <li class="page-item">
-                                            <a class="page-link" href="?${buildPageUrl(corpList.number - 1)}">
+                                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(${corpList.number - 1})">
                                                 <i class="bi bi-chevron-left"></i> 이전
                                             </a>
                                         </li>
                                     </c:if>
-
-                                    <!-- 페이지 번호 -->
                                     <c:forEach var="i" begin="0" end="${corpList.totalPages - 1}">
                                         <c:if test="${i >= corpList.number - 2 && i <= corpList.number + 2}">
                                             <li class="page-item ${i == corpList.number ? 'active' : ''}">
-                                                <a class="page-link" href="?${buildPageUrl(i)}">${i + 1}</a>
+                                                <a class="page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i + 1}</a>
                                             </li>
                                         </c:if>
                                     </c:forEach>
-
-                                    <!-- 다음 페이지 -->
                                     <c:if test="${corpList.hasNext()}">
                                         <li class="page-item">
-                                            <a class="page-link" href="?${buildPageUrl(corpList.number + 1)}">
+                                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(${corpList.number + 1})">
                                                 다음 <i class="bi bi-chevron-right"></i>
                                             </a>
                                         </li>
@@ -399,6 +386,7 @@
                             </nav>
                         </div>
                     </c:if>
+
                 </c:when>
                 <c:otherwise>
                     <div class="no-results">
@@ -414,7 +402,6 @@
         </div>
     </c:if>
 
-    <!-- 검색 조건이 없을 때 -->
     <c:if test="${corpList == null}">
         <div class="results-container">
             <div class="no-results">
@@ -429,13 +416,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 구/군 목록 로드
     function loadDistricts() {
         const citySelect = document.getElementById('city');
         const districtSelect = document.getElementById('district');
         const selectedCity = citySelect.value;
 
-        // 구/군 초기화
         districtSelect.innerHTML = '<option value="">전체</option>';
 
         if (selectedCity) {
@@ -455,7 +440,6 @@
         }
     }
 
-    // 폼 초기화
     function resetForm() {
         document.getElementById('bizNm').value = '';
         document.getElementById('bizNo').value = '';
@@ -464,7 +448,6 @@
         document.getElementById('city').value = '';
         document.getElementById('district').value = '';
 
-        // URL도 초기화
         window.location.href = '/corp/search';
     }
 
@@ -473,14 +456,15 @@
         window.location.href = '/corp/detail/' + corpId;
     }
 
-    // 페이지 URL 생성
     function buildPageUrl(pageNum) {
         const params = new URLSearchParams(window.location.search);
         params.set('page', pageNum);
+
+        if (!params.has('size')) params.set('size', '20');
+        if (!params.has('sort')) params.set('sort', 'id,desc');
         return params.toString();
     }
 
-    // 사업자번호 포맷팅
     document.getElementById('bizNo').addEventListener('input', function(e) {
         let value = e.target.value.replace(/[^0-9]/g, '');
         if (value.length <= 10) {
@@ -493,13 +477,11 @@
         }
     });
 
-    // 페이지 로드 시 구/군 목록 로드
     document.addEventListener('DOMContentLoaded', function() {
         const city = document.getElementById('city').value;
         if (city) {
             loadDistricts();
 
-            // 기존 선택된 구/군 복원
             setTimeout(() => {
                 const selectedDistrict = '${searchRequest.district}';
                 if (selectedDistrict) {
@@ -509,7 +491,6 @@
         }
     });
 
-    // 엔터키로 검색
     document.querySelectorAll('.search-form input').forEach(input => {
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -518,6 +499,15 @@
             }
         });
     });
+
+    function goToPage(pageNum) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', pageNum);
+        if (!params.has('size')) params.set('size', '20');
+        if (!params.has('sort')) params.set('sort', 'id,desc');
+        window.location.search = params.toString();
+    }
+
 </script>
 
 </body>

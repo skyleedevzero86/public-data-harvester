@@ -7,7 +7,6 @@ import lombok.Getter;
 @Getter
 @Builder
 public class CorpMastManualResponse {
-
     private Long id;
     private String sellerId;
     private String bizNm;
@@ -17,18 +16,13 @@ public class CorpMastManualResponse {
     private String siNm;
     private String sggNm;
     private String username;
+    private String description;
 
     public String getFormattedBizNo() {
-        if (bizNo == null || bizNo.length() != 10) {
-            return bizNo;
-        }
+        if (bizNo == null || bizNo.length() != 10) return bizNo;
         return bizNo.substring(0, 3) + "-" + bizNo.substring(3, 5) + "-" + bizNo.substring(5);
     }
-
-    public String getFullAddress() {
-        return siNm + " " + sggNm;
-    }
-
+    public String getFullAddress() { return siNm + " " + sggNm; }
     public static CorpMastManualResponse from(CorpMast entity) {
         return CorpMastManualResponse.builder()
                 .id(entity.getId())
@@ -40,6 +34,7 @@ public class CorpMastManualResponse {
                 .siNm(entity.getSiNm())
                 .sggNm(entity.getSggNm())
                 .username(entity.getUsername())
+                .description(entity.getDescription())
                 .build();
     }
 }
