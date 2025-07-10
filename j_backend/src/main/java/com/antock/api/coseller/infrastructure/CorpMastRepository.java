@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface CorpMastRepository extends JpaRepository<CorpMast, Long> {
+public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpMastRepositoryCustom {
 
     boolean existsByBizNo(String bizNo);
     Optional<CorpMast> findByBizNo(@Param("bizNo") String bizNo);

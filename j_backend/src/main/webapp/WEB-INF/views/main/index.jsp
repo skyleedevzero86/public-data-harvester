@@ -75,5 +75,46 @@
             </ul>
         </div>
 
+        <div class="region-stat-card" style="margin-top:30px; background:#ede7f6; border-radius:18px; padding:24px;">
+            <div style="font-weight:bold; font-size:1.1em; margin-bottom:12px;">
+                <span>📊 지역별 통계 현황</span>
+            </div>
+            <table class="table table-bordered" style="background:#fff;">
+                <thead>
+                <tr>
+                    <th>지역명</th>
+                    <th>총 업체 수</th>
+                    <th>법인등록번호</th>
+                    <th>행정구역코드</th>
+                    <th>완성도</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:if test="${not empty topRegionStat and topRegionStat.totalCount > 0}">
+                    <tr>
+                        <td>${topRegionStat.city} ${topRegionStat.district}</td>
+                        <td><fmt:formatNumber value="${topRegionStat.totalCount}" pattern="#,##0"/></td>
+                        <td>
+                            <fmt:formatNumber value="${topRegionStat.validCorpRegNoCount}" pattern="#,##0"/>
+                            <span style="color:#888;">(<fmt:formatNumber value="${topRegionStat.validCorpRegNoCount * 100.0 / topRegionStat.totalCount}" pattern="0.0"/>%)</span>
+                        </td>
+                        <td>
+                            <fmt:formatNumber value="${topRegionStat.validRegionCdCount}" pattern="#,##0"/>
+                            <span style="color:#888;">(<fmt:formatNumber value="${topRegionStat.validRegionCdCount * 100.0 / topRegionStat.totalCount}" pattern="0.0"/>%)</span>
+                        </td>
+                        <td>
+                            <div style="width:120px; background:#eee; border-radius:8px; overflow:hidden;">
+                                <div style="width:${topRegionStat.completionRate}%; background:#7e57c2; height:12px;"></div>
+                            </div>
+                            <span style="font-size:0.95em; color:#7e57c2; font-weight:bold;">${topRegionStat.completionRate}%</span>
+                        </td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+            <div style="text-align:center; margin-top:16px;">
+                <button class="btn btn-primary" onclick="location.href='/region/detail'">전체 통계 보기</button>
+            </div>
+
 </body>
 </html>

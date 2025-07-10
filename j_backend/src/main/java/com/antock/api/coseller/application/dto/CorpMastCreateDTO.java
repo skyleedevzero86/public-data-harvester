@@ -21,14 +21,14 @@ public class CorpMastCreateDTO {
 
     public CorpMast toEntity() {
         return CorpMast.builder()
-                .sellerId(this.sellerId)
-                .bizNm(this.bizNm)
-                .bizNo(this.bizNo)
-                .corpRegNo(this.corpRegNo)
-                .regionCd(this.regionCd)
-                .siNm(this.siNm)
-                .sggNm(this.sggNm)
-                .username(this.username)
+                .sellerId(this.sellerId != null ? this.sellerId : "")
+                .bizNm(this.bizNm != null ? this.bizNm : "")
+                .bizNo(this.bizNo != null ? this.bizNo : "")
+                .corpRegNo(this.corpRegNo != null ? this.corpRegNo : "")
+                .regionCd(this.regionCd != null ? this.regionCd : "")
+                .siNm(this.siNm != null ? this.siNm : "")
+                .sggNm(this.sggNm != null ? this.sggNm : "")
+                .username(this.username != null ? this.username : "")
                 .build();
     }
 }
