@@ -41,6 +41,9 @@ public class CorpMast {
     @Column(nullable = false)
     private String username;
 
+    @Column(nullable = true, length = 2000)
+    private String description;
+
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
     }
@@ -72,4 +75,13 @@ public class CorpMast {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }
+

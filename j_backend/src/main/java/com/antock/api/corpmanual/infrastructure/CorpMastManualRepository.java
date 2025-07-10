@@ -14,12 +14,14 @@ import java.util.Optional;
 public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long> {
 
         @Query("SELECT c FROM CorpMast c " +
-                        "WHERE (:bizNm IS NULL OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
-                        "AND (:bizNo IS NULL OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
-                        "AND (:sellerId IS NULL OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) " +
-                        "AND (:corpRegNo IS NULL OR c.corpRegNo = :corpRegNo) " +
-                        "AND (:city IS NULL OR c.siNm = :city) " +
-                        "AND (:district IS NULL OR c.sggNm = :district)")
+                        "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) "
+                        +
+                        "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
+                        "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) "
+                        +
+                        "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
+                        "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
+                        "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
         Page<CorpMast> findBySearchConditions(
                         @Param("bizNm") String bizNm,
                         @Param("bizNo") String bizNo,

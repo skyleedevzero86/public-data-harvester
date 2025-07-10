@@ -36,17 +36,16 @@ public class CorpMastSearchWebController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        // 검색 조건이 있는 경우에만 검색 실행
         Page<CorpMastManualResponse> corpList = null;
         if (hasSearchCondition(form)) {
             corpList = corpMastService.search(form, pageable, username, isAdmin);
         } else {
-            // 검색 조건이 없으면 빈 페이지 생성
+
             corpList = Page.empty(pageable);
         }
 
@@ -82,8 +81,8 @@ public class CorpMastSearchWebController {
     public String editForm(@PathVariable Long id, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
         CorpMastManualResponse corp = corpMastService.getById(id, username, isAdmin);
         CorpMastForm form = new CorpMastForm();
 
@@ -95,6 +94,7 @@ public class CorpMastSearchWebController {
         form.setRegionCd(corp.getRegionCd());
         form.setSiNm(corp.getSiNm());
         form.setSggNm(corp.getSggNm());
+        form.setDescription(corp.getDescription());
         model.addAttribute("form", form);
         return "corp/form";
     }
@@ -103,8 +103,8 @@ public class CorpMastSearchWebController {
     public String edit(@PathVariable Long id, @ModelAttribute CorpMastForm form) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
         corpMastService.update(id, form, username, isAdmin);
         return "redirect:/corp/list";
     }
@@ -113,8 +113,8 @@ public class CorpMastSearchWebController {
     public String delete(@PathVariable Long id) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
         corpMastService.delete(id, username, isAdmin);
         return "redirect:/corp/list";
     }
@@ -123,14 +123,13 @@ public class CorpMastSearchWebController {
     public String Modify(@PathVariable Long id, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
         CorpMastManualResponse corp = corpMastService.getById(id, username, isAdmin);
         model.addAttribute("corp", corp);
         model.addAttribute("isAdmin", isAdmin);
         return "corp/modify";
     }
-
 
     @GetMapping("/search")
     public String searchPage(
@@ -171,6 +170,14 @@ public class CorpMastSearchWebController {
         try {
             CorpMastManualResponse corp = corpMastService.getById(id);
             model.addAttribute("corp", corp);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            boolean isAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+
+            boolean hasEditPermission = isAdmin || corp.getUsername().equals(username);
+            model.addAttribute("hasEditPermission", hasEditPermission);
 
             return "corp/detail";
 
