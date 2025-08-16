@@ -1,18 +1,20 @@
 package com.antock.global.security.handler;
 
-import com.antock.global.common.response.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -24,20 +26,22 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException {
+                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
-        log.error("Access denied error: {}", accessDeniedException.getMessage());
+        log.warn("Access denied for request: {} - {}", request.getRequestURI(), accessDeniedException.getMessage());
 
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
 
-        ApiResponse<Void> errorResponse = ApiResponse.of(
-                HttpStatus.FORBIDDEN,
-                "접근 권한이 없습니다.",
-                null
-        );
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", HttpServletResponse.SC_FORBIDDEN);
+        errorResponse.put("error", "Forbidden");
+        errorResponse.put("message", "Insufficient privileges to access this resource");
+        errorResponse.put("path", request.getRequestURI());
 
-        String json = objectMapper.writeValueAsString(errorResponse);
-        response.getWriter().write(json);
+        String jsonResponse = objectMapper.writeValueAsString(errorResponse);
+        response.getWriter().write(jsonResponse);
     }
 }
