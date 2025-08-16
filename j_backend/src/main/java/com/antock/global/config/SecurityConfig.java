@@ -9,16 +9,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -38,38 +40,50 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler)
-                )
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/WEB-INF/views/**").permitAll()
-                        .requestMatchers("/.well-known/**").permitAll()
-                        .requestMatchers("/favicon.ico").permitAll()
-                        .requestMatchers("/robots.txt").permitAll()
-                        .requestMatchers("/sitemap.xml").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/img/**").permitAll()
-                        .requestMatchers("/static/**", "/public/**", "/resources/**").permitAll()
-                        .requestMatchers("/assets/**", "/fonts/**", "/icons/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/debug/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/", "/home", "/index").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .requestMatchers("/members/join", "/members/login").permitAll()
                         .requestMatchers("/api/v1/members/join", "/api/v1/members/login").permitAll()
-                        .requestMatchers("/coseller/save").authenticated()
-                        .requestMatchers("/web/files/**").permitAll()
+                        .requestMatchers("/api/v1/corp/**").permitAll()
+                        .requestMatchers("/api/v1/region-stats/**").permitAll()
                         .requestMatchers("/api/v1/files/**").permitAll()
-                        .requestMatchers("/members/profile", "/members/admin/**").authenticated()
+                        .requestMatchers("/coseller/**").permitAll()
+                        .requestMatchers("/corp/**").permitAll()
+                        .requestMatchers("/region/**").permitAll()
+                        .requestMatchers("/web/files/**").permitAll()
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
+                .headers(headers -> headers
+                        .frameOptions().deny()
+                        .contentTypeOptions().and()
+                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                                .maxAgeInSeconds(31536000)
+                                .includeSubdomains(true)
+                                .preload(true)
+                        )
+                        .referrerPolicy(referrerConfig -> referrerConfig
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                        )
+                        .permissionsPolicy(permissionsConfig -> permissionsConfig
+                                .policy("camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=()")
+                        )
+                        .contentSecurityPolicy(cspConfig -> cspConfig
+                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self'; frame-ancestors 'none';")
+                        )
+                        .xssProtection(xssConfig -> xssConfig
+                                .headerValue("1; mode=block")
+                        )
+                );
 
         return http.build();
     }
@@ -77,10 +91,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("HEAD", "POST", "GET", "DELETE", "PUT", "PATCH"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
