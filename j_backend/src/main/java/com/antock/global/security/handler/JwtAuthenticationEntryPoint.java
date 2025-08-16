@@ -1,48 +1,47 @@
 package com.antock.global.security.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
-@Component
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper objectMapper;
 
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
+                         AuthenticationException authException) throws IOException, ServletException {
 
-        log.error("Unauthorized error: {}", authException.getMessage());
-        log.error("Request URI: {}", request.getRequestURI());
-        log.error("Request Method: {}", request.getMethod());
+        log.warn("Unauthorized access attempt: {} - {}", request.getRequestURI(), authException.getMessage());
 
-        String requestURI = request.getRequestURI();
-        String acceptHeader = request.getHeader("Accept");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
 
-        boolean isApiRequest = requestURI.startsWith("/api/") ||
-                (acceptHeader != null && acceptHeader.contains("application/json"))||
-                requestURI.startsWith("/coseller/");
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+        errorResponse.put("error", "Unauthorized");
+        errorResponse.put("message", "Authentication required to access this resource");
+        errorResponse.put("path", request.getRequestURI());
 
-        if (isApiRequest) {
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-            String jsonResponse = """
-                {
-                    "resultCode": 401,
-                    "resultMsg": "인증이 필요합니다.",
-                    "data": null
-                }
-                """;
-            response.getWriter().write(jsonResponse);
-        } else {
-            response.sendRedirect("/members/login");
-        }
+        String jsonResponse = objectMapper.writeValueAsString(errorResponse);
+        response.getWriter().write(jsonResponse);
     }
 }
