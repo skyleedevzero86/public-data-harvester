@@ -19,6 +19,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,7 +83,11 @@ public class JwtTokenProvider {
             log.warn("JWT secret key is too short. Recommended minimum length is 32 bytes.");
             byte[] paddedKey = new byte[64];
             System.arraycopy(keyBytes, 0, paddedKey, 0, keyBytes.length);
-            secureRandom.nextBytes(paddedKey, keyBytes.length, paddedKey.length - keyBytes.length);
+
+            byte[] remainingBytes = new byte[paddedKey.length - keyBytes.length];
+            secureRandom.nextBytes(remainingBytes);
+            System.arraycopy(remainingBytes, 0, paddedKey, keyBytes.length, remainingBytes.length);
+
             return Keys.hmacShaKeyFor(paddedKey);
         }
 
@@ -214,14 +219,24 @@ public class JwtTokenProvider {
 
     private SecretKey getSecretKeyFromToken(String token) {
         try {
-            String keyId = Jwts.parserBuilder()
-                    .build()
-                    .parseClaimsJws(token)
-                    .getHeader()
-                    .get("kid", String.class);
 
-            if (keyId != null && rotatedKeys.containsKey(keyId)) {
-                return rotatedKeys.get(keyId);
+            String[] chunks = token.split("\\.");
+            if (chunks.length < 2) {
+                return secretKey;
+            }
+
+            String headerJson = new String(java.util.Base64.getUrlDecoder().decode(chunks[0]));
+
+            if (headerJson.contains("\"kid\"")) {
+                String kidPattern = "\"kid\"\\s*:\\s*\"([^\"]+)\"";
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(kidPattern);
+                java.util.regex.Matcher matcher = pattern.matcher(headerJson);
+                if (matcher.find()) {
+                    String keyId = matcher.group(1);
+                    if (rotatedKeys.containsKey(keyId)) {
+                        return rotatedKeys.get(keyId);
+                    }
+                }
             }
 
             return secretKey;
@@ -236,23 +251,19 @@ public class JwtTokenProvider {
         try {
             Claims claims = parseClaims(token);
 
-            // Check if token is expired
             if (claims.getExpiration().before(new Date())) {
                 return false;
             }
 
-            // Check if token is not yet valid
             if (claims.getNotBefore().after(new Date())) {
                 return false;
             }
 
-            // Validate issuer
             if (!issuer.equals(claims.getIssuer())) {
                 log.warn("Invalid JWT issuer: expected {}, got {}", issuer, claims.getIssuer());
                 return false;
             }
 
-            // Validate audience
             if (!audience.equals(claims.getAudience())) {
                 log.warn("Invalid JWT audience: expected {}, got {}", audience, claims.getAudience());
                 return false;
@@ -313,7 +324,7 @@ public class JwtTokenProvider {
     public String getTokenType(String token) {
         try {
             Claims claims = parseClaims(token);
-            return claims.get("tokenType", String.class);
+            return (String) claims.get("tokenType");
         } catch (Exception e) {
             return null;
         }

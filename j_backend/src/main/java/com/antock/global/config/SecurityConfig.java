@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -64,25 +66,24 @@ public class SecurityConfig {
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
                 .headers(headers -> headers
-                        .frameOptions().deny()
-                        .contentTypeOptions().and()
+                        .frameOptions(frameOptions -> frameOptions.deny())
+                        .contentTypeOptions(contentTypeOptions -> {})
                         .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                                 .maxAgeInSeconds(31536000)
-                                .includeSubdomains(true)
+                                .includeSubDomains(true)
                                 .preload(true)
                         )
                         .referrerPolicy(referrerConfig -> referrerConfig
                                 .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
                         )
-                        .permissionsPolicy(permissionsConfig -> permissionsConfig
-                                .policy("camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=()")
-                        )
                         .contentSecurityPolicy(cspConfig -> cspConfig
                                 .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self'; frame-ancestors 'none';")
                         )
                         .xssProtection(xssConfig -> xssConfig
-                                .headerValue("1; mode=block")
+                                .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
                         )
+                        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                                "camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=()"))
                 );
 
         return http.build();
