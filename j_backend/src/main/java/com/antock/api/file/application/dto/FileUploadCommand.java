@@ -17,4 +17,5 @@ public class FileUploadCommand {
     private String description;
     private Long uploaderId;
     private String uploaderName;
+    private String username;
 }

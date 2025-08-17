@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +25,6 @@ public class JpaCorpMastStore implements CorpMastStore {
 
     @Override
     public void saveAll(List<CorpMast> entityList) {
-
         corpMastRepository.saveAll(entityList);
     }
 
@@ -36,5 +36,10 @@ public class JpaCorpMastStore implements CorpMastStore {
     @Override
     public Optional<CorpMast> findByBizNo(String bizNo) {
         return corpMastRepository.findByBizNo(bizNo);
+    }
+
+    @Override
+    public List<String> findExistingBizNos(List<String> bizNos) {
+        return corpMastRepository.findBizNosByBizNoIn(bizNos);
     }
 }

@@ -4,21 +4,23 @@ import com.antock.api.file.application.dto.FileResponse;
 import com.antock.api.file.application.dto.FileUpdateCommand;
 import com.antock.api.file.application.dto.FileUploadCommand;
 import com.antock.api.file.application.service.FileApplicationService;
-import com.antock.global.config.CsvTemplateConfig;
+import com.antock.api.file.application.service.FileValidationService;
+import com.antock.global.common.response.ApiResponse;
+import com.antock.global.security.annotation.CurrentUser;
+import com.antock.global.security.dto.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+
 import java.util.List;
 
 @Slf4j
@@ -28,110 +30,124 @@ import java.util.List;
 public class FileApiController {
 
     private final FileApplicationService fileApplicationService;
+    private final FileValidationService fileValidationService;
 
-    @Autowired
-    private CsvTemplateConfig csvTemplateConfig;
-
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FileResponse> uploadFile(
+    @PostMapping("/upload")
+    public ApiResponse<FileResponse> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "description", required = false) String description) {
+            @RequestParam(value = "description", required = false) String description,
+            @CurrentUser AuthenticatedUser user) {
+
         try {
+            fileValidationService.validateUploadFile(file);
+
             FileUploadCommand command = FileUploadCommand.builder()
                     .file(file)
                     .description(description)
+                    .uploaderId(user.getId())
+                    .uploaderName(user.getNickname())
+                    .username(user.getUsername())
                     .build();
 
             FileResponse response = fileApplicationService.uploadFile(command);
-            return ResponseEntity.ok(response);
+
+            log.info("File uploaded successfully: {}", response.getOriginalFileName());
+            return ApiResponse.success(response, "파일이 성공적으로 업로드되었습니다.");
+
         } catch (Exception e) {
-            log.error("파일 업로드 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("File upload failed: {}", e.getMessage(), e);
+            return ApiResponse.error("파일 업로드에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{fileId}")
+    public ApiResponse<FileResponse> getFileInfo(@PathVariable Long fileId) {
+        try {
+            FileResponse response = fileApplicationService.getFileById(fileId);
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            log.error("Failed to get file info for ID {}: {}", fileId, e.getMessage(), e);
+            return ApiResponse.error("파일 정보 조회에 실패했습니다: " + e.getMessage());
         }
     }
 
     @GetMapping
-    public ResponseEntity<List<FileResponse>> getAllFiles(
-            @RequestParam(value = "keyword", required = false) String keyword) {
+    public ApiResponse<List<FileResponse>> getFileList(Pageable pageable) {
         try {
-            List<FileResponse> files = keyword != null && !keyword.trim().isEmpty()
-                    ? fileApplicationService.searchFiles(keyword)
-                    : fileApplicationService.getAllFiles();
-            return ResponseEntity.ok(files);
+            List<FileResponse> files = fileApplicationService.getAllFiles();
+            return ApiResponse.success(files);
         } catch (Exception e) {
-            log.error("파일 목록 조회 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Failed to get file list: {}", e.getMessage(), e);
+            return ApiResponse.error("파일 목록 조회에 실패했습니다: " + e.getMessage());
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<FileResponse> getFileById(@PathVariable Long id) {
+    @PutMapping("/{fileId}")
+    public ApiResponse<FileResponse> updateFile(
+            @PathVariable Long fileId,
+            @Valid @RequestBody FileUpdateCommand command,
+            @CurrentUser AuthenticatedUser user) {
+
         try {
-            FileResponse file = fileApplicationService.getFileById(id);
-            return ResponseEntity.ok(file);
+            command.setId(fileId);
+            command.setUsername(user.getUsername());
+
+            FileResponse response = fileApplicationService.updateFileDescription(command);
+            log.info("File description updated successfully: {}", fileId);
+            return ApiResponse.success(response, "파일 설명이 성공적으로 수정되었습니다.");
+
         } catch (Exception e) {
-            log.error("파일 조회 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            log.error("Failed to update file description for ID {}: {}", fileId, e.getMessage(), e);
+            return ApiResponse.error("파일 설명 수정에 실패했습니다: " + e.getMessage());
         }
     }
 
-    @GetMapping("/download/{id}")
-    public ResponseEntity<InputStreamResource> downloadFile(@PathVariable Long id) {
-        try {
-            FileResponse fileMetadata = fileApplicationService.getFileById(id);
-            InputStreamResource resource = fileApplicationService.downloadFile(id);
+    @DeleteMapping("/{fileId}")
+    public ApiResponse<Void> deleteFile(
+            @PathVariable Long fileId,
+            @CurrentUser AuthenticatedUser user) {
 
-            String encodedFileName = URLEncoder.encode(
-                    fileMetadata.getOriginalFileName(),
-                    StandardCharsets.UTF_8
-            ).replaceAll("\\+", "%20");
+        try {
+            fileApplicationService.deleteFile(fileId);
+            log.info("File deleted successfully: {}", fileId);
+            return ApiResponse.successVoid("파일이 성공적으로 삭제되었습니다.");
+
+        } catch (Exception e) {
+            log.error("Failed to delete file with ID {}: {}", fileId, e.getMessage(), e);
+            return ApiResponse.error("파일 삭제에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{fileId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
+        try {
+            InputStreamResource resource = fileApplicationService.downloadFile(fileId);
+            FileResponse fileInfo = fileApplicationService.getFileById(fileId);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename*=UTF-8''" + encodedFileName)
-                    .contentType(MediaType.parseMediaType(fileMetadata.getContentType()))
-                    .contentLength(fileMetadata.getFileSize())
+                            "attachment; filename=\"" + fileInfo.getOriginalFileName() + "\"")
+                    .contentType(MediaType.parseMediaType(fileInfo.getContentType()))
+                    .contentLength(fileInfo.getFileSize())
                     .body(resource);
-        } catch (Exception e) {
-            log.error("파일 다운로드 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<FileResponse> updateFile(
-            @PathVariable Long id,
-            @RequestBody FileUpdateCommand command) {
-        try {
-            command.setId(id);
-            FileResponse response = fileApplicationService.updateFileDescription(command);
-            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("파일 업데이트 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
-        try {
-            fileApplicationService.deleteFile(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("파일 삭제 실패: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/template")
-    public ResponseEntity<Resource> downloadCsvTemplate() {
-        Resource resource = new ClassPathResource("CSVFile/" + csvTemplateConfig.getTemplateName());
-        if (!resource.exists()) {
+            log.error("Failed to download file with ID {}: {}", fileId, e.getMessage(), e);
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + csvTemplateConfig.getTemplateName() + "\"")
-                .contentType(MediaType.parseMediaType("text/csv"))
-                .body(resource);
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<List<FileResponse>> searchFiles(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "extension", required = false) String extension) {
+
+        try {
+            List<FileResponse> files = fileApplicationService.searchFiles(keyword);
+            return ApiResponse.success(files);
+        } catch (Exception e) {
+            log.error("Failed to search files: {}", e.getMessage(), e);
+            return ApiResponse.error("파일 검색에 실패했습니다: " + e.getMessage());
+        }
     }
 }

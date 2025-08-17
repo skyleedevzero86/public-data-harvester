@@ -1,6 +1,7 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -12,4 +13,6 @@ public interface CorpMastStore {
     boolean existsByBizNo(String bizNo);
 
     Optional<CorpMast> findByBizNo(String bizNo);
+
+    List<String> findExistingBizNos(List<String> bizNos);
 }
