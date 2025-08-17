@@ -6,6 +6,7 @@ import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
+import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.domain.Member;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
@@ -71,6 +72,31 @@ public class MemberApplicationService {
         return memberPasswordService.getTodayPasswordChangeCount(memberId);
     }
 
+    @Transactional(readOnly = true)
+    public PasswordStatusResponse getPasswordStatus(Long memberId) {
+        log.debug("비밀번호 상태 조회 요청 - memberId: {}", memberId);
+
+        try {
+            boolean isRequired = memberPasswordService.isPasswordChangeRequired(memberId);
+            boolean isRecommended = memberPasswordService.isPasswordChangeRecommended(memberId);
+            long todayChangeCount = memberPasswordService.getTodayPasswordChangeCount(memberId);
+
+            PasswordStatusResponse response = PasswordStatusResponse.builder()
+                    .isChangeRequired(isRequired)
+                    .isChangeRecommended(isRecommended)
+                    .todayChangeCount(todayChangeCount)
+                    .build();
+
+            log.debug("비밀번호 상태 조회 완료 - memberId: {}, required: {}, recommended: {}, todayCount: {}",
+                    memberId, isRequired, isRecommended, todayChangeCount);
+
+            return response;
+        } catch (Exception e) {
+            log.error("비밀번호 상태 조회 실패 - memberId: {}", memberId, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "비밀번호 상태 조회에 실패했습니다.");
+        }
+    }
+
     @Transactional
     public MemberResponse join(MemberJoinRequest request) {
         rateLimitService.checkRateLimit(request.getUsername(), "join");
@@ -106,7 +132,6 @@ public class MemberApplicationService {
             log.info("1단계: 캐시 무효화 완료 - memberId: {}", member.getId());
         }
 
-        // 실제 DB에서 현재 실패 횟수 조회
         Integer currentDbFailCount = memberDomainService.getCurrentLoginFailCount(member.getId());
         log.warn("2단계: 실제 DB 현재 실패 횟수: {}", currentDbFailCount);
 
@@ -114,7 +139,6 @@ public class MemberApplicationService {
                 member.getUsername(), member.getStatus(), member.getRole(),
                 member.getLoginFailCount(), currentDbFailCount, member.isLocked());
 
-        // 로그인 전 계정 상태 검증 (정지/잠금 확인)
         validateMemberStatus(member);
 
         boolean passwordMatches = passwordEncoder.matches(request.getPassword(), member.getPassword());
@@ -123,34 +147,27 @@ public class MemberApplicationService {
         if (!passwordMatches) {
             log.error("===== 🔥 로그인 실패 처리 시작 🔥 =====");
 
-            // ⭐ 중요: 별도 트랜잭션에서 로그인 실패 처리 (롤백 방지)
             try {
                 memberDomainService.handleLoginFailureInNewTransaction(member.getId(), currentDbFailCount);
                 log.error("===== 로그인 실패 처리 완료 =====");
             } catch (Exception e) {
                 log.error("로그인 실패 처리 중 오류: {}", e.getMessage(), e);
-                // 실패 처리가 실패해도 로그인은 실패로 처리
             }
 
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // ⭐ 로그인 성공 처리
         log.info("===== ✅ 로그인 성공 처리 시작 ✅ =====");
 
-        // 성공 시 실패 횟수 초기화
         try {
             memberDomainService.handleLoginSuccessInNewTransaction(member.getId());
         } catch (Exception e) {
             log.error("로그인 성공 처리 중 오류: {}", e.getMessage(), e);
-            // 성공 처리 실패해도 로그인은 성공
         }
 
-        // 최근 로그인 시간 업데이트
         member.updateLastLoginAt();
         memberDomainService.save(member);
 
-        // 성공 후 최신 정보로 다시 조회
         Member updatedMember = memberDomainService.findById(member.getId()).orElse(member);
 
         MemberResponse memberResponse = MemberResponse.from(updatedMember);
@@ -274,7 +291,6 @@ public class MemberApplicationService {
         return response;
     }
 
-    // 관리자용 계정 정지 해제 기능
     @Transactional
     public MemberResponse unlockMember(Long memberId) {
         log.info("관리자 계정 정지 해제 요청 - memberId: {}", memberId);
@@ -335,10 +351,8 @@ public class MemberApplicationService {
     }
 
     private void validateMemberStatus(Member member) {
-        // ⭐ 실제 DB에서 최신 상태 확인
         Integer dbFailCount = memberDomainService.getCurrentLoginFailCount(member.getId());
 
-        // DB에서 5회 이상 실패했으면 차단
         if (dbFailCount != null && dbFailCount >= 5) {
             log.warn("DB 기준 5회 실패로 계정 차단 - username: {}, DB 실패 횟수: {}",
                     member.getUsername(), dbFailCount);
@@ -375,6 +389,7 @@ public class MemberApplicationService {
 
         log.info("회원 탈퇴 처리 완료 - memberId: {}", memberId);
     }
+
     @Transactional(readOnly = true)
     public long countMembersByStatus(MemberStatus status) {
         return memberDomainService.countMembersByStatus(status);
@@ -388,5 +403,4 @@ public class MemberApplicationService {
 
         return members.map(MemberResponse::from);
     }
-
 }

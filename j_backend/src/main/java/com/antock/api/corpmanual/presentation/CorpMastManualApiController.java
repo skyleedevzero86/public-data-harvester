@@ -2,8 +2,8 @@ package com.antock.api.corpmanual.presentation;
 
 import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
-import com.antock.api.corpmanual.application.service.CorpMastManualExcelService;
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
+import com.antock.api.corpmanual.application.service.CorpMastManualExcelService;
 import com.antock.global.common.response.ApiResponse;
 import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
@@ -11,9 +11,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 import java.util.List;
 import java.util.Map;
 
@@ -31,16 +32,12 @@ public class CorpMastManualApiController {
             CorpMastManualRequest request,
             HttpServletResponse response,
             @CurrentUser AuthenticatedUser user) throws Exception {
-        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
-        String fileName = "법인목록_" + dateStr;
-        if (user != null && user.getUsername() != null) {
-            fileName += "_" + user.getNickname() + "(" + user.getUsername() + ")";
-        }
-        fileName += ".xlsx";
-        fileName = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8);
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        log.info("엑셀 내보내기 요청: {}", request);
+
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"corp_data.xlsx\"");
 
         excelService.exportToExcel(request, response.getOutputStream());
     }
@@ -48,68 +45,89 @@ public class CorpMastManualApiController {
     @GetMapping("/search")
     public ApiResponse<Page<CorpMastManualResponse>> search(
             @ModelAttribute CorpMastManualRequest searchRequest) {
+
+        log.info("법인 검색 요청: {}", searchRequest);
         Page<CorpMastManualResponse> result = corpMastService.search(searchRequest);
-        return ApiResponse.of(HttpStatus.OK, result);
+        return ApiResponse.success(result);
     }
 
     @GetMapping("/{id}")
     public ApiResponse<CorpMastManualResponse> getById(@PathVariable Long id) {
+        log.info("법인 정보 조회 요청 - ID: {}", id);
 
-        log.debug("API 법인 상세 조회 요청: ID = {}", id);
-
-        CorpMastManualResponse result = corpMastService.getById(id);
-
-        return ApiResponse.of(HttpStatus.OK, result);
+        try {
+            CorpMastManualResponse result = corpMastService.getById(id);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            log.error("법인 정보 조회 실패 - ID: {}", id, e);
+            return ApiResponse.error("법인 정보를 찾을 수 없습니다.");
+        }
     }
 
     @GetMapping("/bizno/{bizNo}")
     public ApiResponse<CorpMastManualResponse> getByBizNo(@PathVariable String bizNo) {
+        log.info("사업자번호로 법인 정보 조회 요청: {}", bizNo);
 
-        log.debug("API 사업자번호 조회 요청: bizNo = {}", bizNo);
-
-        CorpMastManualResponse result = corpMastService.getByBizNo(bizNo);
-
-        return ApiResponse.of(HttpStatus.OK, result);
+        try {
+            CorpMastManualResponse result = corpMastService.getByBizNo(bizNo);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            log.error("사업자번호로 법인 정보 조회 실패: {}", bizNo, e);
+            return ApiResponse.error("해당 사업자번호의 법인 정보를 찾을 수 없습니다.");
+        }
     }
 
     @GetMapping("/regno/{corpRegNo}")
     public ApiResponse<CorpMastManualResponse> getByCorpRegNo(@PathVariable String corpRegNo) {
+        log.info("법인등록번호로 법인 정보 조회 요청: {}", corpRegNo);
 
-        log.debug("API 법인등록번호 조회 요청: corpRegNo = {}", corpRegNo);
-
-        CorpMastManualResponse result = corpMastService.getByCorpRegNo(corpRegNo);
-
-        return ApiResponse.of(HttpStatus.OK, result);
+        try {
+            CorpMastManualResponse result = corpMastService.getByCorpRegNo(corpRegNo);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            log.error("법인등록번호로 법인 정보 조회 실패: {}", corpRegNo, e);
+            return ApiResponse.error("해당 법인등록번호의 법인 정보를 찾을 수 없습니다.");
+        }
     }
 
     @GetMapping("/cities")
     public ApiResponse<List<String>> getCities() {
+        log.info("도시 목록 조회 요청");
 
-        log.debug("API 시/도 목록 조회 요청");
-
-        List<String> cities = corpMastService.getAllCities();
-
-        return ApiResponse.of(HttpStatus.OK, cities);
+        try {
+            List<String> cities = corpMastService.getAllCities();
+            return ApiResponse.success(cities);
+        } catch (Exception e) {
+            log.error("도시 목록 조회 실패", e);
+            return ApiResponse.error("도시 목록을 가져올 수 없습니다.");
+        }
     }
 
     @GetMapping("/districts/{city}")
     public ApiResponse<List<String>> getDistrictsByCity(@PathVariable String city) {
+        log.info("구/군 목록 조회 요청 - 도시: {}", city);
 
-        log.debug("API 구/군 목록 조회 요청: city = {}", city);
-
-        List<String> districts = corpMastService.getDistrictsByCity(city);
-
-        return ApiResponse.of(HttpStatus.OK, districts);
+        try {
+            List<String> districts = corpMastService.getDistrictsByCity(city);
+            return ApiResponse.success(districts);
+        } catch (Exception e) {
+            log.error("구/군 목록 조회 실패 - 도시: {}", city, e);
+            return ApiResponse.error("해당 도시의 구/군 목록을 가져올 수 없습니다.");
+        }
     }
 
     @GetMapping("/statistics")
     public ApiResponse<Map<String, Object>> getSearchStatistics(
             @ModelAttribute CorpMastManualRequest searchRequest) {
 
-        log.debug("API 검색 통계 조회 요청: {}", searchRequest);
+        log.info("검색 통계 요청: {}", searchRequest);
 
-        Map<String, Object> statistics = corpMastService.getSearchStatistics(searchRequest);
-
-        return ApiResponse.of(HttpStatus.OK, statistics);
+        try {
+            Map<String, Object> statistics = corpMastService.getSearchStatistics(searchRequest);
+            return ApiResponse.success(statistics);
+        } catch (Exception e) {
+            log.error("검색 통계 조회 실패", e);
+            return ApiResponse.error("검색 통계를 가져올 수 없습니다.");
+        }
     }
 }
