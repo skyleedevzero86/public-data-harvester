@@ -14,4 +14,5 @@ import lombok.NoArgsConstructor;
 public class FileUpdateCommand {
     private Long id;
     private String description;
+    private String username;
 }
