@@ -1,7 +1,6 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.infrastructure.CorpMastRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,5 +23,4 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpM
     long countValidCorpRegNo();
     @Query("SELECT COUNT(c) FROM CorpMast c WHERE c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%'")
     long countValidRegionCd();
-
 }

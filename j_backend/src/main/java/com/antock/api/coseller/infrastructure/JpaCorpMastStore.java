@@ -1,12 +1,12 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.domain.CorpMastRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -40,9 +40,6 @@ public class JpaCorpMastStore implements CorpMastStore {
 
     @Override
     public List<String> findExistingBizNos(List<String> bizNos) {
-        if (bizNos == null || bizNos.isEmpty()) {
-            return List.of();
-        }
         return corpMastRepository.findBizNosByBizNoIn(bizNos);
     }
 }

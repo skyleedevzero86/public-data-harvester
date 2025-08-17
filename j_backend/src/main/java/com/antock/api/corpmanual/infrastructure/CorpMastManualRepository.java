@@ -9,45 +9,42 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long>, CorpMastRepositoryCustom {
 
         @Query("SELECT c FROM CorpMast c " +
-                        "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) "
-                        +
-                        "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
-                        "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) "
-                        +
-                        "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
-                        "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
-                        "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
+                "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
+                "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
+                "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) " +
+                "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
+                "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
+                "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
         Page<CorpMast> findBySearchConditions(
-                        @Param("bizNm") String bizNm,
-                        @Param("bizNo") String bizNo,
-                        @Param("sellerId") String sellerId,
-                        @Param("corpRegNo") String corpRegNo,
-                        @Param("city") String city,
-                        @Param("district") String district,
-                        Pageable pageable);
+                @Param("bizNm") String bizNm,
+                @Param("bizNo") String bizNo,
+                @Param("sellerId") String sellerId,
+                @Param("corpRegNo") String corpRegNo,
+                @Param("city") String city,
+                @Param("district") String district,
+                Pageable pageable);
 
         @Query("SELECT COUNT(c) FROM CorpMast c " +
-                        "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) "
-                        +
-                        "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
-                        "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) "
-                        +
-                        "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
-                        "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
-                        "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
+                "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
+                "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
+                "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) " +
+                "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
+                "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
+                "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
         long countBySearchConditions(
-                        @Param("bizNm") String bizNm,
-                        @Param("bizNo") String bizNo,
-                        @Param("sellerId") String sellerId,
-                        @Param("corpRegNo") String corpRegNo,
-                        @Param("city") String city,
-                        @Param("district") String district);
+                @Param("bizNm") String bizNm,
+                @Param("bizNo") String bizNo,
+                @Param("sellerId") String sellerId,
+                @Param("corpRegNo") String corpRegNo,
+                @Param("city") String city,
+                @Param("district") String district);
 
         @Query("SELECT c FROM CorpMast c WHERE REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')")
         Optional<CorpMast> findByBizNo(@Param("bizNo") String bizNo);
@@ -64,27 +61,27 @@ public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long>,
         Page<CorpMast> findByBizNmContainingIgnoreCase(@Param("bizNm") String bizNm, Pageable pageable);
 
         @Query("SELECT DISTINCT c.sggNm FROM CorpMast c WHERE c.siNm = :city ORDER BY c.sggNm")
-        java.util.List<String> findDistinctDistrictsByCity(@Param("city") String city);
+        List<String> findDistinctDistrictsByCity(@Param("city") String city);
 
         @Query("SELECT DISTINCT c.siNm FROM CorpMast c ORDER BY c.siNm")
-        java.util.List<String> findDistinctCities();
+        List<String> findDistinctCities();
 
         Page<CorpMast> findByUsername(String username, Pageable pageable);
 
         @Query("SELECT c FROM CorpMast c WHERE " +
-                        "(:isAdmin = true OR c.username = :username) " +
-                        "AND (:bizNm IS NULL OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
-                        "AND (:bizNo IS NULL OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
-                        "AND (:corpRegNo IS NULL OR c.corpRegNo LIKE CONCAT('%', :corpRegNo, '%')) " +
-                        "AND (:siNm IS NULL OR c.siNm = :siNm) " +
-                        "AND (:sggNm IS NULL OR c.sggNm = :sggNm)")
+                "(:isAdmin = true OR c.username = :username) " +
+                "AND (:bizNm IS NULL OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
+                "AND (:bizNo IS NULL OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
+                "AND (:corpRegNo IS NULL OR c.corpRegNo LIKE CONCAT('%', :corpRegNo, '%')) " +
+                "AND (:siNm IS NULL OR c.siNm = :siNm) " +
+                "AND (:sggNm IS NULL OR c.sggNm = :sggNm)")
         Page<CorpMast> searchCorpMast(
-                        @Param("isAdmin") boolean isAdmin,
-                        @Param("username") String username,
-                        @Param("bizNm") String bizNm,
-                        @Param("bizNo") String bizNo,
-                        @Param("corpRegNo") String corpRegNo,
-                        @Param("siNm") String siNm,
-                        @Param("sggNm") String sggNm,
-                        Pageable pageable);
+                @Param("isAdmin") boolean isAdmin,
+                @Param("username") String username,
+                @Param("bizNm") String bizNm,
+                @Param("bizNo") String bizNo,
+                @Param("corpRegNo") String corpRegNo,
+                @Param("siNm") String siNm,
+                @Param("sggNm") String sggNm,
+                Pageable pageable);
 }

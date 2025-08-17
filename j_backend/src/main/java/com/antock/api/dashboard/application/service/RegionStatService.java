@@ -1,6 +1,6 @@
 package com.antock.api.dashboard.application.service;
 
-import com.antock.api.coseller.domain.CorpMastRepository;
+import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.dashboard.application.dto.RegionStatDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

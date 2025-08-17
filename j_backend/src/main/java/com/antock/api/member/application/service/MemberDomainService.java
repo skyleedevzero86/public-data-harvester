@@ -60,6 +60,12 @@ public class MemberDomainService {
         return memberOpt;
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Member> findByEmail(String email) {
+        log.debug("DB에서 이메일로 사용자 조회 시작: email={}", email);
+        return memberRepository.findByEmail(email);
+    }
+
     public Optional<Member> findById(Long id) {
         return memberRepository.findById(id);
     }
