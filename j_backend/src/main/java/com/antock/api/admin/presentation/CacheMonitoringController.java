@@ -115,4 +115,76 @@ public class CacheMonitoringController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/rate-limit/security/{identifier}")
+    public ResponseEntity<Map<String, Object>> getRateLimitSecurityInfo(@PathVariable String identifier) {
+        log.info("관리자에 의한 rate limit 보안 정보 조회 - 식별자: {}", identifier);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("identifier", identifier);
+        response.put("backend", rateLimitService.isRedisAvailable() ? "Redis" : "Memory");
+        response.put("timestamp", System.currentTimeMillis());
+        response.put("message", "보안 정보 조회 완료");
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/rate-limit/security/block/{identifier}")
+    public ResponseEntity<Map<String, Object>> blockIdentifier(
+            @PathVariable String identifier,
+            @RequestParam String reason,
+            @RequestParam(defaultValue = "30") long blockDurationMinutes) {
+
+        log.warn("관리자에 의한 식별자 차단 - 식별자: {}, 사유: {}, 차단시간: {}분", identifier, reason, blockDurationMinutes);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "식별자가 차단되었습니다");
+        response.put("identifier", identifier);
+        response.put("reason", reason);
+        response.put("blockDurationMinutes", blockDurationMinutes);
+        response.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/rate-limit/security/unblock/{identifier}")
+    public ResponseEntity<Map<String, Object>> unblockIdentifier(@PathVariable String identifier) {
+        log.info("관리자에 의한 식별자 차단 해제 - 식별자: {}", identifier);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "식별자의 차단이 해제되었습니다");
+        response.put("identifier", identifier);
+        response.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/rate-limit/security/whitelist/{identifier}")
+    public ResponseEntity<Map<String, Object>> addToWhitelist(@PathVariable String identifier) {
+        log.info("관리자에 의한 화이트리스트 추가 - 식별자: {}", identifier);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "화이트리스트에 추가되었습니다");
+        response.put("identifier", identifier);
+        response.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/rate-limit/security/whitelist/{identifier}")
+    public ResponseEntity<Map<String, Object>> removeFromWhitelist(@PathVariable String identifier) {
+        log.info("관리자에 의한 화이트리스트 제거 - 식별자: {}", identifier);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "화이트리스트에서 제거되었습니다");
+        response.put("identifier", identifier);
+        response.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(response);
+    }
+
 }

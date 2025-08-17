@@ -31,6 +31,8 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "S001", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "S002", "만료된 토큰입니다."),
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "S003", "요청 한도를 초과했습니다."),
+    IDENTIFIER_BLOCKED(HttpStatus.FORBIDDEN, "S004", "차단된 식별자입니다."),
+    SECURITY_VIOLATION(HttpStatus.FORBIDDEN, "S005", "보안 정책 위반이 감지되었습니다."),
 
     // 비밀번호 변경 관련 에러 코드
     INVALID_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "P001", "현재 비밀번호가 일치하지 않습니다."),

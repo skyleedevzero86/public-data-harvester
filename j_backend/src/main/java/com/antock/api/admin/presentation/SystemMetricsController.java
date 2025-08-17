@@ -66,6 +66,31 @@ public class SystemMetricsController {
         return ResponseEntity.ok(metrics);
     }
 
+    @GetMapping("/rate-limit/performance")
+    public ResponseEntity<Map<String, Object>> getRateLimitPerformanceMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+
+        boolean redisAvailable = rateLimitService.isRedisAvailable();
+        metrics.put("backend", redisAvailable ? "Redis" : "Memory");
+        metrics.put("redisHealth", redisAvailable ? "Healthy" : "Unavailable");
+        metrics.put("fallbackMode", !redisAvailable);
+        metrics.put("timestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(metrics);
+    }
+
+    @GetMapping("/security/overview")
+    public ResponseEntity<Map<String, Object>> getSecurityOverview() {
+        Map<String, Object> security = new HashMap<>();
+
+        security.put("rateLimitBackend", rateLimitService.isRedisAvailable() ? "Redis" : "Memory");
+        security.put("memoryFallbackActive", !rateLimitService.isRedisAvailable());
+        security.put("timestamp", System.currentTimeMillis());
+        security.put("status", "Active");
+
+        return ResponseEntity.ok(security);
+    }
+
     private long getSystemUptime() {
         return System.currentTimeMillis() -
                 java.lang.management.ManagementFactory.getRuntimeMXBean().getStartTime();

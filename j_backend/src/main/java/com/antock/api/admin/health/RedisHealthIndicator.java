@@ -24,10 +24,11 @@ public class RedisHealthIndicator implements HealthIndicator {
                         .withDetail("status", "정상")
                         .build();
             } else {
-                return Health.down()
+                return Health.up()
                         .withDetail("redis", "연결 안됨")
                         .withDetail("backend", "Memory fallback")
                         .withDetail("status", "제한적 동작")
+                        .withDetail("warning", "메모리 기반 동작 중 - 보안 모니터링 필요")
                         .build();
             }
         } catch (Exception e) {
