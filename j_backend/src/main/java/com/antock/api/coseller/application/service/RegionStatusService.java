@@ -1,7 +1,7 @@
 package com.antock.api.coseller.application.service;
 
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.infrastructure.CorpMastRepository;
+import com.antock.api.coseller.domain.CorpMastRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

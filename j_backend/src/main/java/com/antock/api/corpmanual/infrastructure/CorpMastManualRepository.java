@@ -1,6 +1,7 @@
 package com.antock.api.corpmanual.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
+import com.antock.api.coseller.infrastructure.CorpMastRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long> {
+public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long>, CorpMastRepositoryCustom {
 
         @Query("SELECT c FROM CorpMast c " +
                         "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) "
@@ -30,6 +31,23 @@ public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long> 
                         @Param("city") String city,
                         @Param("district") String district,
                         Pageable pageable);
+
+        @Query("SELECT COUNT(c) FROM CorpMast c " +
+                        "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) "
+                        +
+                        "AND (:bizNo IS NULL OR :bizNo = '' OR REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')) " +
+                        "AND (:sellerId IS NULL OR :sellerId = '' OR LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))) "
+                        +
+                        "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
+                        "AND (:city IS NULL OR :city = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:city))) " +
+                        "AND (:district IS NULL OR :district = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:district)))")
+        long countBySearchConditions(
+                        @Param("bizNm") String bizNm,
+                        @Param("bizNo") String bizNo,
+                        @Param("sellerId") String sellerId,
+                        @Param("corpRegNo") String corpRegNo,
+                        @Param("city") String city,
+                        @Param("district") String district);
 
         @Query("SELECT c FROM CorpMast c WHERE REPLACE(c.bizNo, '-', '') = REPLACE(:bizNo, '-', '')")
         Optional<CorpMast> findByBizNo(@Param("bizNo") String bizNo);

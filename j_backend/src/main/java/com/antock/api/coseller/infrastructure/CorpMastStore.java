@@ -12,4 +12,6 @@ public interface CorpMastStore {
     boolean existsByBizNo(String bizNo);
 
     Optional<CorpMast> findByBizNo(String bizNo);
+
+    List<String> findExistingBizNos(List<String> bizNos);
 }

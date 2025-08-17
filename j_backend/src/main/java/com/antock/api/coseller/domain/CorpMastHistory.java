@@ -1,11 +1,10 @@
 package com.antock.api.coseller.domain;
 
 import com.antock.global.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Builder;
@@ -27,4 +26,8 @@ public class CorpMastHistory extends BaseEntity {
     @Column
     private String message;
     private LocalDateTime timestamp;
+
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "corp_mast_id")
+    private CorpMast corpMast;
 }

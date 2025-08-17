@@ -1,6 +1,7 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
+import com.antock.api.coseller.domain.CorpMastRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,6 @@ public class JpaCorpMastStore implements CorpMastStore {
 
     @Override
     public void saveAll(List<CorpMast> entityList) {
-
         corpMastRepository.saveAll(entityList);
     }
 
@@ -36,5 +36,13 @@ public class JpaCorpMastStore implements CorpMastStore {
     @Override
     public Optional<CorpMast> findByBizNo(String bizNo) {
         return corpMastRepository.findByBizNo(bizNo);
+    }
+
+    @Override
+    public List<String> findExistingBizNos(List<String> bizNos) {
+        if (bizNos == null || bizNos.isEmpty()) {
+            return List.of();
+        }
+        return corpMastRepository.findBizNosByBizNoIn(bizNos);
     }
 }

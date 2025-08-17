@@ -1,7 +1,7 @@
 package com.antock.corp.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.infrastructure.CorpMastRepository;
+import com.antock.api.coseller.domain.CorpMastRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,7 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
+import com.antock.api.coseller.infrastructure.CorpMastRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,9 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpM
     Optional<CorpMast> findByBizNo(@Param("bizNo") String bizNo);
     List<CorpMast> findBySiNmAndSggNm(String siNm, String sggNm);
     List<CorpMast> findBySiNm(String siNm);
+
+    @Query("SELECT c.bizNo FROM CorpMast c WHERE c.bizNo IN :bizNos")
+    List<String> findBizNosByBizNoIn(@Param("bizNos") List<String> bizNos);
 
     long count();
     @Query("SELECT COUNT(c) FROM CorpMast c WHERE c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%'")
