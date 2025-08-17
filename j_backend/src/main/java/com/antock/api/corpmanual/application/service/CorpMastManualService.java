@@ -11,6 +11,7 @@ import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,6 +36,8 @@ public class CorpMastManualService {
 
     private final CorpMastManualRepository corpMastSearchRepository;
     private final CorpMastHistoryRepository corpMastHistoryRepository;
+
+    @Qualifier("applicationTaskExecutor")
     private final Executor asyncExecutor;
 
     @Cacheable(value = "corpMast", key = "#request.hashCode()")
@@ -274,6 +278,22 @@ public class CorpMastManualService {
 
     @Cacheable(value = "regionStats", key = "'all'")
     public List<com.antock.api.dashboard.application.dto.RegionStatDto> getRegionStats() {
-        return corpMastSearchRepository.getRegionStats();
+        List<Object[]> rawStats = corpMastSearchRepository.getRegionStats();
+
+        return rawStats.stream()
+                .map(this::convertToRegionStatDto)
+                .collect(Collectors.toList());
     }
+
+    private com.antock.api.dashboard.application.dto.RegionStatDto convertToRegionStatDto(Object[] rawData) {
+        String city = (String) rawData[0];
+        String district = (String) rawData[1];
+        Long totalCount = ((Number) rawData[2]).longValue();
+        Long validCorpRegNoCount = ((Number) rawData[3]).longValue();
+        Long validRegionCdCount = ((Number) rawData[4]).longValue();
+
+        return new com.antock.api.dashboard.application.dto.RegionStatDto(
+                city, district, totalCount, validCorpRegNoCount, validRegionCdCount);
+    }
+
 }
