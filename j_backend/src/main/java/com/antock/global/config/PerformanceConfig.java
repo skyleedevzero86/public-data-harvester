@@ -5,16 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Configuration
@@ -24,15 +20,6 @@ public class PerformanceConfig {
 
     private final SlowQueryInterceptor slowQueryInterceptor;
     private final DataSource dataSource;
-
-    private final ScheduledExecutorService performanceMonitor = Executors.newScheduledThreadPool(1);
-
-    @Bean
-    @Profile("dev")
-    public SlowQueryInterceptor slowQueryInterceptor() {
-        log.info("SlowQueryInterceptor enabled for development profile");
-        return new SlowQueryInterceptor();
-    }
 
     @Bean
     @ConditionalOnProperty(name = "app.performance.monitoring.enabled", havingValue = "true")
@@ -49,7 +36,6 @@ public class PerformanceConfig {
 
             log.info("Performance Metrics - Total Queries: {}, Slow Queries: {}, Slow Query %: {:.2f}%",
                     totalQueryCount, slowQueryCount, slowQueryPercentage);
-
 
             checkDatabaseConnection();
 
