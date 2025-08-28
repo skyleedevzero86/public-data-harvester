@@ -1,8 +1,8 @@
 package com.antock.global.security.resolver;
 
-import com.antock.api.member.application.service.AuthTokenService;
 import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
+import com.antock.global.security.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +22,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 @RequiredArgsConstructor
 public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
-    private final AuthTokenService authTokenService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -40,15 +40,26 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
 
             HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
             if (request != null) {
-                String token = extractTokenFromCookies(request);
+                String token = extractTokenFromRequest(request);
                 if (token != null) {
                     try {
-                        Claims claims = authTokenService.parseToken(token);
+                        if (!jwtTokenProvider.validateToken(token)) {
+                            log.warn("Invalid token provided for CurrentUser resolution");
+                            return null;
+                        }
+
+                        Claims claims = jwtTokenProvider.parseClaims(token);
+
+                        String tokenType = claims.get("type", String.class);
+                        if (!"ACCESS".equals(tokenType)) {
+                            log.warn("Invalid token type for CurrentUser: {}", tokenType);
+                            return null;
+                        }
 
                         AuthenticatedUser user = AuthenticatedUser.builder()
                                 .id(claims.get("id", Long.class))
                                 .username(claims.getSubject())
-                                .nickname((String) claims.get("nickname"))
+                                .nickname(claims.get("nickname", String.class))
                                 .role((String) claims.get("role"))
                                 .build();
 
@@ -66,7 +77,12 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
         return null;
     }
 
-    private String extractTokenFromCookies(HttpServletRequest request) {
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
@@ -75,6 +91,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
                 }
             }
         }
+
         return null;
     }
 }

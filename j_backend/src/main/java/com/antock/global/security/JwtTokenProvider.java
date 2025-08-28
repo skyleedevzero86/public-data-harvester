@@ -1,6 +1,5 @@
 package com.antock.global.security;
 
-import com.antock.api.member.domain.Member;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import io.jsonwebtoken.*;
@@ -16,10 +15,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +67,7 @@ public class JwtTokenProvider {
 
     private SecretKey generateSecretKey(String secretKeyString) {
         if (secretKeyString == null || secretKeyString.trim().isEmpty() ||
-                "default-secret-key-change-in-production".equals(secretKeyString)) {
+                "your-very-long-secret-key-that-should-be-at-least-64-characters-long-for-hs512-algorithm-security".equals(secretKeyString)) {
             log.warn("Using default JWT secret key. Please set JWT_SECRET_KEY environment variable in production!");
             byte[] keyBytes = new byte[64];
             secureRandom.nextBytes(keyBytes);
@@ -95,11 +91,11 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(String username, String role) {
-        return createToken(username, role, accessTokenValidityInMilliseconds, "access");
+        return createToken(username, role, accessTokenValidityInMilliseconds, "ACCESS");
     }
 
     public String createRefreshToken(String username, String role) {
-        return createToken(username, role, refreshTokenValidityInMilliseconds, "refresh");
+        return createToken(username, role, refreshTokenValidityInMilliseconds, "REFRESH");
     }
 
     private String createToken(String username, String role, long validityInMilliseconds, String tokenType) {
@@ -110,7 +106,7 @@ public class JwtTokenProvider {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
-        claims.put("tokenType", tokenType);
+        claims.put("type", tokenType);
         claims.put("keyId", getCurrentKeyId());
 
         return Jwts.builder()
@@ -219,7 +215,6 @@ public class JwtTokenProvider {
 
     private SecretKey getSecretKeyFromToken(String token) {
         try {
-
             String[] chunks = token.split("\\.");
             if (chunks.length < 2) {
                 return secretKey;
@@ -324,7 +319,7 @@ public class JwtTokenProvider {
     public String getTokenType(String token) {
         try {
             Claims claims = parseClaims(token);
-            return (String) claims.get("tokenType");
+            return (String) claims.get("type");
         } catch (Exception e) {
             return null;
         }
@@ -356,7 +351,7 @@ public class JwtTokenProvider {
             info.put("notBefore", claims.getNotBefore());
             info.put("id", claims.getId());
             info.put("role", claims.get("role"));
-            info.put("tokenType", claims.get("tokenType"));
+            info.put("type", claims.get("type"));
             info.put("keyId", claims.get("keyId"));
 
             return info;

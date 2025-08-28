@@ -42,23 +42,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = resolveToken(request);
 
             if (StringUtils.hasText(token)) {
-
                 if (jwtTokenProvider.validateToken(token)) {
-
                     String tokenType = jwtTokenProvider.getTokenType(token);
-                    if ("access".equals(tokenType)) {
-                        Authentication authentication = jwtTokenProvider.getAuthentication(token);
+
+                    if ("ACCESS".equals(tokenType)) {
+                        Authentication authentication = getAuthentication(token);
 
                         if (authentication != null && authentication.isAuthenticated()) {
                             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                            if (jwtTokenProvider.isTokenNearExpiration(token, 15)) {
-                                String username = jwtTokenProvider.getUsernameFromToken(token);
-                                log.warn("Access token for user '{}' will expire soon", username);
-                            }
                         }
                     } else {
-                        log.warn("Invalid token type: {}. Expected 'access' token", tokenType);
+                        log.warn("Invalid token type: {}. Expected 'ACCESS' token", tokenType);
+                        clearTokenCookie(response);
                     }
                 } else {
                     log.warn("Invalid JWT token provided");
@@ -76,7 +71,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
@@ -85,7 +79,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             Optional<Cookie> tokenCookie = Arrays.stream(cookies)
-                    .filter(cookie -> "access_token".equals(cookie.getName()))
+                    .filter(cookie -> "accessToken".equals(cookie.getName()))
                     .findFirst();
 
             if (tokenCookie.isPresent()) {
@@ -99,19 +93,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    private Authentication getAuthentication(String token) {
+        try {
+            String username = jwtTokenProvider.getUsernameFromToken(token);
+            if (username != null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to create authentication from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private void clearTokenCookie(HttpServletResponse response) {
-        Cookie accessTokenCookie = new Cookie("access_token", null);
+        Cookie accessTokenCookie = new Cookie("accessToken", null);
         accessTokenCookie.setMaxAge(0);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setSecure(false);
+        accessTokenCookie.setDomain(null);
         response.addCookie(accessTokenCookie);
 
-        Cookie refreshTokenCookie = new Cookie("refresh_token", null);
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
         refreshTokenCookie.setMaxAge(0);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setSecure(false);
+        refreshTokenCookie.setDomain(null);
         response.addCookie(refreshTokenCookie);
     }
 
@@ -126,6 +137,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/v1/members/join") ||
                 path.equals("/api/v1/members/login") ||
                 path.startsWith("/actuator/") ||
-                path.equals("/favicon.ico");
+                path.equals("/favicon.ico") ||
+                path.equals("/") ||
+                path.equals("/members/login") ||
+                path.equals("/members/join");
     }
 }

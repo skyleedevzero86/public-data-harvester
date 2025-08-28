@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,9 +26,18 @@ public class AuthTokenService {
             @Value("${custom.jwt.secretKey}") String secretKeyString,
             @Value("${custom.jwt.accessTokenExpirationSeconds}") long accessTokenExpirationSeconds,
             @Value("${custom.jwt.refreshTokenExpirationSeconds}") long refreshTokenExpirationSeconds) {
+
+        if (secretKeyString == null || secretKeyString.trim().isEmpty() ||
+                secretKeyString.length() < 32) {
+            log.error("JWT secret key is too short or empty. Minimum length required: 32 characters");
+            throw new IllegalArgumentException("JWT secret key must be at least 32 characters long");
+        }
+
         this.secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes());
         this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
+
+        log.info("AuthTokenService initialized with secure key length: {} bytes", secretKeyString.length());
     }
 
     public String generateAccessToken(Member member) {
@@ -37,7 +47,6 @@ public class AuthTokenService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", member.getId());
         claims.put("username", member.getUsername());
-        claims.put("nickname", member.getNickname());
         claims.put("role", member.getRole().name());
         claims.put("type", "ACCESS");
 
@@ -88,27 +97,70 @@ public class AuthTokenService {
             log.warn("Invalid JWT signature: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         } catch (IllegalArgumentException e) {
-            log.warn("JWT token compact of handler are invalid: {}", e.getMessage());
+            log.warn("JWT token is empty or invalid: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
     }
 
     public boolean validateToken(String token) {
         try {
-            parseToken(token);
+            Claims claims = parseToken(token);
+
+            String tokenType = claims.get("type", String.class);
+            if (tokenType == null || !"ACCESS".equals(tokenType)) {
+                log.warn("Invalid token type: {}", tokenType);
+                return false;
+            }
+
+            if (claims.getExpiration().before(new Date())) {
+                log.warn("Token has expired");
+                return false;
+            }
+
             return true;
         } catch (BusinessException e) {
+            log.warn("Token validation failed: {}", e.getMessage());
             return false;
         }
     }
 
     public Long getMemberIdFromToken(String token) {
-        Claims claims = parseToken(token);
-        return claims.get("id", Long.class);
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("id", Long.class);
+        } catch (Exception e) {
+            log.error("Failed to extract member ID from token: {}", e.getMessage());
+            return null;
+        }
     }
 
     public String getUsernameFromToken(String token) {
-        Claims claims = parseToken(token);
-        return claims.getSubject();
+        try {
+            Claims claims = parseToken(token);
+            return claims.getSubject();
+        } catch (Exception e) {
+            log.error("Failed to extract username from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String getRoleFromToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("role", String.class);
+        } catch (Exception e) {
+            log.error("Failed to extract role from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String getTokenType(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return (String) claims.get("type");
+        } catch (Exception e) {
+            log.error("Failed to extract token type from token: {}", e.getMessage());
+            return null;
+        }
     }
 }
