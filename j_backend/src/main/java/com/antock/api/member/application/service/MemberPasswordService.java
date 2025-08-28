@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,10 @@ public class MemberPasswordService {
 
     private static final int MAX_DAILY_PASSWORD_CHANGES = 3;
     private static final int PASSWORD_HISTORY_CHECK_COUNT = 5;
+
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    );
 
     @Transactional
     public void changePassword(Long memberId, MemberPasswordChangeRequest request) {
@@ -91,7 +96,19 @@ public class MemberPasswordService {
             throw new BusinessException(ErrorCode.SAME_AS_OLD_PASSWORD);
         }
 
+        if (!isValidPassword(request.getNewPassword())) {
+            log.warn("비밀번호 정책 위반 - 영문 대/소문자, 숫자, 특수문자를 포함해야 함");
+            throw new BusinessException(ErrorCode.WEAK_PASSWORD);
+        }
+
         log.debug("비밀번호 변경 요청 검증 완료");
+    }
+
+    private boolean isValidPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        return PASSWORD_PATTERN.matcher(password).matches();
     }
 
     private void validatePasswordHistory(Long memberId, String newPassword) {

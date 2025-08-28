@@ -3,27 +3,19 @@ package com.antock.web.member.presentation;
 import com.antock.api.member.application.dto.request.MemberJoinRequest;
 import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
 import com.antock.api.member.application.dto.request.MemberUpdateRequest;
-import com.antock.api.member.application.dto.request.MemberLoginRequest;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.PasswordMigrationService;
 import com.antock.api.member.value.MemberStatus;
-import com.antock.api.member.value.Role;
+import com.antock.api.member.application.dto.request.MemberLoginRequest;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import com.antock.global.security.JwtTokenProvider;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,6 +25,11 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -47,11 +44,10 @@ import java.util.stream.Collectors;
 public class MemberWebController {
 
     private final MemberApplicationService memberApplicationService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final PasswordMigrationService passwordMigrationService;
 
     @PostConstruct
-    public void initializePasswords() {
+    public void initPasswordMigration() {
         try {
             passwordMigrationService.migratePlainTextPasswords();
             log.info("비밀번호 마이그레이션 완료");
@@ -75,9 +71,9 @@ public class MemberWebController {
 
     @PostMapping("/members/join")
     public String processJoin(@Valid @ModelAttribute MemberJoinRequest joinRequest,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
-            Model model) {
+                              BindingResult bindingResult,
+                              RedirectAttributes redirectAttributes,
+                              Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("memberJoinRequest", joinRequest);
             return "member/join";
@@ -102,22 +98,23 @@ public class MemberWebController {
         }
     }
 
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/";
-    }
-
     @GetMapping("/members/login")
-    public String loginForm() {
+    public String loginForm(HttpServletRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !authentication.getName().equals("anonymousUser")) {
+            log.info("이미 로그인된 사용자가 로그인 페이지 접근 시도: {}", authentication.getName());
+            return "redirect:/";
+        }
         return "member/login";
     }
 
     @PostMapping("/members/login")
     public String processLogin(@RequestParam String username,
-            @RequestParam String password,
-            HttpServletResponse response,
-            RedirectAttributes redirectAttributes,
-            HttpServletRequest request) {
+                               @RequestParam String password,
+                               HttpServletResponse response,
+                               RedirectAttributes redirectAttributes,
+                               HttpServletRequest request) {
         try {
             log.info("웹 로그인 시도: username={}", username);
 
@@ -175,12 +172,10 @@ public class MemberWebController {
                 return "redirect:/members/login";
             }
 
-            MemberResponse member = memberApplicationService.getMemberInfo(memberId);
-
-            if (member.getStatus() == MemberStatus.WITHDRAWN) {
-                log.warn("탈퇴된 회원의 프로필 접근 시도 - memberId: {}", memberId);
-                SecurityContextHolder.clearContext();
-                return "redirect:/";
+            MemberResponse member = memberApplicationService.getCurrentMemberInfo(memberId);
+            if (member == null) {
+                log.error("회원 정보를 찾을 수 없음: memberId={}", memberId);
+                return "redirect:/members/login";
             }
 
             model.addAttribute("member", member);
@@ -206,9 +201,9 @@ public class MemberWebController {
 
     @PostMapping("/members/profile")
     public String updateProfile(@Valid @ModelAttribute MemberUpdateRequest updateRequest,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
-            Model model) {
+                                BindingResult bindingResult,
+                                RedirectAttributes redirectAttributes,
+                                Model model) {
         if (bindingResult.hasErrors()) {
             try {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -280,59 +275,44 @@ public class MemberWebController {
     @GetMapping("/members/admin/list")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String memberList(@PageableDefault(size = 20) Pageable pageable,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String role,
-            Model model) {
+                             @RequestParam(required = false) String status,
+                             @RequestParam(required = false) String role,
+                             Model model) {
         try {
             log.info("회원 목록 조회 시작 - status: {}, role: {}", status, role);
 
-            Page<MemberResponse> members;
-            if ((status != null && !status.isEmpty()) || (role != null && !role.isEmpty())) {
-                members = memberApplicationService.getMembersByStatusAndRole(status, role, pageable);
-            } else {
-                members = memberApplicationService.getMembers(pageable);
-            }
+            Page<MemberResponse> members = memberApplicationService.getMembersByStatusAndRole(status, role, pageable);
 
-            log.info("회원 목록 조회 완료 - 총 {}명, 현재 페이지 {}명",
-                    members.getTotalElements(), members.getContent().size());
-
-            model.addAttribute("memberViewList", members.getContent().stream()
+            List<MemberView> memberViewList = members.getContent().stream()
                     .map(member -> new MemberView(member))
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
 
-            model.addAttribute("currentPage", members.getNumber());
-            model.addAttribute("totalPages", members.getTotalPages());
-            model.addAttribute("totalElements", members.getTotalElements());
-            model.addAttribute("size", members.getSize());
-            model.addAttribute("hasNext", members.hasNext());
-            model.addAttribute("hasPrevious", members.hasPrevious());
-            model.addAttribute("isFirst", members.isFirst());
-            model.addAttribute("isLast", members.isLast());
+            model.addAttribute("memberViewList", memberViewList);
+            model.addAttribute("members", members);
+            model.addAttribute("selectedStatus", status);
+            model.addAttribute("selectedRole", role);
 
-            long totalMembers = memberApplicationService.countMembersByStatus(null);
-            long approvedMembers = memberApplicationService.countMembersByStatus(MemberStatus.APPROVED);
+            long totalMembers = memberApplicationService.countAllMembers();
             long pendingMembers = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
+            long approvedMembers = memberApplicationService.countMembersByStatus(MemberStatus.APPROVED);
             long rejectedMembers = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
             long suspendedMembers = memberApplicationService.countMembersByStatus(MemberStatus.SUSPENDED);
             long withdrawnMembers = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
 
             model.addAttribute("totalMembers", totalMembers);
-            model.addAttribute("approvedMembers", approvedMembers);
             model.addAttribute("pendingMembers", pendingMembers);
+            model.addAttribute("approvedMembers", approvedMembers);
             model.addAttribute("rejectedMembers", rejectedMembers);
             model.addAttribute("suspendedMembers", suspendedMembers);
             model.addAttribute("withdrawnMembers", withdrawnMembers);
 
-            model.addAttribute("statusList", MemberStatus.values());
-            model.addAttribute("roleList", Role.values());
-            model.addAttribute("selectedStatus", status);
-            model.addAttribute("selectedRole", role);
+            log.info("회원 목록 조회 완료 - 총 {}명, 표시 {}명", totalMembers, memberViewList.size());
 
             return "member/admin/list";
 
         } catch (Exception e) {
-            log.error("회원 목록 조회 실패: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "회원 목록을 불러오는 중 오류가 발생했습니다.");
+            log.error("회원 목록 조회 실패: {}", e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
             return "member/admin/list";
         }
     }
@@ -344,31 +324,24 @@ public class MemberWebController {
             log.info("승인 대기 회원 목록 조회 시작");
 
             Page<MemberResponse> pendingMembers = memberApplicationService.getPendingMembers(pageable);
-            log.info("조회된 승인 대기 회원 수: {}", pendingMembers.getTotalElements());
 
-            model.addAttribute("pendingMemberViewList", pendingMembers.getContent().stream()
+            List<MemberView> pendingMemberViewList = pendingMembers.getContent().stream()
                     .map(member -> new MemberView(member))
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
 
-            model.addAttribute("currentPage", pendingMembers.getNumber());
-            model.addAttribute("totalPages", pendingMembers.getTotalPages());
-            model.addAttribute("totalElements", pendingMembers.getTotalElements());
-            model.addAttribute("size", pendingMembers.getSize());
-            model.addAttribute("hasNext", pendingMembers.hasNext());
-            model.addAttribute("hasPrevious", pendingMembers.hasPrevious());
-            model.addAttribute("isFirst", pendingMembers.isFirst());
-            model.addAttribute("isLast", pendingMembers.isLast());
+            model.addAttribute("pendingMemberViewList", pendingMemberViewList);
+            model.addAttribute("pendingMembers", pendingMembers);
 
             long totalPendingCount = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
-            log.info("전체 승인 대기 회원 수: {}", totalPendingCount);
-
             model.addAttribute("totalPendingCount", totalPendingCount);
+
+            log.info("승인 대기 회원 목록 조회 완료 - 총 {}명, 표시 {}명", totalPendingCount, pendingMemberViewList.size());
 
             return "member/admin/pending";
 
         } catch (Exception e) {
-            log.error("승인 대기 회원 목록 조회 실패: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "승인 대기 회원 목록을 불러오는 중 오류가 발생했습니다.");
+            log.error("승인 대기 회원 목록 조회 실패: {}", e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
             return "member/admin/pending";
         }
     }
@@ -382,17 +355,16 @@ public class MemberWebController {
             Long approverId = memberApplicationService.getMemberIdByUsername(username);
 
             MemberResponse approvedMember = memberApplicationService.approveMember(memberId, approverId);
-            log.info("회원 승인 완료: memberId={}, approverId={}", memberId, approverId);
+            log.info("회원 승인 완료: memberId={}", memberId);
 
             redirectAttributes.addFlashAttribute("successMessage",
                     approvedMember.getUsername() + " 회원이 승인되었습니다.");
-
         } catch (Exception e) {
             log.error("회원 승인 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
-        return "redirect:/members/admin/pending";
+        return "redirect:/members/admin/list";
     }
 
     @PostMapping("/members/admin/{memberId}/reject")
@@ -404,13 +376,12 @@ public class MemberWebController {
 
             redirectAttributes.addFlashAttribute("successMessage",
                     rejectedMember.getUsername() + " 회원이 거부되었습니다.");
-
         } catch (Exception e) {
             log.error("회원 거부 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
-        return "redirect:/members/admin/pending";
+        return "redirect:/members/admin/list";
     }
 
     @PostMapping("/members/admin/{memberId}/reset-to-pending")
@@ -440,7 +411,6 @@ public class MemberWebController {
 
             redirectAttributes.addFlashAttribute("successMessage",
                     suspendedMember.getUsername() + " 회원이 정지되었습니다.");
-
         } catch (Exception e) {
             log.error("회원 정지 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -480,49 +450,39 @@ public class MemberWebController {
 
     @PostMapping("/members/password/change")
     public String changePassword(HttpServletRequest request,
-            @Valid @ModelAttribute("passwordChangeRequest") MemberPasswordChangeRequest passwordChangeRequest,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
-            Model model) {
-
-        if (bindingResult.hasErrors()) {
-            try {
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if (authentication != null && authentication.isAuthenticated()) {
-                    String username = authentication.getName();
-                    Long memberId = memberApplicationService.getMemberIdByUsername(username);
-                    if (memberId != null) {
-                        PasswordStatusResponse passwordStatus = memberApplicationService.getPasswordStatus(memberId);
-                        model.addAttribute("isPasswordChangeRequired", passwordStatus.isChangeRequired());
-                        model.addAttribute("isPasswordChangeRecommended", passwordStatus.isChangeRecommended());
-                        model.addAttribute("todayChangeCount", passwordStatus.getTodayChangeCount());
-                    }
-                }
-            } catch (Exception e) {
-                log.error("비밀번호 변경 실패 시 상태 조회 오류: {}", e.getMessage());
-            }
-
-            model.addAttribute("passwordChangeRequest", passwordChangeRequest);
-            model.addAttribute("org.springframework.validation.BindingResult.passwordChangeRequest", bindingResult);
-            return "member/password-change";
-        }
+                                 @Valid @ModelAttribute("passwordChangeRequest") MemberPasswordChangeRequest passwordChangeRequest,
+                                 BindingResult bindingResult,
+                                 RedirectAttributes redirectAttributes,
+                                 Model model) {
 
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
-                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "회원 정보를 찾을 수 없습니다.");
+                return "redirect:/members/login";
             }
 
             String username = authentication.getName();
             Long memberId = memberApplicationService.getMemberIdByUsername(username);
             if (memberId == null) {
-                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "회원 정보를 찾을 수 없습니다.");
+                return "redirect:/members/login";
+            }
+
+            PasswordStatusResponse passwordStatus = memberApplicationService.getPasswordStatus(memberId);
+
+            if (bindingResult.hasErrors()) {
+                model.addAttribute("passwordChangeRequest", passwordChangeRequest);
+                model.addAttribute("isPasswordChangeRequired", passwordStatus.isChangeRequired());
+                model.addAttribute("isPasswordChangeRecommended", passwordStatus.isChangeRecommended());
+                model.addAttribute("todayChangeCount", passwordStatus.getTodayChangeCount());
+                return "member/password-change";
             }
 
             memberApplicationService.changePassword(memberId, passwordChangeRequest);
-            log.info("비밀번호 변경 성공: memberId={}", memberId);
 
-            redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 성공적으로 변경되었습니다.");
+            log.info("비밀번호 변경 성공: username={}, memberId={}", username, memberId);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "비밀번호가 성공적으로 변경되었습니다.");
             return "redirect:/members/profile";
 
         } catch (Exception e) {
@@ -541,7 +501,7 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
-                log.error("비밀번호 변경 실패 후 상태 조회 오류: {}", ex.getMessage());
+                log.error("비밀번호 변경 실패 시 상태 조회 오류: {}", ex.getMessage());
             }
 
             model.addAttribute("passwordChangeRequest", passwordChangeRequest);

@@ -161,7 +161,7 @@ public class MemberDomainService {
         }
 
         if (member.isLocked()) {
-            member.resetLoginFailCount();
+            member.unlock();
         }
 
         return memberRepository.save(member);
@@ -199,7 +199,7 @@ public class MemberDomainService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Member forceUpdateLoginFail(Member member) {
+    public Member forceUpdateLoginFailCount(Member member) {
         try {
             log.debug("로그인 실패 카운트 강제 업데이트 시작: memberId={}, currentFailCount={}",
                     member.getId(), member.getLoginFailCount());
@@ -217,8 +217,7 @@ public class MemberDomainService {
                     member.getId(),
                     newFailCount,
                     status,
-                    lockedAt
-            );
+                    lockedAt);
 
             log.info("SQL 직접 업데이트 완료: memberId={}, updatedRows={}, newFailCount={}, status={}, lockedAt={}",
                     member.getId(), updatedRows, newFailCount, status, lockedAt);
@@ -238,14 +237,16 @@ public class MemberDomainService {
     }
 
     @Transactional
-    public void forceUpdateLoginFailCountBySql(Long memberId, Integer failCount, String status, LocalDateTime lockedAt) {
+    public void forceUpdateLoginFailCountBySql(Long memberId, Integer failCount, String status,
+                                               LocalDateTime lockedAt) {
         try {
             log.debug("SQL로 로그인 실패 카운트 업데이트: memberId={}, failCount={}, status={}, lockedAt={}",
                     memberId, failCount, status, lockedAt);
 
             int updatedRows = memberRepository.updateLoginFailBySql(memberId, failCount, status, lockedAt);
 
-            log.info("SQL 업데이트 완료: memberId={}, updatedRows={}", memberId, updatedRows);
+            log.info("SQL 업데이트 완료: memberId={}, updatedRows={}, failCount={}, status={}",
+                    memberId, updatedRows, failCount, status);
 
             if (updatedRows == 0) {
                 log.warn("업데이트된 행이 없음: memberId={}", memberId);
@@ -293,7 +294,6 @@ public class MemberDomainService {
             }
 
             int updatedRows = memberRepository.updateLoginFailBySql(memberId, newFailCount, status, lockedAt);
-
             log.info("로그인 실패 처리 완료: memberId={}, updatedRows={}, newFailCount={}, status={}",
                     memberId, updatedRows, newFailCount, status);
 
@@ -308,7 +308,7 @@ public class MemberDomainService {
         try {
             log.debug("새 트랜잭션에서 로그인 성공 처리: memberId={}", memberId);
 
-            int updatedRows = memberRepository.updateLoginFailCountOnly(memberId, 0);
+            int updatedRows = memberRepository.updateLoginSuccessBySql(memberId, LocalDateTime.now());
 
             log.info("로그인 성공 처리 완료: memberId={}, updatedRows={}", memberId, updatedRows);
 
@@ -322,19 +322,19 @@ public class MemberDomainService {
         MemberStatus status = null;
         Role role = null;
 
-        if (statusStr != null && !statusStr.isEmpty()) {
+        if (statusStr != null && !statusStr.trim().isEmpty()) {
             try {
                 status = MemberStatus.valueOf(statusStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid status value: {}", statusStr);
+                log.warn("Invalid status parameter: {}", statusStr);
             }
         }
 
-        if (roleStr != null && !roleStr.isEmpty()) {
+        if (roleStr != null && !roleStr.trim().isEmpty()) {
             try {
                 role = Role.valueOf(roleStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid role value: {}", roleStr);
+                log.warn("Invalid role parameter: {}", roleStr);
             }
         }
 
@@ -350,4 +350,7 @@ public class MemberDomainService {
         return memberRepository.save(member);
     }
 
+    public long countAllMembers() {
+        return memberRepository.count();
+    }
 }

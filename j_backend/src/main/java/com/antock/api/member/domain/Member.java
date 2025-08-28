@@ -75,7 +75,7 @@ public class Member extends BaseTimeEntity {
 
     @Column(name = "password_change_count")
     @Builder.Default
-    private int passwordChangeCount = 0;
+    private Integer passwordChangeCount = 0;
 
     @Column(name = "last_password_change_date")
     private LocalDate lastPasswordChangeDate;
@@ -89,13 +89,13 @@ public class Member extends BaseTimeEntity {
 
         LocalDate today = LocalDate.now();
         if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
-            this.lastPasswordChangeDate = today;
             this.passwordChangeCount = 1;
+            this.lastPasswordChangeDate = today;
         } else {
-            this.passwordChangeCount++;
+            this.passwordChangeCount = (this.passwordChangeCount == null ? 0 : this.passwordChangeCount) + 1;
         }
 
-        log.info("비밀번호 변경 완료 - memberId: {}, 새로운 passwordChangedAt: {}, 오늘 변경 횟수: {}",
+        log.info("비밀번호 변경 완료 - memberId: {}, passwordChangedAt: {}, 오늘 변경 횟수: {}",
                 getId(), this.passwordChangedAt, this.passwordChangeCount);
     }
 
@@ -104,12 +104,17 @@ public class Member extends BaseTimeEntity {
         if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
             return true;
         }
-        boolean canChange = this.passwordChangeCount < 3;
 
-        log.debug("비밀번호 변경 가능 여부 - memberId: {}, 오늘 변경 횟수: {}, 가능 여부: {}",
-                getId(), this.passwordChangeCount, canChange);
+        int maxDailyChanges = 3;
+        return this.passwordChangeCount == null || this.passwordChangeCount < maxDailyChanges;
+    }
 
-        return canChange;
+    public int getTodayPasswordChangeCount() {
+        LocalDate today = LocalDate.now();
+        if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
+            return 0;
+        }
+        return this.passwordChangeCount == null ? 0 : this.passwordChangeCount;
     }
 
     public boolean isPasswordChangeRequired() {
@@ -118,11 +123,11 @@ public class Member extends BaseTimeEntity {
             return true;
         }
 
-        LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
-        boolean isRequired = this.passwordChangedAt.isBefore(threeMonthsAgo);
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        boolean isRequired = this.passwordChangedAt.isBefore(thirtyDaysAgo);
 
-        log.debug("비밀번호 변경 필요 여부 - memberId: {}, passwordChangedAt: {}, 3개월 전: {}, 필요 여부: {}",
-                getId(), this.passwordChangedAt, threeMonthsAgo, isRequired);
+        log.debug("비밀번호 변경 필요 여부: memberId={}, passwordChangedAt={}, required={}",
+                getId(), this.passwordChangedAt, isRequired);
 
         return isRequired;
     }
@@ -133,11 +138,11 @@ public class Member extends BaseTimeEntity {
             return true;
         }
 
-        LocalDateTime twoMonthsAgo = LocalDateTime.now().minusMonths(2);
-        boolean isRecommended = this.passwordChangedAt.isBefore(twoMonthsAgo);
+        LocalDateTime fourteenDaysAgo = LocalDateTime.now().minusDays(14);
+        boolean isRecommended = this.passwordChangedAt.isBefore(fourteenDaysAgo);
 
-        log.debug("비밀번호 변경 권장 여부 - memberId: {}, passwordChangedAt: {}, 2개월 전: {}, 권장 여부: {}",
-                getId(), this.passwordChangedAt, twoMonthsAgo, isRecommended);
+        log.debug("비밀번호 변경 권장 여부: memberId={}, passwordChangedAt={}, recommended={}",
+                getId(), this.passwordChangedAt, isRecommended);
 
         return isRecommended;
     }
@@ -146,86 +151,8 @@ public class Member extends BaseTimeEntity {
         return this.username;
     }
 
-    public boolean isAdmin() {
-        return this.role == Role.ADMIN;
-    }
-
-    public boolean isApproved() {
-        return this.status == MemberStatus.APPROVED;
-    }
-
-    public boolean isActive() {
-        return this.status == MemberStatus.APPROVED && !isLocked();
-    }
-
-    public boolean isLocked() {
-        return this.loginFailCount >= 5 || this.status == MemberStatus.SUSPENDED;
-    }
-
-    public boolean matchPassword(String rawPassword) {
-        return PasswordUtils.matches(rawPassword, this.password);
-    }
-
-    public void approve(Long approverId) {
-        this.status = MemberStatus.APPROVED;
-        this.approvedBy = approverId;
-        this.approvedAt = LocalDateTime.now();
-        this.loginFailCount = 0;
-        this.accountLockedAt = null;
-    }
-
-    public void reject() {
-        this.status = MemberStatus.REJECTED;
-    }
-
-    public void suspend() {
-        this.status = MemberStatus.SUSPENDED;
-    }
-
-    public void increaseLoginFailCount() {
-        this.loginFailCount++;
-
-        if (this.loginFailCount >= 5) {
-            this.status = MemberStatus.SUSPENDED;
-            this.accountLockedAt = LocalDateTime.now();
-            log.warn("계정이 잠김 - memberId: {}, failCount: {}, lockedAt: {}",
-                    getId(), this.loginFailCount, this.accountLockedAt);
-        }
-
-        log.debug("로그인 실패 카운트 증가 - memberId: {}, failCount: {}, status: {}",
-                getId(), this.loginFailCount, this.status);
-    }
-
-    public void resetLoginFailCount() {
-        log.debug("로그인 실패 카운트 리셋 전 - memberId: {}, 이전 failCount: {}, 이전 status: {}",
-                getId(), this.loginFailCount, this.status);
-
-        this.loginFailCount = 0;
-        if (this.status == MemberStatus.SUSPENDED && this.accountLockedAt != null) {
-            this.status = MemberStatus.APPROVED;
-            this.accountLockedAt = null;
-        }
-
-        log.info("로그인 실패 카운트 리셋 완료 - memberId: {}, 새로운 failCount: {}, 새로운 status: {}",
-                getId(), this.loginFailCount, this.status);
-    }
-
-    public void updateLastLoginAt() {
-        this.lastLoginAt = LocalDateTime.now();
-    }
-
-    public void updateProfile(String nickname, String email) {
-        this.nickname = nickname;
-        this.email = email;
-    }
-
-    public void changeRole(Role role) {
-        this.role = role;
-    }
-
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
-
         authorities.add(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
 
         if (this.role == Role.ADMIN) {
@@ -238,24 +165,118 @@ public class Member extends BaseTimeEntity {
         return authorities;
     }
 
-    public void withdraw() {
-        this.status = MemberStatus.WITHDRAWN;
-        this.email = maskEmail(this.email);
+    public boolean isActive() {
+        boolean isStatusActive = this.status == MemberStatus.APPROVED;
+        boolean isNotLocked = !isLocked();
+
+        log.debug("회원 활성 상태 확인: memberId={}, status={}, isLocked={}, isActive={}",
+                getId(), this.status, isLocked(), isStatusActive && isNotLocked);
+
+        return isStatusActive && isNotLocked;
     }
 
-    private String maskEmail(String email) {
-        if (email == null || !email.contains("@")) {
-            return "***@***.***";
+    public boolean isLocked() {
+        return this.loginFailCount >= 5 || this.status == MemberStatus.SUSPENDED;
+    }
+
+    public boolean matchPassword(String rawPassword) {
+        return PasswordUtils.matches(rawPassword, this.password);
+    }
+
+    public void increaseLoginFailCount() {
+        this.loginFailCount = (this.loginFailCount == null ? 0 : this.loginFailCount) + 1;
+
+        if (this.loginFailCount >= 5) {
+            this.status = MemberStatus.SUSPENDED;
+            this.accountLockedAt = LocalDateTime.now();
+            log.warn("계정 잠금 처리: memberId={}, loginFailCount={}", getId(), this.loginFailCount);
         }
 
-        String[] parts = email.split("@");
+        log.debug("로그인 실패 카운트 증가: memberId={}, loginFailCount={}", getId(), this.loginFailCount);
+    }
+
+    public void resetLoginFailCount() {
+        this.loginFailCount = 0;
+        this.accountLockedAt = null;
+        log.debug("로그인 실패 카운트 초기화: memberId={}", getId());
+    }
+
+    public void updateProfile(String nickname, String email) {
+        this.nickname = nickname;
+        this.email = email;
+        log.info("프로필 업데이트: memberId={}, nickname={}, email={}", getId(), nickname, email);
+    }
+
+    public void approve(Long approverId) {
+        this.status = MemberStatus.APPROVED;
+        this.approvedBy = approverId;
+        this.approvedAt = LocalDateTime.now();
+        this.accountLockedAt = null;
+        this.loginFailCount = 0;
+        log.info("회원 승인: memberId={}, approverId={}, approvedAt={}", getId(), approverId, this.approvedAt);
+    }
+
+    public void reject() {
+        this.status = MemberStatus.REJECTED;
+        this.approvedBy = null;
+        this.approvedAt = null;
+        log.info("회원 거부: memberId={}", getId());
+    }
+
+    public void suspend() {
+        this.status = MemberStatus.SUSPENDED;
+        this.accountLockedAt = LocalDateTime.now();
+        log.info("회원 정지: memberId={}, accountLockedAt={}", getId(), this.accountLockedAt);
+    }
+
+    public void withdraw() {
+        this.status = MemberStatus.WITHDRAWN;
+        log.info("회원 탈퇴: memberId={}", getId());
+    }
+
+    public void changeRole(Role newRole) {
+        this.role = newRole;
+        log.info("회원 권한 변경: memberId={}, newRole={}", getId(), newRole);
+    }
+
+    public void unlock() {
+        if (this.status == MemberStatus.SUSPENDED) {
+            this.status = MemberStatus.APPROVED;
+        }
+        this.accountLockedAt = null;
+        this.loginFailCount = 0;
+        log.info("회원 잠금 해제: memberId={}", getId());
+    }
+
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+        log.debug("마지막 로그인 시간 업데이트: memberId={}, lastLoginAt={}", getId(), lastLoginAt);
+    }
+
+    public String getMaskedEmail() {
+        if (this.email == null || !this.email.contains("@")) {
+            return this.email;
+        }
+
+        String[] parts = this.email.split("@");
         String localPart = parts[0];
         String domainPart = parts[1];
 
-        String maskedLocal = localPart.length() > 2 ?
-                localPart.substring(0, 2) + "***" : "***";
-        String maskedDomain = "***." + (domainPart.contains(".") ?
-                domainPart.substring(domainPart.lastIndexOf(".") + 1) : "***");
+        String maskedLocal;
+        if (localPart.length() <= 2) {
+            maskedLocal = localPart.charAt(0) + "*";
+        } else {
+            maskedLocal = localPart.charAt(0) + "*".repeat(localPart.length() - 2)
+                    + localPart.charAt(localPart.length() - 1);
+        }
+
+        String maskedDomain;
+        if (domainPart.length() <= 2) {
+            maskedDomain = "*" + domainPart.charAt(domainPart.length() - 1);
+        } else {
+            maskedDomain = domainPart.charAt(0) + "*".repeat(domainPart.length() - 2)
+                    + domainPart.charAt(domainPart.length() - 1);
+        }
 
         return maskedLocal + "@" + maskedDomain;
     }
