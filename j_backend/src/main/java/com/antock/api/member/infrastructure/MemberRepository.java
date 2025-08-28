@@ -153,4 +153,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
     })
     List<com.antock.api.member.application.dto.response.MemberStatsDto> getMemberStats();
+
+    @Modifying
+    @Query(value = "UPDATE members SET login_fail_count = 0, last_login_at = :lastLoginAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+    int updateLoginSuccessBySql(@Param("memberId") Long memberId,
+                                @Param("lastLoginAt") LocalDateTime lastLoginAt);
 }

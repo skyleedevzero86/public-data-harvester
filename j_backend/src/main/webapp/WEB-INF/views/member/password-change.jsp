@@ -76,14 +76,6 @@
                         </div>
                     </c:if>
 
-                    <c:if test="${not empty bindingResult && bindingResult.hasGlobalErrors()}">
-                        <div class="alert alert-danger">
-                            <c:forEach var="error" items="${bindingResult.globalErrors}">
-                                <i class="bi bi-exclamation-triangle"></i> ${error.defaultMessage}<br>
-                            </c:forEach>
-                        </div>
-                    </c:if>
-
                     <div class="alert ${todayChangeCount >= 3 ? 'alert-danger' : 'alert-info'}">
                         <i class="bi bi-info-circle"></i>
                         <small>
@@ -95,12 +87,12 @@
                         </small>
                     </div>
 
-                    <form:form modelAttribute="passwordChangeRequest" method="post" id="passwordChangeForm">
+                    <form:form modelAttribute="passwordChangeRequest" method="post" id="passwordChangeForm" novalidate="true">
                         <div class="mb-3">
                             <label for="oldPassword" class="form-label">현재 비밀번호 <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <form:password path="oldPassword" class="form-control" id="oldPassword"
-                                               placeholder="현재 비밀번호를 입력하세요"
+                                <form:password path="oldPassword" class="form-control ${not empty bindingResult && bindingResult.hasFieldErrors('oldPassword') ? 'is-invalid' : ''}"
+                                               id="oldPassword" placeholder="현재 비밀번호를 입력하세요"
                                                disabled="${todayChangeCount >= 3}" />
                                 <button type="button" class="btn btn-outline-secondary"
                                         onclick="togglePassword('oldPassword')"
@@ -108,14 +100,14 @@
                                     <i class="bi bi-eye" id="oldPasswordIcon"></i>
                                 </button>
                             </div>
-                            <form:errors path="oldPassword" class="text-danger" />
+                            <form:errors path="oldPassword" class="invalid-feedback d-block" />
                         </div>
 
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">새 비밀번호 <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <form:password path="newPassword" class="form-control" id="newPassword"
-                                               placeholder="새 비밀번호를 입력하세요"
+                                <form:password path="newPassword" class="form-control ${not empty bindingResult && bindingResult.hasFieldErrors('newPassword') ? 'is-invalid' : ''}"
+                                               id="newPassword" placeholder="새 비밀번호를 입력하세요"
                                                disabled="${todayChangeCount >= 3}" />
                                 <button type="button" class="btn btn-outline-secondary"
                                         onclick="togglePassword('newPassword')"
@@ -124,16 +116,16 @@
                                 </button>
                             </div>
                             <div class="form-text">
-                                8-20자, 영문 대/소문자, 숫자, 특수문자(@$!%*?&) 포함
+                                8-20자, 영문 대/소문자, 숫자, 특수문자 포함 필요
                             </div>
-                            <form:errors path="newPassword" class="text-danger" />
+                            <form:errors path="newPassword" class="invalid-feedback d-block" />
                         </div>
 
                         <div class="mb-3">
                             <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인 <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <form:password path="newPasswordConfirm" class="form-control" id="newPasswordConfirm"
-                                               placeholder="새 비밀번호를 다시 입력하세요"
+                                <form:password path="newPasswordConfirm" class="form-control ${not empty bindingResult && bindingResult.hasFieldErrors('newPasswordConfirm') ? 'is-invalid' : ''}"
+                                               id="newPasswordConfirm" placeholder="새 비밀번호를 다시 입력하세요"
                                                disabled="${todayChangeCount >= 3}" />
                                 <button type="button" class="btn btn-outline-secondary"
                                         onclick="togglePassword('newPasswordConfirm')"
@@ -141,7 +133,7 @@
                                     <i class="bi bi-eye" id="newPasswordConfirmIcon"></i>
                                 </button>
                             </div>
-                            <form:errors path="newPasswordConfirm" class="text-danger" />
+                            <form:errors path="newPasswordConfirm" class="invalid-feedback d-block" />
                         </div>
 
                         <div class="mb-3">
@@ -152,14 +144,15 @@
                             <small class="form-text" id="passwordStrengthText">비밀번호를 입력하세요</small>
                         </div>
 
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
                             <small>
-                                <strong>보안 안내:</strong><br>
-                                • 비밀번호 변경 후 자동으로 로그아웃됩니다.<br>
-                                • 최근 사용한 5개 비밀번호는 재사용할 수 없습니다.<br>
-                                • 90일마다 비밀번호를 변경해주세요.<br>
-                                • 언제든 비밀번호 변경이 가능합니다 (일일 3회 제한).
+                                <strong>비밀번호 정책:</strong><br>
+                                • 길이: 8자 이상 20자 이하<br>
+                                • 포함 필수: 영문 대문자, 소문자, 숫자, 특수문자<br>
+                                • 사용 가능한 특수문자: !@#$%^&*(),.?":{}<>_+-=[]\;'`~<br>
+                                • 최근 5개 비밀번호는 재사용 불가<br>
+                                • 하루 최대 3회까지 변경 가능
                             </small>
                         </div>
 
@@ -212,12 +205,37 @@
 
         let strength = 0;
         let message = '';
+        let requirements = [];
 
-        if (password.length >= 8) strength++;
-        if (password.match(/[a-z]/)) strength++;
-        if (password.match(/[A-Z]/)) strength++;
-        if (password.match(/[0-9]/)) strength++;
-        if (password.match(/[@$!%*?&]/)) strength++;
+        if (password.length >= 8) {
+            strength++;
+        } else {
+            requirements.push('8자 이상');
+        }
+
+        if (password.match(/[a-z]/)) {
+            strength++;
+        } else {
+            requirements.push('영문 소문자');
+        }
+
+        if (password.match(/[A-Z]/)) {
+            strength++;
+        } else {
+            requirements.push('영문 대문자');
+        }
+
+        if (password.match(/[0-9]/)) {
+            strength++;
+        } else {
+            requirements.push('숫자');
+        }
+
+        if (password.match(/[!@#$%^&*(),.?":{}|<>_+=\[\]\\;'`~-]/)) {
+            strength++;
+        } else {
+            requirements.push('특수문자');
+        }
 
         switch(strength) {
             case 0:
@@ -248,7 +266,12 @@
                 break;
         }
 
+        if (requirements.length > 0) {
+            message += ' (필요: ' + requirements.join(', ') + ')';
+        }
+
         strengthText.textContent = message;
+        strengthText.className = strength === 5 ? 'form-text text-success' : 'form-text text-warning';
     });
 
     document.getElementById('newPasswordConfirm').addEventListener('input', function() {
@@ -268,7 +291,7 @@
         const todayChangeCount = ${todayChangeCount};
         if (todayChangeCount >= 3) {
             e.preventDefault();
-            alert('오늘은 더 이상 비밀번호를 변경할 수 없습니다.');
+            alert('오늘은 더 이상 비밀번호를 변경할 수 없습니다. (일일 3회 제한)');
             return false;
         }
 
@@ -280,6 +303,17 @@
             alert('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
             return false;
         }
+
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_+=\[\]\\;'`~-])[A-Za-z\d!@#$%^&*(),.?":{}|<>_+=\[\]\\;'`~-]{8,20}$/;
+        if (!passwordPattern.test(newPassword)) {
+            e.preventDefault();
+            alert('비밀번호는 8-20자이며, 영문 대/소문자, 숫자, 특수문자를 포함해야 합니다.');
+            return false;
+        }
+
+        const submitButton = document.getElementById('submitButton');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>변경 중...';
     });
 </script>
 </body>

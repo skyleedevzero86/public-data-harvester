@@ -8,18 +8,11 @@ import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.domain.Member;
-import com.antock.api.member.domain.MemberPasswordHistory;
-import com.antock.api.member.infrastructure.MemberRepository;
-import com.antock.api.member.infrastructure.MemberPasswordHistoryRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import com.antock.global.utils.PasswordUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CacheEvict;
@@ -51,12 +44,12 @@ public class MemberApplicationService {
 
     @Autowired
     public MemberApplicationService(MemberDomainService memberDomainService,
-            AuthTokenService authTokenService,
-            RateLimitServiceInterface rateLimitService,
-            @Autowired(required = false) MemberCacheService memberCacheService,
-            PasswordEncoder passwordEncoder,
-            MemberPasswordService memberPasswordService,
-            @Qualifier("applicationTaskExecutor") Executor asyncExecutor) {
+                                    AuthTokenService authTokenService,
+                                    RateLimitServiceInterface rateLimitService,
+                                    @Autowired(required = false) MemberCacheService memberCacheService,
+                                    PasswordEncoder passwordEncoder,
+                                    MemberPasswordService memberPasswordService,
+                                    @Qualifier("applicationTaskExecutor") Executor asyncExecutor) {
         this.memberDomainService = memberDomainService;
         this.authTokenService = authTokenService;
         this.rateLimitService = rateLimitService;
@@ -135,6 +128,9 @@ public class MemberApplicationService {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
+        member.updateLastLoginAt(LocalDateTime.now());
+        memberDomainService.save(member);
+
         String accessToken = authTokenService.generateAccessToken(member);
         String refreshToken = authTokenService.generateRefreshToken(member);
 
@@ -148,7 +144,8 @@ public class MemberApplicationService {
             }, asyncExecutor);
         }
 
-        log.info("로그인 성공: username={}, id={}", member.getUsername(), member.getId());
+        log.info("로그인 성공: username={}, id={}, lastLoginAt={}",
+                member.getUsername(), member.getId(), member.getLastLoginAt());
 
         return MemberLoginResponse.builder()
                 .member(MemberResponse.from(member))
@@ -230,6 +227,8 @@ public class MemberApplicationService {
 
         if (memberCacheService != null) {
             memberCacheService.evictMemberCache(memberId);
+            memberCacheService.cacheMemberResponse(MemberResponse.from(member));
+            memberCacheService.cacheMemberProfile(MemberResponse.from(member));
         }
 
         return MemberResponse.from(member);
@@ -243,8 +242,10 @@ public class MemberApplicationService {
     }
 
     public MemberCacheService.CacheStatistics getCacheStatistics() {
-        return memberCacheService != null ? memberCacheService.getCacheStatistics()
-                : new MemberCacheService.CacheStatistics(0, 0, 0, 0.0, 0, false);
+        if (memberCacheService != null) {
+            return memberCacheService.getCacheStatistics();
+        }
+        return new MemberCacheService.CacheStatistics(0, 0, 0, 0.0, 0, false);
     }
 
     @Transactional
@@ -281,6 +282,10 @@ public class MemberApplicationService {
     public void deleteMember(Long memberId) {
         Member member = memberDomainService.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (member.getRole() == Role.ADMIN) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "관리자는 삭제할 수 없습니다.");
+        }
 
         member.withdraw();
         memberDomainService.save(member);

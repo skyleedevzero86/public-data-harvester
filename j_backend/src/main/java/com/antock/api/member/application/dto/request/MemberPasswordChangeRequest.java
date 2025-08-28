@@ -16,15 +16,14 @@ import lombok.Setter;
 @Builder
 public class MemberPasswordChangeRequest {
 
-    @NotBlank(message = "현재 비밀번호는 필수입니다.")
+    @NotBlank
     private String oldPassword;
 
-    @NotBlank(message = "새 비밀번호는 필수입니다.")
-    @Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "비밀번호는 영문 대/소문자, 숫자, 특수문자를 포함해야 합니다.")
+    @NotBlank
+    @Size(min = 8, max = 20)
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_+=\\-\\[\\]\\\\;'`~])[A-Za-z\\d!@#$%^&*(),.?\":{}|<>_+=\\-\\[\\]\\\\;'`~]{8,}$")
     private String newPassword;
 
-    @NotBlank(message = "새 비밀번호 확인은 필수입니다.")
+    @NotBlank
     private String newPasswordConfirm;
 }
