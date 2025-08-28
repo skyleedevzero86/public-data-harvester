@@ -10,9 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,23 +26,32 @@ import java.util.UUID;
 public class MemberDomainService {
 
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Member createMember(String username, String password, String nickname, String email) {
         validateDuplicateUsername(username);
         validateDuplicateEmail(email);
 
+        String encodedPassword = passwordEncoder.encode(password);
+        log.info("회원가입 - 비밀번호 암호화 완료: username={}", username);
+
         Member member = Member.builder()
                 .username(username)
-                .password(password)
+                .password(encodedPassword)
                 .nickname(nickname)
                 .email(email)
                 .apiKey(generateApiKey())
                 .status(MemberStatus.PENDING)
                 .role(Role.USER)
+                .passwordChangedAt(LocalDateTime.now())
                 .build();
 
-        return memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
+        log.info("회원가입 완료: username={}, memberId={}, status={}",
+                username, savedMember.getId(), savedMember.getStatus());
+
+        return savedMember;
     }
 
     @Transactional(readOnly = true)
@@ -51,10 +62,10 @@ public class MemberDomainService {
 
         if (memberOpt.isPresent()) {
             Member member = memberOpt.get();
-            log.debug("DB 조회 결과 - memberId: {}, loginFailCount: {}, status: {}",
-                    member.getId(), member.getLoginFailCount(), member.getStatus());
+            log.debug("사용자 조회 성공: username={}, id={}, status={}, role={}",
+                    username, member.getId(), member.getStatus(), member.getRole());
         } else {
-            log.debug("DB에서 사용자를 찾을 수 없음: username={}", username);
+            log.debug("사용자를 찾을 수 없음: username={}", username);
         }
 
         return memberOpt;
@@ -62,7 +73,6 @@ public class MemberDomainService {
 
     @Transactional(readOnly = true)
     public Optional<Member> findByEmail(String email) {
-        log.debug("DB에서 이메일로 사용자 조회 시작: email={}", email);
         return memberRepository.findByEmail(email);
     }
 
@@ -83,10 +93,8 @@ public class MemberDomainService {
     }
 
     public List<Member> findPendingMembers() {
-        return memberRepository.findPendingMembersAfter(
-                MemberStatus.PENDING,
-                LocalDateTime.now().minusDays(30)
-        );
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        return memberRepository.findPendingMembersAfter(MemberStatus.PENDING, thirtyDaysAgo);
     }
 
     @Transactional
@@ -94,12 +102,13 @@ public class MemberDomainService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if (member.getStatus() != MemberStatus.PENDING && member.getStatus() != MemberStatus.REJECTED) {
-            throw new BusinessException(ErrorCode.INVALID_MEMBER_STATUS);
-        }
-
         member.approve(approverId);
-        return memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
+
+        log.info("회원 승인 완료: memberId={}, approverId={}, status={}",
+                memberId, approverId, savedMember.getStatus());
+
+        return savedMember;
     }
 
     @Transactional
@@ -117,7 +126,7 @@ public class MemberDomainService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         member.suspend();
-        return memberRepository.saveAndFlush(member);
+        return memberRepository.save(member);
     }
 
     @Transactional
@@ -147,20 +156,15 @@ public class MemberDomainService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        log.info("계정 정지 해제 시작 - memberId: {}, 현재 상태: {}, 실패 횟수: {}, 정지 시간: {}",
-                memberId, member.getStatus(), member.getLoginFailCount(), member.getAccountLockedAt());
+        if (member.getStatus() == MemberStatus.SUSPENDED) {
+            member.approve(null);
+        }
 
-        Integer beforeFailCount = member.getLoginFailCount();
-        MemberStatus beforeStatus = member.getStatus();
+        if (member.isLocked()) {
+            member.resetLoginFailCount();
+        }
 
-        member.resetLoginFailCount();
-        Member savedMember = memberRepository.saveAndFlush(member);
-
-        log.info("계정 정지 해제 완료 - memberId: {}, 상태: {} -> {}, 실패 횟수: {} -> {}, 정지 시간: {}",
-                memberId, beforeStatus, savedMember.getStatus(), beforeFailCount,
-                savedMember.getLoginFailCount(), savedMember.getAccountLockedAt());
-
-        return savedMember;
+        return memberRepository.save(member);
     }
 
     @Transactional
@@ -170,45 +174,25 @@ public class MemberDomainService {
 
     @Transactional
     public Member saveAndFlush(Member member) {
-        log.info("saveAndFlush 시작 - memberId: {}, loginFailCount: {}, status: {}",
-                member.getId(), member.getLoginFailCount(), member.getStatus());
-
-        try {
-
-            Member savedMember = memberRepository.saveAndFlush(member);
-
-            log.info("saveAndFlush 1단계 완료 - 저장된 loginFailCount: {}, status: {}",
-                    savedMember.getLoginFailCount(), savedMember.getStatus());
-
-            memberRepository.flush();
-
-            Member reloadedMember = memberRepository.findById(member.getId()).orElse(null);
-            if (reloadedMember != null) {
-                log.info("saveAndFlush 2단계 - 재조회 결과: loginFailCount={}, status={}",
-                        reloadedMember.getLoginFailCount(), reloadedMember.getStatus());
-                return reloadedMember;
-            }
-
-            return savedMember;
-
-        } catch (Exception e) {
-            log.error("saveAndFlush 실패 - memberId: {}, error: {}", member.getId(), e.getMessage(), e);
-            throw e;
-        }
+        return memberRepository.saveAndFlush(member);
     }
 
     @Transactional(readOnly = true)
     public Optional<Member> findByUsernameNoCache(String username) {
-        log.info("캐시 우회 DB 직접 조회: username={}", username);
+        log.debug("캐시 없이 DB에서 사용자 조회: username={}", username);
 
         Optional<Member> memberOpt = memberRepository.findByUsername(username);
 
         if (memberOpt.isPresent()) {
             Member member = memberOpt.get();
-            log.info("DB 직접 조회 결과 - memberId: {}, loginFailCount: {}, status: {}",
-                    member.getId(), member.getLoginFailCount(), member.getStatus());
+            log.debug("사용자 조회 성공 (캐시 없음): username={}, id={}, status={}, role={}, loginFailCount={}",
+                    username, member.getId(), member.getStatus(), member.getRole(), member.getLoginFailCount());
+
+            if (member.isLocked()) {
+                log.warn("계정 잠금 상태: username={}, lockedAt={}", username, member.getAccountLockedAt());
+            }
         } else {
-            log.warn("DB에서 사용자를 찾을 수 없음: username={}", username);
+            log.debug("사용자를 찾을 수 없음 (캐시 없음): username={}", username);
         }
 
         return memberOpt;
@@ -216,70 +200,58 @@ public class MemberDomainService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Member forceUpdateLoginFail(Member member) {
-        log.error("강제 로그인 실패 업데이트 시작 - memberId: {}", member.getId());
-
         try {
-            Member currentMember = memberRepository.findById(member.getId()).orElse(null);
-            if (currentMember != null) {
-                log.warn("업데이트 전 DB 상태 - loginFailCount: {}, status: {}",
-                        currentMember.getLoginFailCount(), currentMember.getStatus());
-            }
+            log.debug("로그인 실패 카운트 강제 업데이트 시작: memberId={}, currentFailCount={}",
+                    member.getId(), member.getLoginFailCount());
 
-            Integer beforeCount = member.getLoginFailCount();
-            log.warn("메모리 상태 - Before: {}, After: {}", beforeCount, member.getLoginFailCount());
+            Integer currentFailCountFromDb = memberRepository.getCurrentLoginFailCount(member.getId());
+            log.debug("DB에서 조회된 현재 실패 카운트: {}", currentFailCountFromDb);
 
-            Member savedMember = memberRepository.saveAndFlush(member);
-            log.error("1차 저장 완료 - savedFailCount: {}", savedMember.getLoginFailCount());
+            member.increaseLoginFailCount();
 
-            memberRepository.flush();
+            Integer newFailCount = member.getLoginFailCount();
+            String status = member.getStatus().name();
+            LocalDateTime lockedAt = member.getAccountLockedAt();
 
-            Member finalMember = memberRepository.findById(member.getId()).orElse(null);
-            if (finalMember != null) {
-                log.error("최종 DB 확인 - memberId: {}, loginFailCount: {}, status: {}, lockedAt: {}",
-                        finalMember.getId(), finalMember.getLoginFailCount(),
-                        finalMember.getStatus(), finalMember.getAccountLockedAt());
+            int updatedRows = memberRepository.updateLoginFailBySql(
+                    member.getId(),
+                    newFailCount,
+                    status,
+                    lockedAt
+            );
 
-                return finalMember;
-            }
+            log.info("SQL 직접 업데이트 완료: memberId={}, updatedRows={}, newFailCount={}, status={}, lockedAt={}",
+                    member.getId(), updatedRows, newFailCount, status, lockedAt);
 
-            return savedMember;
+            return member;
 
         } catch (Exception e) {
-            log.error("강제 업데이트 실패 - memberId: {}, error: {}", member.getId(), e.getMessage(), e);
+            log.error("로그인 실패 카운트 강제 업데이트 실패: memberId={}, error={}",
+                    member.getId(), e.getMessage(), e);
             throw e;
         }
     }
 
     @Transactional(readOnly = true)
     public Integer getCurrentLoginFailCount(Long memberId) {
-        Integer count = memberRepository.getCurrentLoginFailCount(memberId);
-        log.debug("DB에서 현재 로그인 실패 횟수 조회 - memberId: {}, count: {}", memberId, count);
-        return count;
+        return memberRepository.getCurrentLoginFailCount(memberId);
     }
 
     @Transactional
     public void forceUpdateLoginFailCountBySql(Long memberId, Integer failCount, String status, LocalDateTime lockedAt) {
-        log.error("원시 SQL로 강제 업데이트 - memberId: {}, failCount: {}, status: {}", memberId, failCount, status);
-
         try {
-
-            Integer beforeCount = memberRepository.getCurrentLoginFailCount(memberId);
-            log.warn("업데이트 전 DB 값: {}", beforeCount);
+            log.debug("SQL로 로그인 실패 카운트 업데이트: memberId={}, failCount={}, status={}, lockedAt={}",
+                    memberId, failCount, status, lockedAt);
 
             int updatedRows = memberRepository.updateLoginFailBySql(memberId, failCount, status, lockedAt);
-            log.error("원시 SQL 업데이트 완료 - 영향받은 행: {}", updatedRows);
 
-            Integer afterCount = memberRepository.getCurrentLoginFailCount(memberId);
-            log.error("업데이트 후 DB 값: {} -> {}", beforeCount, afterCount);
+            log.info("SQL 업데이트 완료: memberId={}, updatedRows={}", memberId, updatedRows);
 
-            if (!failCount.equals(afterCount)) {
-                log.error("업데이트 실패! 예상: {}, 실제: {}", failCount, afterCount);
-            } else {
-                log.info("업데이트 성공 확인");
+            if (updatedRows == 0) {
+                log.warn("업데이트된 행이 없음: memberId={}", memberId);
             }
-
         } catch (Exception e) {
-            log.error("원시 SQL 업데이트 실패: {}", e.getMessage(), e);
+            log.error("SQL 업데이트 실패: memberId={}, error={}", memberId, e.getMessage(), e);
             throw e;
         }
     }
@@ -306,53 +278,42 @@ public class MemberDomainService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleLoginFailureInNewTransaction(Long memberId, Integer currentFailCount) {
-        log.error("별도 트랜잭션에서 로그인 실패 처리 시작 - memberId: {}", memberId);
-
         try {
+            log.debug("새 트랜잭션에서 로그인 실패 처리: memberId={}, currentFailCount={}",
+                    memberId, currentFailCount);
 
-            Integer newFailCount = (currentFailCount != null ? currentFailCount : 0) + 1;
-            log.warn("새로운 실패 횟수 계산: {} -> {}", currentFailCount, newFailCount);
-
-            String newStatus = "APPROVED";
+            Integer newFailCount = currentFailCount + 1;
+            String status = MemberStatus.APPROVED.name();
             LocalDateTime lockedAt = null;
+
             if (newFailCount >= 5) {
-                newStatus = "SUSPENDED";
+                status = MemberStatus.SUSPENDED.name();
                 lockedAt = LocalDateTime.now();
-                log.error("5회 실패로 계정 정지 처리 ");
+                log.warn("계정 잠금 처리: memberId={}, failCount={}", memberId, newFailCount);
             }
 
-            int updatedRows = memberRepository.updateLoginFailBySql(memberId, newFailCount, newStatus, lockedAt);
-            log.error("원시 SQL 업데이트 완료 - 영향받은 행: {}", updatedRows);
+            int updatedRows = memberRepository.updateLoginFailBySql(memberId, newFailCount, status, lockedAt);
 
-            Integer finalDbFailCount = memberRepository.getCurrentLoginFailCount(memberId);
-            log.error("===== 최종 확인 - DB 실패 횟수: {} =====", finalDbFailCount);
-
-            if (newFailCount >= 5) {
-                log.error(" 계정 자동 정지 완료 - memberId: {}, 실패 횟수: {}",
-                        memberId, finalDbFailCount);
-            }
-
-            memberRepository.flush();
+            log.info("로그인 실패 처리 완료: memberId={}, updatedRows={}, newFailCount={}, status={}",
+                    memberId, updatedRows, newFailCount, status);
 
         } catch (Exception e) {
-            log.error("별도 트랜잭션 로그인 실패 처리 오류: {}", e.getMessage(), e);
+            log.error("로그인 실패 처리 중 오류: memberId={}, error={}", memberId, e.getMessage(), e);
             throw e;
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleLoginSuccessInNewTransaction(Long memberId) {
-        log.info("별도 트랜잭션에서 로그인 성공 처리 시작 - memberId: {}", memberId);
-
         try {
-            int updatedRows = memberRepository.updateLoginFailBySql(memberId, 0, "APPROVED", null);
-            log.info("성공 처리 SQL 업데이트 완료 - 영향받은 행: {}", updatedRows);
+            log.debug("새 트랜잭션에서 로그인 성공 처리: memberId={}", memberId);
 
-            memberRepository.flush();
+            int updatedRows = memberRepository.updateLoginFailCountOnly(memberId, 0);
+
+            log.info("로그인 성공 처리 완료: memberId={}, updatedRows={}", memberId, updatedRows);
 
         } catch (Exception e) {
-            log.error("별도 트랜잭션 로그인 성공 처리 오류: {}", e.getMessage(), e);
-            throw e;
+            log.error("로그인 성공 처리 중 오류: memberId={}, error={}", memberId, e.getMessage(), e);
         }
     }
 
@@ -361,12 +322,11 @@ public class MemberDomainService {
         MemberStatus status = null;
         Role role = null;
 
-
         if (statusStr != null && !statusStr.isEmpty()) {
             try {
                 status = MemberStatus.valueOf(statusStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                log.warn("잘못된 상태 값: {}", statusStr);
+                log.warn("Invalid status value: {}", statusStr);
             }
         }
 
@@ -374,11 +334,20 @@ public class MemberDomainService {
             try {
                 role = Role.valueOf(roleStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                log.warn("잘못된 권한 값: {}", roleStr);
+                log.warn("Invalid role value: {}", roleStr);
             }
         }
 
         return memberRepository.findByStatusAndRole(status, role, pageable);
+    }
+
+    @Transactional
+    public Member resetToPending(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.resetToPending();
+        return memberRepository.save(member);
     }
 
 }
