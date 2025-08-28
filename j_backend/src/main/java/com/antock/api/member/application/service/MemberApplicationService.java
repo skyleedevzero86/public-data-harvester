@@ -15,6 +15,7 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
+import com.antock.global.utils.PasswordUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -50,12 +51,12 @@ public class MemberApplicationService {
 
     @Autowired
     public MemberApplicationService(MemberDomainService memberDomainService,
-                                    AuthTokenService authTokenService,
-                                    RateLimitServiceInterface rateLimitService,
-                                    @Autowired(required = false) MemberCacheService memberCacheService,
-                                    PasswordEncoder passwordEncoder,
-                                    MemberPasswordService memberPasswordService,
-                                    @Qualifier("applicationTaskExecutor") Executor asyncExecutor) {
+            AuthTokenService authTokenService,
+            RateLimitServiceInterface rateLimitService,
+            @Autowired(required = false) MemberCacheService memberCacheService,
+            PasswordEncoder passwordEncoder,
+            MemberPasswordService memberPasswordService,
+            @Qualifier("applicationTaskExecutor") Executor asyncExecutor) {
         this.memberDomainService = memberDomainService;
         this.authTokenService = authTokenService;
         this.rateLimitService = rateLimitService;
@@ -111,8 +112,7 @@ public class MemberApplicationService {
                 request.getUsername(),
                 request.getPassword(),
                 request.getNickname(),
-                request.getEmail()
-        );
+                request.getEmail());
 
         log.info("회원가입 완료: username={}, id={}", member.getUsername(), member.getId());
 
@@ -134,8 +134,6 @@ public class MemberApplicationService {
             memberDomainService.handleLoginFailureInNewTransaction(member.getId(), member.getLoginFailCount());
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
-
-        memberDomainService.handleLoginSuccessInNewTransaction(member.getId());
 
         String accessToken = authTokenService.generateAccessToken(member);
         String refreshToken = authTokenService.generateRefreshToken(member);
@@ -197,35 +195,35 @@ public class MemberApplicationService {
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile", "pendingMembers"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile", "pendingMembers" }, allEntries = true)
     public MemberResponse approveMember(Long memberId, Long approverId) {
         Member member = memberDomainService.approveMember(memberId, approverId);
         return MemberResponse.from(member);
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile", "pendingMembers"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile", "pendingMembers" }, allEntries = true)
     public MemberResponse rejectMember(Long memberId) {
         Member member = memberDomainService.rejectMember(memberId);
         return MemberResponse.from(member);
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile" }, allEntries = true)
     public MemberResponse suspendMember(Long memberId) {
         Member member = memberDomainService.suspendMember(memberId);
         return MemberResponse.from(member);
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile" }, allEntries = true)
     public MemberResponse unlockMember(Long memberId) {
         Member member = memberDomainService.unlockMember(memberId);
         return MemberResponse.from(member);
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile"}, key = "#memberId")
+    @CacheEvict(value = { "member", "memberProfile" }, key = "#memberId")
     public MemberResponse updateProfile(Long memberId, MemberUpdateRequest request) {
         Member member = memberDomainService.updateMemberProfile(
                 memberId, request.getNickname(), request.getEmail());
@@ -238,7 +236,7 @@ public class MemberApplicationService {
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile" }, allEntries = true)
     public MemberResponse changeRole(Long memberId, Role role) {
         Member member = memberDomainService.changeRole(memberId, role);
         return MemberResponse.from(member);
@@ -250,7 +248,7 @@ public class MemberApplicationService {
     }
 
     @Transactional
-    @CacheEvict(value = {"member", "memberProfile", "memberList", "pendingMembers"}, allEntries = true)
+    @CacheEvict(value = { "member", "memberProfile", "memberList", "pendingMembers" }, allEntries = true)
     public void evictAllMemberCache() {
         if (memberCacheService != null) {
             memberCacheService.evictAllMemberCache();
@@ -298,6 +296,11 @@ public class MemberApplicationService {
     }
 
     @Transactional(readOnly = true)
+    public long countAllMembers() {
+        return memberDomainService.countAllMembers();
+    }
+
+    @Transactional(readOnly = true)
     public Page<MemberResponse> getMembersByStatusAndRole(String status, String role, Pageable pageable) {
         return memberDomainService.findMembersByStatusAndRole(status, role, pageable)
                 .map(MemberResponse::from);
@@ -310,5 +313,12 @@ public class MemberApplicationService {
         long todayChangeCount = memberPasswordService.getTodayPasswordChangeCount(memberId);
 
         return PasswordStatusResponse.of(isChangeRequired, isChangeRecommended, todayChangeCount);
+    }
+
+    @Transactional
+    @CacheEvict(value = { "member", "memberProfile" }, allEntries = true)
+    public MemberResponse resetToPending(Long memberId) {
+        Member member = memberDomainService.resetToPending(memberId);
+        return MemberResponse.from(member);
     }
 }

@@ -6,7 +6,6 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -102,12 +101,9 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
-        SecretKey currentKey = getCurrentSecretKey();
-
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         claims.put("type", tokenType);
-        claims.put("keyId", getCurrentKeyId());
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -117,128 +113,48 @@ public class JwtTokenProvider {
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .setNotBefore(now)
-                .setId(generateTokenId())
-                .signWith(currentKey, SignatureAlgorithm.forName(algorithm))
+                .signWith(secretKey, SignatureAlgorithm.forName(algorithm))
                 .compact();
-    }
-
-    private SecretKey getCurrentSecretKey() {
-        if (!keyRotationEnabled) {
-            return secretKey;
-        }
-
-        String currentKeyId = getCurrentKeyId();
-        return rotatedKeys.computeIfAbsent(currentKeyId, k -> {
-            log.info("Generating new rotated key with ID: {}", currentKeyId);
-            return generateSecretKey(null);
-        });
-    }
-
-    private String getCurrentKeyId() {
-        if (!keyRotationEnabled) {
-            return "default";
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        if (lastKeyRotation.plusHours(keyRotationIntervalHours).isBefore(now)) {
-            lastKeyRotation = now;
-            cleanupOldKeys();
-        }
-
-        return String.format("key_%d", lastKeyRotation.getHour() / keyRotationIntervalHours);
-    }
-
-    private void cleanupOldKeys() {
-        int maxKeysToKeep = 3;
-        if (rotatedKeys.size() > maxKeysToKeep) {
-            rotatedKeys.entrySet().removeIf(entry -> {
-                String keyId = entry.getKey();
-                if (!keyId.equals(getCurrentKeyId())) {
-                    log.debug("Removing old rotated key: {}", keyId);
-                    return true;
-                }
-                return false;
-            });
-        }
-    }
-
-    private String generateTokenId() {
-        byte[] randomBytes = new byte[16];
-        secureRandom.nextBytes(randomBytes);
-        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     public Authentication getAuthentication(String token) {
         try {
             Claims claims = parseClaims(token);
             String username = claims.getSubject();
-
-            if (username == null) {
-                throw new BusinessException(ErrorCode.INVALID_TOKEN);
+            if (username != null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
             }
-
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-
-        } catch (JwtException e) {
-            log.warn("JWT token parsing failed: {}", e.getMessage());
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to create authentication from token: {}", e.getMessage());
+            return null;
         }
     }
 
     public Claims parseClaims(String token) {
         try {
-            SecretKey key = getSecretKeyFromToken(token);
             return Jwts.parserBuilder()
-                    .setSigningKey(key)
+                    .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-
         } catch (ExpiredJwtException e) {
-            log.warn("JWT token expired: {}", e.getMessage());
+            log.warn("Expired JWT token: {}", e.getMessage());
             throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
         } catch (UnsupportedJwtException e) {
             log.warn("Unsupported JWT token: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         } catch (MalformedJwtException e) {
-            log.warn("Malformed JWT token: {}", e.getMessage());
+            log.warn("Invalid JWT token format: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         } catch (SecurityException e) {
-            log.warn("JWT signature validation failed: {}", e.getMessage());
+            log.warn("Invalid JWT signature: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         } catch (IllegalArgumentException e) {
-            log.warn("JWT token is empty: {}", e.getMessage());
+            log.warn("JWT token is empty or invalid: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
-        }
-    }
-
-    private SecretKey getSecretKeyFromToken(String token) {
-        try {
-            String[] chunks = token.split("\\.");
-            if (chunks.length < 2) {
-                return secretKey;
-            }
-
-            String headerJson = new String(java.util.Base64.getUrlDecoder().decode(chunks[0]));
-
-            if (headerJson.contains("\"kid\"")) {
-                String kidPattern = "\"kid\"\\s*:\\s*\"([^\"]+)\"";
-                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(kidPattern);
-                java.util.regex.Matcher matcher = pattern.matcher(headerJson);
-                if (matcher.find()) {
-                    String keyId = matcher.group(1);
-                    if (rotatedKeys.containsKey(keyId)) {
-                        return rotatedKeys.get(keyId);
-                    }
-                }
-            }
-
-            return secretKey;
-
-        } catch (Exception e) {
-            log.debug("Could not extract key ID from token, using default key");
-            return secretKey;
         }
     }
 
@@ -247,10 +163,12 @@ public class JwtTokenProvider {
             Claims claims = parseClaims(token);
 
             if (claims.getExpiration().before(new Date())) {
+                log.debug("Token has expired");
                 return false;
             }
 
-            if (claims.getNotBefore().after(new Date())) {
+            if (claims.getNotBefore() != null && claims.getNotBefore().after(new Date())) {
+                log.debug("Token is not yet valid");
                 return false;
             }
 
@@ -277,7 +195,7 @@ public class JwtTokenProvider {
             Claims claims = parseClaims(token);
             return claims.getSubject();
         } catch (Exception e) {
-            log.warn("Could not extract username from token: {}", e.getMessage());
+            log.error("Failed to extract username from token: {}", e.getMessage());
             return null;
         }
     }
@@ -287,7 +205,7 @@ public class JwtTokenProvider {
             Claims claims = parseClaims(token);
             return claims.getExpiration();
         } catch (Exception e) {
-            log.warn("Could not extract expiration date from token: {}", e.getMessage());
+            log.error("Failed to extract expiration date from token: {}", e.getMessage());
             return null;
         }
     }
@@ -305,14 +223,17 @@ public class JwtTokenProvider {
         try {
             Date expiration = getExpirationDateFromToken(token);
             if (expiration == null) {
-                return false;
+                return true;
             }
 
-            long thresholdMs = thresholdMinutes * 60 * 1000;
-            return (expiration.getTime() - System.currentTimeMillis()) <= thresholdMs;
+            long currentTime = System.currentTimeMillis();
+            long expirationTime = expiration.getTime();
+            long timeUntilExpiration = expirationTime - currentTime;
+            long thresholdMillis = thresholdMinutes * 60 * 1000;
 
+            return timeUntilExpiration <= thresholdMillis;
         } catch (Exception e) {
-            return false;
+            return true;
         }
     }
 
@@ -321,6 +242,7 @@ public class JwtTokenProvider {
             Claims claims = parseClaims(token);
             return (String) claims.get("type");
         } catch (Exception e) {
+            log.error("Failed to extract token type from token: {}", e.getMessage());
             return null;
         }
     }
@@ -331,33 +253,28 @@ public class JwtTokenProvider {
             return;
         }
 
-        String newKeyId = getCurrentKeyId();
+        String currentKeyId = String.valueOf(System.currentTimeMillis());
         SecretKey newKey = generateSecretKey(null);
-        rotatedKeys.put(newKeyId, newKey);
+        rotatedKeys.put(currentKeyId, newKey);
+        lastKeyRotation = LocalDateTime.now();
 
-        log.info("Secret key rotated successfully. New key ID: {}", newKeyId);
+        log.info("Secret key rotated successfully with ID: {}", currentKeyId);
     }
 
     public Map<String, Object> getTokenInfo(String token) {
         try {
             Claims claims = parseClaims(token);
-            Map<String, Object> info = new HashMap<>();
-
-            info.put("subject", claims.getSubject());
-            info.put("issuer", claims.getIssuer());
-            info.put("audience", claims.getAudience());
-            info.put("issuedAt", claims.getIssuedAt());
-            info.put("expiration", claims.getExpiration());
-            info.put("notBefore", claims.getNotBefore());
-            info.put("id", claims.getId());
-            info.put("role", claims.get("role"));
-            info.put("type", claims.get("type"));
-            info.put("keyId", claims.get("keyId"));
-
-            return info;
-
+            Map<String, Object> tokenInfo = new HashMap<>();
+            tokenInfo.put("subject", claims.getSubject());
+            tokenInfo.put("issuer", claims.getIssuer());
+            tokenInfo.put("audience", claims.getAudience());
+            tokenInfo.put("issuedAt", claims.getIssuedAt());
+            tokenInfo.put("expiration", claims.getExpiration());
+            tokenInfo.put("type", claims.get("type"));
+            tokenInfo.put("role", claims.get("role"));
+            return tokenInfo;
         } catch (Exception e) {
-            log.warn("Could not extract token info: {}", e.getMessage());
+            log.error("Failed to extract token info: {}", e.getMessage());
             return new HashMap<>();
         }
     }

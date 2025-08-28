@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/api/v1/files/**",
                                 "/api/v1/coseller/**",
                                 "/corp/**",
-                                "/coseller/**",
+                                "/coseller/manual",
                                 "/file/**",
                                 "/dashboard/**",
                                 "/region/**",
@@ -64,11 +64,15 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/WEB-INF/views/**",
                                 "/error",
-                                "/web/files/**"
+                                "/web/files/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/coseller/save").authenticated()
-                        .requestMatchers("/members/profile", "/members/admin/**").authenticated()
+                        .requestMatchers("/members/profile", "/members/admin/**", "/members/password/**").authenticated()
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -83,7 +87,7 @@ public class SecurityConfig {
                                         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
                                         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
                                         "img-src 'self' data: https:; " +
-                                        "font-src 'self'; " +
+                                        "font-src 'self' https://cdn.jsdelivr.net; " +
                                         "connect-src 'self'; " +
                                         "media-src 'self'; " +
                                         "object-src 'none'; " +

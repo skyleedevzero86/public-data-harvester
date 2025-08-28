@@ -38,31 +38,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        String requestURI = request.getRequestURI();
+        log.debug("Processing request: {} {}", request.getMethod(), requestURI);
+
         try {
             String token = resolveToken(request);
+            log.debug("Extracted token: {}", token != null ? "***" + token.substring(Math.max(0, token.length() - 10)) : "null");
 
             if (StringUtils.hasText(token)) {
                 if (jwtTokenProvider.validateToken(token)) {
                     String tokenType = jwtTokenProvider.getTokenType(token);
+                    log.debug("Token type: {}", tokenType);
 
                     if ("ACCESS".equals(tokenType)) {
                         Authentication authentication = getAuthentication(token);
 
                         if (authentication != null && authentication.isAuthenticated()) {
                             SecurityContextHolder.getContext().setAuthentication(authentication);
+                            log.debug("Authentication set for user: {}", authentication.getName());
+                        } else {
+                            log.warn("Failed to create authentication from token");
                         }
                     } else {
                         log.warn("Invalid token type: {}. Expected 'ACCESS' token", tokenType);
                         clearTokenCookie(response);
                     }
                 } else {
-                    log.warn("Invalid JWT token provided");
+                    log.warn("Invalid JWT token provided for request: {}", requestURI);
                     clearTokenCookie(response);
                 }
+            } else {
+                log.debug("No token found for request: {}", requestURI);
             }
 
         } catch (Exception e) {
-            log.error("JWT token processing error: {}", e.getMessage(), e);
+            log.error("JWT token processing error for request {}: {}", requestURI, e.getMessage(), e);
             SecurityContextHolder.clearContext();
             clearTokenCookie(response);
         }
@@ -73,6 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            log.debug("Found Authorization header token");
             return bearerToken.substring(7);
         }
 
@@ -85,11 +96,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (tokenCookie.isPresent()) {
                 String token = tokenCookie.get().getValue();
                 if (StringUtils.hasText(token)) {
+                    log.debug("Found accessToken cookie");
                     return token;
                 }
             }
         }
 
+        log.debug("No token found in request");
         return null;
     }
 
@@ -97,6 +110,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String username = jwtTokenProvider.getUsernameFromToken(token);
             if (username != null) {
+                log.debug("Creating authentication for username: {}", username);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
@@ -109,20 +123,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void clearTokenCookie(HttpServletResponse response) {
-        Cookie accessTokenCookie = new Cookie("accessToken", null);
+        log.debug("Clearing token cookies");
+        Cookie accessTokenCookie = new Cookie("accessToken", "");
         accessTokenCookie.setMaxAge(0);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setSecure(false);
-        accessTokenCookie.setDomain(null);
         response.addCookie(accessTokenCookie);
 
-        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "");
         refreshTokenCookie.setMaxAge(0);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(false);
-        refreshTokenCookie.setDomain(null);
         response.addCookie(refreshTokenCookie);
     }
 
@@ -130,7 +143,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
 
-        return path.startsWith("/static/") ||
+        boolean shouldSkip = path.startsWith("/static/") ||
                 path.startsWith("/css/") ||
                 path.startsWith("/js/") ||
                 path.startsWith("/images/") ||
@@ -141,5 +154,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/") ||
                 path.equals("/members/login") ||
                 path.equals("/members/join");
+
+        if (shouldSkip) {
+            log.debug("Skipping JWT filter for path: {}", path);
+        }
+
+        return shouldSkip;
     }
 }
