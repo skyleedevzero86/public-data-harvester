@@ -1,6 +1,5 @@
 package com.antock.global.security.filter;
 
-import com.antock.global.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -39,42 +38,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        log.debug("Processing request: {} {}", request.getMethod(), requestURI);
 
         try {
             String token = resolveToken(request);
-            log.debug("Extracted token: {}", token != null ? "***" + token.substring(Math.max(0, token.length() - 10)) : "null");
 
             if (StringUtils.hasText(token)) {
                 if (jwtTokenProvider.validateToken(token)) {
                     String tokenType = jwtTokenProvider.getTokenType(token);
-                    log.debug("Token type: {}", tokenType);
 
                     if ("ACCESS".equals(tokenType)) {
                         Authentication authentication = getAuthentication(token);
 
                         if (authentication != null && authentication.isAuthenticated()) {
                             SecurityContextHolder.getContext().setAuthentication(authentication);
-                            log.debug("Authentication set for user: {}", authentication.getName());
+                            log.info("인증 설정 성공 - 사용자: {}", authentication.getName());
                         } else {
-                            log.warn("Failed to create authentication from token");
+                            log.warn("토큰에서 인증 생성 실패");
                         }
-                    } else {
-                        log.warn("Invalid token type: {}. Expected 'ACCESS' token", tokenType);
-                        clearTokenCookie(response);
                     }
                 } else {
-                    log.warn("Invalid JWT token provided for request: {}", requestURI);
-                    clearTokenCookie(response);
+                    log.warn("JWT 토큰 검증 실패 - 요청: {}", requestURI);
                 }
             } else {
-                log.debug("No token found for request: {}", requestURI);
+                log.info("JWT 토큰 없음 - 요청: {}", requestURI);
             }
-
         } catch (Exception e) {
-            log.error("JWT token processing error for request {}: {}", requestURI, e.getMessage(), e);
-            SecurityContextHolder.clearContext();
-            clearTokenCookie(response);
+            log.error("JWT 토큰 처리 오류 - 요청 {}: {}", requestURI, e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
@@ -83,7 +72,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            log.debug("Found Authorization header token");
             return bearerToken.substring(7);
         }
 
@@ -96,13 +84,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (tokenCookie.isPresent()) {
                 String token = tokenCookie.get().getValue();
                 if (StringUtils.hasText(token)) {
-                    log.debug("Found accessToken cookie");
                     return token;
                 }
             }
         }
 
-        log.debug("No token found in request");
         return null;
     }
 
@@ -110,20 +96,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String username = jwtTokenProvider.getUsernameFromToken(token);
             if (username != null) {
-                log.debug("Creating authentication for username: {}", username);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
             }
             return null;
         } catch (Exception e) {
-            log.error("Failed to create authentication from token: {}", e.getMessage());
+            log.error("토큰에서 인증 생성 실패: {}", e.getMessage());
             return null;
         }
     }
 
     private void clearTokenCookie(HttpServletResponse response) {
-        log.debug("Clearing token cookies");
         Cookie accessTokenCookie = new Cookie("accessToken", "");
         accessTokenCookie.setMaxAge(0);
         accessTokenCookie.setPath("/");
@@ -151,13 +135,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/v1/members/login") ||
                 path.startsWith("/actuator/") ||
                 path.equals("/favicon.ico") ||
-                path.equals("/") ||
                 path.equals("/members/login") ||
                 path.equals("/members/join");
-
-        if (shouldSkip) {
-            log.debug("Skipping JWT filter for path: {}", path);
-        }
 
         return shouldSkip;
     }

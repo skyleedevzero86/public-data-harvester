@@ -12,7 +12,9 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,9 +52,7 @@ public class MemberWebController {
     public void initPasswordMigration() {
         try {
             passwordMigrationService.migratePlainTextPasswords();
-            log.info("비밀번호 마이그레이션 완료");
         } catch (Exception e) {
-            log.error("비밀번호 마이그레이션 실패: {}", e.getMessage());
         }
     }
 
@@ -80,18 +80,11 @@ public class MemberWebController {
         }
 
         try {
-            log.info("회원가입 시도: username={}, email={}", joinRequest.getUsername(), joinRequest.getEmail());
-
             MemberResponse member = memberApplicationService.join(joinRequest);
-
-            log.info("회원가입 성공: username={}, memberId={}", member.getUsername(), member.getId());
-
             redirectAttributes.addFlashAttribute("successMessage",
                     "회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
             return "redirect:/members/login";
-
         } catch (Exception e) {
-            log.error("회원가입 실패: {}", e.getMessage());
             model.addAttribute("memberJoinRequest", joinRequest);
             model.addAttribute("errorMessage", e.getMessage());
             return "member/join";
@@ -103,7 +96,6 @@ public class MemberWebController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
                 && !authentication.getName().equals("anonymousUser")) {
-            log.info("이미 로그인된 사용자가 로그인 페이지 접근 시도: {}", authentication.getName());
             return "redirect:/";
         }
         return "member/login";
@@ -116,8 +108,6 @@ public class MemberWebController {
                                RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
         try {
-            log.info("웹 로그인 시도: username={}", username);
-
             MemberLoginRequest loginRequest = MemberLoginRequest.builder()
                     .username(username)
                     .password(password)
@@ -133,29 +123,41 @@ public class MemberWebController {
             accessTokenCookie.setSecure(false);
             response.addCookie(accessTokenCookie);
 
-            log.info("웹 로그인 성공: username={}", username);
-
             redirectAttributes.addFlashAttribute("successMessage", "로그인 되었습니다.");
             return "redirect:/";
-
         } catch (Exception e) {
-            log.error("웹 로그인 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/members/login";
         }
     }
 
     @GetMapping("/members/logout")
-    public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        Cookie accessTokenCookie = new Cookie("accessToken", null);
+    public String logout(HttpServletResponse response, HttpServletRequest request,
+                         RedirectAttributes redirectAttributes) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        clearAllAuthCookies(response);
+        SecurityContextHolder.clearContext();
+        redirectAttributes.addFlashAttribute("successMessage", "로그아웃 되었습니다.");
+        return "redirect:/members/login";
+    }
+
+    private void clearAllAuthCookies(HttpServletResponse response) {
+        Cookie accessTokenCookie = new Cookie("accessToken", "");
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false);
         response.addCookie(accessTokenCookie);
 
-        SecurityContextHolder.clearContext();
-
-        redirectAttributes.addFlashAttribute("successMessage", "로그아웃 되었습니다.");
-        return "redirect:/";
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "");
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false);
+        response.addCookie(refreshTokenCookie);
     }
 
     @GetMapping("/members/profile")
@@ -174,12 +176,10 @@ public class MemberWebController {
 
             MemberResponse member = memberApplicationService.getCurrentMemberInfo(memberId);
             if (member == null) {
-                log.error("회원 정보를 찾을 수 없음: memberId={}", memberId);
                 return "redirect:/members/login";
             }
 
             model.addAttribute("member", member);
-
             model.addAttribute("createDateFormatted", convertToDate(member.getCreateDate()));
             model.addAttribute("lastLoginAtFormatted", convertToDate(member.getLastLoginAt()));
             model.addAttribute("approvedAtFormatted", convertToDate(member.getApprovedAt()));
@@ -192,9 +192,7 @@ public class MemberWebController {
             model.addAttribute("memberUpdateRequest", memberUpdateRequest);
 
             return "member/profile";
-
         } catch (Exception e) {
-            log.error("프로필 페이지 로드 실패: {}", e.getMessage());
             return "redirect:/";
         }
     }
@@ -220,7 +218,6 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception e) {
-                log.error("프로필 수정 실패 시 회원 정보 조회 오류: {}", e.getMessage());
             }
 
             model.addAttribute("memberUpdateRequest", updateRequest);
@@ -241,13 +238,9 @@ public class MemberWebController {
             }
 
             memberApplicationService.updateProfile(memberId, updateRequest);
-
             redirectAttributes.addFlashAttribute("successMessage", "프로필이 성공적으로 수정되었습니다.");
             return "redirect:/members/profile";
-
         } catch (Exception e) {
-            log.error("프로필 수정 실패: {}", e.getMessage());
-
             try {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 if (authentication != null && authentication.isAuthenticated()) {
@@ -263,7 +256,6 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
-                log.error("프로필 수정 실패 후 회원 정보 조회 오류: {}", ex.getMessage());
             }
 
             model.addAttribute("memberUpdateRequest", updateRequest);
@@ -279,8 +271,6 @@ public class MemberWebController {
                              @RequestParam(required = false) String role,
                              Model model) {
         try {
-            log.info("회원 목록 조회 시작 - status: {}, role: {}", status, role);
-
             Page<MemberResponse> members = memberApplicationService.getMembersByStatusAndRole(status, role, pageable);
 
             List<MemberView> memberViewList = members.getContent().stream()
@@ -306,12 +296,8 @@ public class MemberWebController {
             model.addAttribute("suspendedMembers", suspendedMembers);
             model.addAttribute("withdrawnMembers", withdrawnMembers);
 
-            log.info("회원 목록 조회 완료 - 총 {}명, 표시 {}명", totalMembers, memberViewList.size());
-
             return "member/admin/list";
-
         } catch (Exception e) {
-            log.error("회원 목록 조회 실패: {}", e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "member/admin/list";
         }
@@ -321,8 +307,6 @@ public class MemberWebController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String pendingMembers(@PageableDefault(size = 20) Pageable pageable, Model model) {
         try {
-            log.info("승인 대기 회원 목록 조회 시작");
-
             Page<MemberResponse> pendingMembers = memberApplicationService.getPendingMembers(pageable);
 
             List<MemberView> pendingMemberViewList = pendingMembers.getContent().stream()
@@ -335,12 +319,8 @@ public class MemberWebController {
             long totalPendingCount = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
             model.addAttribute("totalPendingCount", totalPendingCount);
 
-            log.info("승인 대기 회원 목록 조회 완료 - 총 {}명, 표시 {}명", totalPendingCount, pendingMemberViewList.size());
-
             return "member/admin/pending";
-
         } catch (Exception e) {
-            log.error("승인 대기 회원 목록 조회 실패: {}", e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
             return "member/admin/pending";
         }
@@ -355,15 +335,11 @@ public class MemberWebController {
             Long approverId = memberApplicationService.getMemberIdByUsername(username);
 
             MemberResponse approvedMember = memberApplicationService.approveMember(memberId, approverId);
-            log.info("회원 승인 완료: memberId={}", memberId);
-
             redirectAttributes.addFlashAttribute("successMessage",
                     approvedMember.getUsername() + " 회원이 승인되었습니다.");
         } catch (Exception e) {
-            log.error("회원 승인 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-
         return "redirect:/members/admin/list";
     }
 
@@ -372,15 +348,11 @@ public class MemberWebController {
     public String rejectMember(@PathVariable Long memberId, RedirectAttributes redirectAttributes) {
         try {
             MemberResponse rejectedMember = memberApplicationService.rejectMember(memberId);
-            log.info("회원 거부 완료: memberId={}", memberId);
-
             redirectAttributes.addFlashAttribute("successMessage",
                     rejectedMember.getUsername() + " 회원이 거부되었습니다.");
         } catch (Exception e) {
-            log.error("회원 거부 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-
         return "redirect:/members/admin/list";
     }
 
@@ -389,16 +361,11 @@ public class MemberWebController {
     public String resetToPending(@PathVariable Long memberId, RedirectAttributes redirectAttributes) {
         try {
             MemberResponse resetMember = memberApplicationService.resetToPending(memberId);
-            log.info("회원 승인 대기로 변경 완료: memberId={}", memberId);
-
             redirectAttributes.addFlashAttribute("successMessage",
                     resetMember.getUsername() + " 회원이 승인 대기 상태로 변경되었습니다.");
-
         } catch (Exception e) {
-            log.error("회원 승인 대기 변경 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-
         return "redirect:/members/admin/list";
     }
 
@@ -407,15 +374,11 @@ public class MemberWebController {
     public String suspendMember(@PathVariable Long memberId, RedirectAttributes redirectAttributes) {
         try {
             MemberResponse suspendedMember = memberApplicationService.suspendMember(memberId);
-            log.info("회원 정지 완료: memberId={}", memberId);
-
             redirectAttributes.addFlashAttribute("successMessage",
                     suspendedMember.getUsername() + " 회원이 정지되었습니다.");
         } catch (Exception e) {
-            log.error("회원 정지 실패: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-
         return "redirect:/members/admin/list";
     }
 
@@ -441,9 +404,7 @@ public class MemberWebController {
             model.addAttribute("todayChangeCount", passwordStatus.getTodayChangeCount());
 
             return "member/password-change";
-
         } catch (Exception e) {
-            log.error("비밀번호 변경 페이지 로드 실패: {}", e.getMessage());
             return "redirect:/members/profile";
         }
     }
@@ -454,7 +415,6 @@ public class MemberWebController {
                                  BindingResult bindingResult,
                                  RedirectAttributes redirectAttributes,
                                  Model model) {
-
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -477,17 +437,20 @@ public class MemberWebController {
                 return "member/password-change";
             }
 
+            if (passwordStatus.getTodayChangeCount() >= 3) {
+                model.addAttribute("passwordChangeRequest", passwordChangeRequest);
+                model.addAttribute("isPasswordChangeRequired", passwordStatus.isChangeRequired());
+                model.addAttribute("isPasswordChangeRecommended", passwordStatus.isChangeRecommended());
+                model.addAttribute("todayChangeCount", passwordStatus.getTodayChangeCount());
+                model.addAttribute("errorMessage", "오늘은 더 이상 비밀번호를 변경할 수 없습니다. (일일 3회 제한)");
+                return "member/password-change";
+            }
+
             memberApplicationService.changePassword(memberId, passwordChangeRequest);
-
-            log.info("비밀번호 변경 성공: username={}, memberId={}", username, memberId);
-
             redirectAttributes.addFlashAttribute("successMessage",
                     "비밀번호가 성공적으로 변경되었습니다.");
             return "redirect:/members/profile";
-
-        } catch (Exception e) {
-            log.error("비밀번호 변경 실패: {}", e.getMessage());
-
+        } catch (BusinessException e) {
             try {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 if (authentication != null && authentication.isAuthenticated()) {
@@ -501,11 +464,29 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
-                log.error("비밀번호 변경 실패 시 상태 조회 오류: {}", ex.getMessage());
             }
 
             model.addAttribute("passwordChangeRequest", passwordChangeRequest);
             model.addAttribute("errorMessage", e.getMessage());
+            return "member/password-change";
+        } catch (Exception e) {
+            try {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.isAuthenticated()) {
+                    String username = authentication.getName();
+                    Long memberId = memberApplicationService.getMemberIdByUsername(username);
+                    if (memberId != null) {
+                        PasswordStatusResponse passwordStatus = memberApplicationService.getPasswordStatus(memberId);
+                        model.addAttribute("isPasswordChangeRequired", passwordStatus.isChangeRequired());
+                        model.addAttribute("isPasswordChangeRecommended", passwordStatus.isChangeRecommended());
+                        model.addAttribute("todayChangeCount", passwordStatus.getTodayChangeCount());
+                    }
+                }
+            } catch (Exception ex) {
+            }
+
+            model.addAttribute("passwordChangeRequest", passwordChangeRequest);
+            model.addAttribute("errorMessage", "비밀번호 변경 중 오류가 발생했습니다: " + e.getMessage());
             return "member/password-change";
         }
     }
