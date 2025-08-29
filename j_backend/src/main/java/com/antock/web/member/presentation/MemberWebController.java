@@ -599,4 +599,62 @@ public class MemberWebController {
         return "redirect:/members/admin/list";
     }
 
+    @PostMapping("/members/withdraw")
+    public String withdrawSelf(HttpServletRequest request, HttpServletResponse response,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/members/login";
+            }
+
+            String username = authentication.getName();
+            Long memberId = memberApplicationService.getMemberIdByUsername(username);
+            if (memberId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "회원 정보를 찾을 수 없습니다.");
+                return "redirect:/members/profile";
+            }
+
+            MemberResponse currentMember = memberApplicationService.getMemberInfo(memberId);
+
+            if (currentMember.getRole() == com.antock.api.member.value.Role.ADMIN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "관리자는 본인 탈퇴를 할 수 없습니다. 다른 관리자에게 문의하세요.");
+                return "redirect:/members/profile";
+            }
+
+            if (currentMember.getStatus() == MemberStatus.WITHDRAWN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "이미 탈퇴한 회원입니다.");
+                return "redirect:/members/profile";
+            }
+
+            log.info("사용자 본인 탈퇴 요청 - memberId: {}, username: {}", memberId, username);
+
+            memberApplicationService.deleteMember(memberId);
+
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            clearAllAuthCookies(response);
+            SecurityContextHolder.clearContext();
+
+            log.info("사용자 본인 탈퇴 완료 - memberId: {}, username: {}", memberId, username);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "회원 탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+
+            return "redirect:/members/login";
+
+        } catch (BusinessException e) {
+            log.error("사용자 본인 탈퇴 실패 (비즈니스 예외): {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/members/profile";
+        } catch (Exception e) {
+            log.error("사용자 본인 탈퇴 실패", e);
+            redirectAttributes.addFlashAttribute("errorMessage", "탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/members/profile";
+        }
+    }
+
+
 }
