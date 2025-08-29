@@ -158,4 +158,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query(value = "UPDATE members SET login_fail_count = 0, last_login_at = :lastLoginAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
     int updateLoginSuccessBySql(@Param("memberId") Long memberId,
                                 @Param("lastLoginAt") LocalDateTime lastLoginAt);
+
+    @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role")
+    @QueryHints({
+            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+    })
+    long countByRole(@Param("role") Role role);
+
+    @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role AND m.status = :status")
+    @QueryHints({
+            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+    })
+    long countByRoleAndStatus(@Param("role") Role role, @Param("status") MemberStatus status);
 }
