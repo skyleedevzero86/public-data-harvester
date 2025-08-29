@@ -4,6 +4,7 @@ import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.*;
 import com.antock.api.member.domain.Member;
+import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,8 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -38,9 +42,16 @@ class MemberApplicationServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    private MemberApplicationService memberApplicationService;
-
+    @Mock
     private MemberPasswordService memberPasswordService;
+
+    @Mock
+    private Executor asyncExecutor;
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    private MemberApplicationService memberApplicationService;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +61,9 @@ class MemberApplicationServiceTest {
                 rateLimitService,
                 memberCacheService,
                 passwordEncoder,
-                memberPasswordService
+                memberPasswordService,
+                asyncExecutor,
+                memberRepository
         );
     }
 
@@ -158,6 +171,31 @@ class MemberApplicationServiceTest {
         assertThat(result.isCacheAvailable()).isTrue();
 
         verify(memberCacheService).getCacheStatistics();
+    }
+
+    @Test
+    @DisplayName("캐시 서비스가 null인 경우 빈 통계 반환")
+    void getCacheStatistics_WhenCacheServiceIsNull() {
+        // given
+        memberApplicationService = new MemberApplicationService(
+                memberDomainService,
+                authTokenService,
+                rateLimitService,
+                null,
+                passwordEncoder,
+                memberPasswordService,
+                asyncExecutor,
+                memberRepository
+        );
+
+        // when
+        MemberCacheService.CacheStatistics result = memberApplicationService.getCacheStatistics();
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getCacheHits()).isEqualTo(0);
+        assertThat(result.getCacheMisses()).isEqualTo(0);
+        assertThat(result.isCacheAvailable()).isFalse();
     }
 
     private Member createTestMember(Long memberId) {

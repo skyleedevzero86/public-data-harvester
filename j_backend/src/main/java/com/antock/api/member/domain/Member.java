@@ -235,8 +235,15 @@ public class Member extends BaseTimeEntity {
     }
 
     public void changeRole(Role newRole) {
+        if (newRole == null) {
+            throw new IllegalArgumentException("역할은 null일 수 없습니다.");
+        }
+
+        if (this.role == Role.ADMIN && newRole != Role.ADMIN) {
+            throw new IllegalArgumentException("ADMIN 역할에서 다른 역할로 변경할 수 없습니다.");
+        }
+
         this.role = newRole;
-        log.info("회원 권한 변경: memberId={}, newRole={}", getId(), newRole);
     }
 
     public void unlock() {
@@ -289,4 +296,5 @@ public class Member extends BaseTimeEntity {
         this.loginFailCount = 0;
         log.info("회원 상태를 승인 대기로 재설정: memberId={}, username={}", this.getId(), this.username);
     }
+
 }

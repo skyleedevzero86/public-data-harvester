@@ -10,6 +10,7 @@ import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.PasswordMigrationService;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpSession;
@@ -293,20 +294,6 @@ public class MemberWebController {
             model.addAttribute("members", members);
             model.addAttribute("selectedStatus", status);
             model.addAttribute("selectedRole", role);
-
-            long totalMembers = memberApplicationService.countAllMembers();
-            long pendingMembers = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
-            long approvedMembers = memberApplicationService.countMembersByStatus(MemberStatus.APPROVED);
-            long rejectedMembers = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
-            long suspendedMembers = memberApplicationService.countMembersByStatus(MemberStatus.SUSPENDED);
-            long withdrawnMembers = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
-
-            model.addAttribute("totalMembers", totalMembers);
-            model.addAttribute("pendingMembers", pendingMembers);
-            model.addAttribute("approvedMembers", approvedMembers);
-            model.addAttribute("rejectedMembers", rejectedMembers);
-            model.addAttribute("suspendedMembers", suspendedMembers);
-            model.addAttribute("withdrawnMembers", withdrawnMembers);
 
             return "member/admin/list";
         } catch (Exception e) {
@@ -655,6 +642,32 @@ public class MemberWebController {
             return "redirect:/members/profile";
         }
     }
+    @PostMapping("/members/admin/{memberId}/role")
+    public String changeMemberRole(@PathVariable Long memberId,
+                                   @RequestParam Role role,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/members/login";
+            }
 
+            String username = authentication.getName();
+            Long approverId = memberApplicationService.getMemberIdByUsername(username);
+
+            if (approverId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보를 찾을 수 없습니다.");
+                return "redirect:/members/admin/list";
+            }
+
+            memberApplicationService.changeMemberRole(memberId, role, approverId);
+            redirectAttributes.addFlashAttribute("successMessage", "회원 역할이 변경되었습니다.");
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "역할 변경에 실패했습니다: " + e.getMessage());
+        }
+
+        return "redirect:/members/admin/list";
+    }
 
 }

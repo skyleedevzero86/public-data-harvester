@@ -92,6 +92,11 @@ public class MemberDomainService {
         return memberRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public List<Member> findAllMembers() {
+        return memberRepository.findAll();
+    }
+
     public List<Member> findPendingMembers() {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         return memberRepository.findPendingMembersAfter(MemberStatus.PENDING, thirtyDaysAgo);
