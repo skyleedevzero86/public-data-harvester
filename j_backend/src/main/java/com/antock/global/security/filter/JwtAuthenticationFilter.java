@@ -1,5 +1,6 @@
 package com.antock.global.security.filter;
 
+import com.antock.global.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,8 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
-                                   UserDetailsService userDetailsService,
-                                   ObjectMapper objectMapper) {
+            UserDetailsService userDetailsService,
+            ObjectMapper objectMapper) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
         this.objectMapper = objectMapper;
