@@ -226,7 +226,7 @@ public class MemberApiController {
         }
     }
 
-    @DeleteMapping("/admin/{memberId}")
+    @DeleteMapping("/admin/{memberId}/delete")
     public ApiResponse<Void> deleteMember(@PathVariable Long memberId) {
         log.info("회원 삭제 요청 - memberId: {}", memberId);
 
