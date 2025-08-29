@@ -1,3 +1,5 @@
+*.md
+test.md
 src/test/**/ScritSelectKey*.java
 application.yml
 application-*.yml
