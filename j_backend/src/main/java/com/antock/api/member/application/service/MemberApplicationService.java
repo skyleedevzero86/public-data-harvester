@@ -8,6 +8,7 @@ import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.domain.Member;
+import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
@@ -41,6 +42,7 @@ public class MemberApplicationService {
     private final PasswordEncoder passwordEncoder;
     private final MemberPasswordService memberPasswordService;
     private final Executor asyncExecutor;
+    private final MemberRepository memberRepository;
 
     @Autowired
     public MemberApplicationService(MemberDomainService memberDomainService,
@@ -49,7 +51,8 @@ public class MemberApplicationService {
                                     @Autowired(required = false) MemberCacheService memberCacheService,
                                     PasswordEncoder passwordEncoder,
                                     MemberPasswordService memberPasswordService,
-                                    @Qualifier("applicationTaskExecutor") Executor asyncExecutor) {
+                                    @Qualifier("applicationTaskExecutor") Executor asyncExecutor,
+                                    MemberRepository memberRepository) {
         this.memberDomainService = memberDomainService;
         this.authTokenService = authTokenService;
         this.rateLimitService = rateLimitService;
@@ -57,6 +60,7 @@ public class MemberApplicationService {
         this.passwordEncoder = passwordEncoder;
         this.memberPasswordService = memberPasswordService;
         this.asyncExecutor = asyncExecutor;
+        this.memberRepository = memberRepository;
     }
 
     @Transactional
@@ -159,7 +163,6 @@ public class MemberApplicationService {
     public MemberResponse getCurrentMemberInfo(Long memberId) {
         Member member = memberDomainService.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         return MemberResponse.from(member);
     }
 
@@ -167,7 +170,6 @@ public class MemberApplicationService {
     public MemberResponse getMemberProfile(Long memberId) {
         Member member = memberDomainService.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         return MemberResponse.from(member);
     }
 
@@ -175,7 +177,6 @@ public class MemberApplicationService {
     public MemberResponse getMemberInfo(Long memberId) {
         Member member = memberDomainService.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         return MemberResponse.from(member);
     }
 
@@ -227,8 +228,6 @@ public class MemberApplicationService {
 
         if (memberCacheService != null) {
             memberCacheService.evictMemberCache(memberId);
-            memberCacheService.cacheMemberResponse(MemberResponse.from(member));
-            memberCacheService.cacheMemberProfile(MemberResponse.from(member));
         }
 
         return MemberResponse.from(member);
@@ -245,15 +244,7 @@ public class MemberApplicationService {
         if (memberCacheService != null) {
             return memberCacheService.getCacheStatistics();
         }
-        return new MemberCacheService.CacheStatistics(0, 0, 0, 0.0, 0, false);
-    }
-
-    @Transactional
-    @CacheEvict(value = { "member", "memberProfile", "memberList", "pendingMembers" }, allEntries = true)
-    public void evictAllMemberCache() {
-        if (memberCacheService != null) {
-            memberCacheService.evictAllMemberCache();
-        }
+        return MemberCacheService.CacheStatistics.empty();
     }
 
     private void validateMemberStatus(Member member) {
@@ -293,16 +284,16 @@ public class MemberApplicationService {
         if (memberCacheService != null) {
             memberCacheService.evictMemberCache(memberId);
         }
+
+        log.info("회원 삭제 완료: username={}, id={}", member.getUsername(), memberId);
     }
 
     @Transactional(readOnly = true)
-    public long countMembersByStatus(MemberStatus status) {
-        return memberDomainService.countMembersByStatus(status);
-    }
-
-    @Transactional(readOnly = true)
-    public long countAllMembers() {
-        return memberDomainService.countAllMembers();
+    public List<MemberResponse> getAllMembers() {
+        return memberDomainService.findAllMembers()
+                .stream()
+                .map(MemberResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -326,4 +317,55 @@ public class MemberApplicationService {
         Member member = memberDomainService.resetToPending(memberId);
         return MemberResponse.from(member);
     }
+
+    public MemberResponse changeMemberRole(Long memberId, Role newRole, Long approverId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (member.getRole() == newRole) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "이미 동일한 역할입니다.");
+        }
+
+        Member approver = memberRepository.findById(approverId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (approver.getRole() != Role.ADMIN) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "역할 변경 권한이 없습니다.");
+        }
+
+        member.changeRole(newRole);
+
+        Member savedMember = memberRepository.save(member);
+
+        if (memberCacheService != null) {
+            memberCacheService.evictMemberCache(savedMember.getId());
+        }
+
+        log.info("회원 역할 변경 완료 - memberId: {}, oldRole: {}, newRole: {}, approver: {}",
+                memberId, member.getRole(), newRole, approver.getUsername());
+
+        return MemberResponse.from(savedMember);
+    }
+
+    public void evictAllMemberCache() {
+        log.info("전체 회원 캐시 무효화 요청");
+
+        if (memberCacheService != null) {
+            try {
+                memberCacheService.evictAllMemberCache();
+                log.info("전체 회원 캐시 무효화 완료");
+            } catch (Exception e) {
+                log.error("전체 회원 캐시 무효화 실패", e);
+                throw new RuntimeException("캐시 무효화 중 오류가 발생했습니다: " + e.getMessage(), e);
+            }
+        } else {
+            log.warn("MemberCacheService가 설정되지 않아 캐시 무효화를 수행할 수 없습니다");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public long countMembersByStatus(MemberStatus status) {
+        return memberDomainService.countMembersByStatus(status);
+    }
+
 }

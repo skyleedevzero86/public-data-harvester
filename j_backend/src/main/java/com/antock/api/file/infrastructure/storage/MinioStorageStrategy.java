@@ -5,19 +5,20 @@ import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
+@Profile("dev")
 @RequiredArgsConstructor
 public class MinioStorageStrategy implements FileStorageStrategy {
 
-    private final Optional<MinioClient> minioClient;
+    private final MinioClient minioClient;
 
     @Value("${minio.bucket:default-bucket}")
     private String bucketName;
@@ -28,14 +29,13 @@ public class MinioStorageStrategy implements FileStorageStrategy {
         createBucketIfNotExists();
 
         try (InputStream inputStream = file.getInputStream()) {
-            minioClient.get().putObject(
+            minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(storedFileName)
                             .stream(inputStream, file.getSize(), -1)
                             .contentType(file.getContentType())
-                            .build()
-            );
+                            .build());
             return storedFileName;
         }
     }
@@ -43,42 +43,45 @@ public class MinioStorageStrategy implements FileStorageStrategy {
     @Override
     public InputStreamResource downloadFile(String storedFileName) throws Exception {
         validateMinioAvailable();
-        InputStream stream = minioClient.get().getObject(
+        InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(bucketName)
                         .object(storedFileName)
-                        .build()
-        );
+                        .build());
         return new InputStreamResource(stream);
     }
 
     @Override
     public String getDownloadUrl(String storedFileName) throws Exception {
         validateMinioAvailable();
-        return minioClient.get().getPresignedObjectUrl(
+        return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.GET)
                         .bucket(bucketName)
                         .object(storedFileName)
                         .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
+                        .build());
     }
 
     @Override
     public void deleteFile(String storedFileName) throws Exception {
         validateMinioAvailable();
-        minioClient.get().removeObject(
+        minioClient.removeObject(
                 RemoveObjectArgs.builder()
                         .bucket(bucketName)
                         .object(storedFileName)
-                        .build()
-        );
+                        .build());
     }
 
     @Override
     public boolean isAvailable() {
-        return minioClient.isPresent();
+        try {
+            return minioClient != null && minioClient.bucketExists(
+                    BucketExistsArgs.builder().bucket(bucketName).build());
+        } catch (Exception e) {
+            log.warn("MinIO 연결 확인 실패: {}", e.getMessage());
+            return false;
+        }
     }
 
     private void validateMinioAvailable() {
@@ -88,13 +91,11 @@ public class MinioStorageStrategy implements FileStorageStrategy {
     }
 
     private void createBucketIfNotExists() throws Exception {
-        boolean found = minioClient.get().bucketExists(
-                BucketExistsArgs.builder().bucket(bucketName).build()
-        );
+        boolean found = minioClient.bucketExists(
+                BucketExistsArgs.builder().bucket(bucketName).build());
         if (!found) {
-            minioClient.get().makeBucket(
-                    MakeBucketArgs.builder().bucket(bucketName).build()
-            );
+            minioClient.makeBucket(
+                    MakeBucketArgs.builder().bucket(bucketName).build());
             log.info("MinIO 버킷 생성 완료: {}", bucketName);
         }
     }

@@ -35,13 +35,13 @@ public class GlobalExceptionHandler {
         log.debug("Custom exception: {}", ex.getMessage());
 
         ApiResponse<Void> response = ApiResponse.of(
-                ex.getStatus(),
+                ex.getHttpStatus(),
                 ex.getMessage(),
                 null
         );
 
         return ResponseEntity
-                .status(ex.getStatus())
+                .status(ex.getHttpStatus())
                 .body(response);
     }
 

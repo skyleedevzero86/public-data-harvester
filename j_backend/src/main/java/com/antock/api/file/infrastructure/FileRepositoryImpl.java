@@ -38,6 +38,11 @@ public class FileRepositoryImpl implements FileRepository {
     }
 
     @Override
+    public Optional<File> findByOriginalFileName(String originalFileName) {
+        return jpaFileRepository.findByMetadataOriginalFileName(originalFileName);
+    }
+
+    @Override
     public void deleteById(Long id) {
         jpaFileRepository.deleteById(id);
     }

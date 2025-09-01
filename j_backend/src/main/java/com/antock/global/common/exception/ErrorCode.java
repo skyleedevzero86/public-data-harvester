@@ -17,6 +17,8 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "C009", "접근 권한이 없습니다."),
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "C010", "입력 파라미터가 올바르지 않습니다."),
 
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "E0004", "접근 권한이 없습니다."),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "E0005", "잘못된 요청입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "회원을 찾을 수 없습니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "M002", "이미 사용중인 사용자명입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "M003", "이미 사용중인 이메일입니다."),

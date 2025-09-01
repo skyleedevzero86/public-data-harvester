@@ -31,6 +31,10 @@ public interface MemberCacheService {
             this.cacheAvailable = cacheAvailable;
         }
 
+        public static CacheStatistics empty() {
+            return new CacheStatistics(0, 0, 0, 0.0, 0, false);
+        }
+
         public long getCacheHits() { return cacheHits; }
         public long getCacheMisses() { return cacheMisses; }
         public long getCacheErrors() { return cacheErrors; }

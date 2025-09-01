@@ -17,10 +17,9 @@ public class CorpInfoApiClient {
 
     public CorpInfoApiClient(
             RestTemplate restTemplate,
-            @Value("${corp-info.url}") String url,
-            @Value("${corp-info.endpoint}") String endpoint,
-            @Value("${corp-info.serviceKey}") String serviceKey
-    ) {
+            @Value("${corp-info.url:https://apis.data.go.kr/1130000/MllBsDtl_2Service}") String url,
+            @Value("${corp-info.endpoint:/getMllBsInfoDetail_2}") String endpoint,
+            @Value("${corp-info.serviceKey:gm4VRA9rbbd%2BQ6%2F%2FknBcl3lZ5GIm0fq37PbyHPrRJdJ9xjsQlHOsqcb2j0M1coSz2AWOduxHVBLZwj8pSsm88A%3D%3D}") String serviceKey) {
         this.restTemplate = restTemplate;
         this.url = url;
         this.endpoint = endpoint;
@@ -31,11 +30,13 @@ public class CorpInfoApiClient {
         List<Map<String, Object>> result = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
         for (int page = 1; page <= 49; page++) {
-            String apiUrl = String.format("%s%s?serviceKey=%s&pageNo=%d&numOfRows=1000&resultType=json&ctpvNm=%s&signguNm=%s",
+            String apiUrl = String.format(
+                    "%s%s?serviceKey=%s&pageNo=%d&numOfRows=1000&resultType=json&ctpvNm=%s&signguNm=%s",
                     url, endpoint, serviceKey, page, encode(city), encode(district));
             log.info("API 호출 URL: {}", apiUrl);
             String responseStr = restTemplate.getForObject(apiUrl, String.class);
-            if (responseStr == null || responseStr.trim().isEmpty()) break;
+            if (responseStr == null || responseStr.trim().isEmpty())
+                break;
             if (responseStr.trim().startsWith("<")) {
                 log.error("API 파싱에러 확인: " + responseStr);
                 break;
@@ -44,7 +45,8 @@ public class CorpInfoApiClient {
                 Map<String, Object> response = mapper.readValue(responseStr, Map.class);
                 Object itemsObj = response.get("items");
                 if (itemsObj instanceof List<?> items) {
-                    if (items.isEmpty()) break;
+                    if (items.isEmpty())
+                        break;
                     for (Object item : items) {
                         if (item instanceof Map) {
                             result.add((Map<String, Object>) item);

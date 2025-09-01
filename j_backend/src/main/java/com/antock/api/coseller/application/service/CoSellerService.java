@@ -39,11 +39,14 @@ public class CoSellerService {
 
     @Transactional
     public int saveCoSeller(RegionRequestDto requestDto, String username) {
+
         log.info("데이터 저장 프로세스 시작: City={}, District={}, username={}",
                 requestDto.getCity().name(), requestDto.getDistrict().name(), username);
 
-        List<BizCsvInfoDto> csvList = csvService.readBizCsv(
-                requestDto.getCity().name(), requestDto.getDistrict().name());
+        String fileName = requestDto.getCity().getValue() + "_" + requestDto.getDistrict().getValue() + ".csv";
+
+        List<BizCsvInfoDto> csvList = csvService.readCsvFile(fileName);
+
         log.info("CSV 파일에서 읽어온 유효한 데이터 수: {}건", csvList.size());
 
         if (csvList.isEmpty()) {

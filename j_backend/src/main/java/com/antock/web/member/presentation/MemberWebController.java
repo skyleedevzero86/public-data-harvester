@@ -10,6 +10,7 @@ import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.PasswordMigrationService;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.application.dto.request.MemberLoginRequest;
+import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpSession;
@@ -71,9 +72,9 @@ public class MemberWebController {
 
     @PostMapping("/members/join")
     public String processJoin(@Valid @ModelAttribute MemberJoinRequest joinRequest,
-                              BindingResult bindingResult,
-                              RedirectAttributes redirectAttributes,
-                              Model model) {
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("memberJoinRequest", joinRequest);
             return "member/join";
@@ -103,10 +104,10 @@ public class MemberWebController {
 
     @PostMapping("/members/login")
     public String processLogin(@RequestParam String username,
-                               @RequestParam String password,
-                               HttpServletResponse response,
-                               RedirectAttributes redirectAttributes,
-                               HttpServletRequest request) {
+            @RequestParam String password,
+            HttpServletResponse response,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
         try {
             MemberLoginRequest loginRequest = MemberLoginRequest.builder()
                     .username(username)
@@ -133,7 +134,7 @@ public class MemberWebController {
 
     @GetMapping("/members/logout")
     public String logout(HttpServletResponse response, HttpServletRequest request,
-                         RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes) {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
@@ -199,9 +200,9 @@ public class MemberWebController {
 
     @PostMapping("/members/profile")
     public String updateProfile(@Valid @ModelAttribute MemberUpdateRequest updateRequest,
-                                BindingResult bindingResult,
-                                RedirectAttributes redirectAttributes,
-                                Model model) {
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         if (bindingResult.hasErrors()) {
             try {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -267,9 +268,9 @@ public class MemberWebController {
     @GetMapping("/members/admin/list")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String memberList(@PageableDefault(size = 20) Pageable pageable,
-                             @RequestParam(required = false) String status,
-                             @RequestParam(required = false) String role,
-                             Model model) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role,
+            Model model) {
         try {
             Page<MemberResponse> members = memberApplicationService.getMembersByStatusAndRole(status, role, pageable);
 
@@ -277,24 +278,22 @@ public class MemberWebController {
                     .map(member -> new MemberView(member))
                     .collect(Collectors.toList());
 
+            long pendingCount = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
+            long approvedCount = memberApplicationService.countMembersByStatus(MemberStatus.APPROVED);
+            long rejectedCount = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
+            long suspendedCount = memberApplicationService.countMembersByStatus(MemberStatus.SUSPENDED);
+            long withdrawnCount = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
+
+            model.addAttribute("pendingCount", pendingCount);
+            model.addAttribute("approvedCount", approvedCount);
+            model.addAttribute("rejectedCount", rejectedCount);
+            model.addAttribute("suspendedCount", suspendedCount);
+            model.addAttribute("withdrawnCount", withdrawnCount);
+
             model.addAttribute("memberViewList", memberViewList);
             model.addAttribute("members", members);
             model.addAttribute("selectedStatus", status);
             model.addAttribute("selectedRole", role);
-
-            long totalMembers = memberApplicationService.countAllMembers();
-            long pendingMembers = memberApplicationService.countMembersByStatus(MemberStatus.PENDING);
-            long approvedMembers = memberApplicationService.countMembersByStatus(MemberStatus.APPROVED);
-            long rejectedMembers = memberApplicationService.countMembersByStatus(MemberStatus.REJECTED);
-            long suspendedMembers = memberApplicationService.countMembersByStatus(MemberStatus.SUSPENDED);
-            long withdrawnMembers = memberApplicationService.countMembersByStatus(MemberStatus.WITHDRAWN);
-
-            model.addAttribute("totalMembers", totalMembers);
-            model.addAttribute("pendingMembers", pendingMembers);
-            model.addAttribute("approvedMembers", approvedMembers);
-            model.addAttribute("rejectedMembers", rejectedMembers);
-            model.addAttribute("suspendedMembers", suspendedMembers);
-            model.addAttribute("withdrawnMembers", withdrawnMembers);
 
             return "member/admin/list";
         } catch (Exception e) {
@@ -411,10 +410,10 @@ public class MemberWebController {
 
     @PostMapping("/members/password/change")
     public String changePassword(HttpServletRequest request,
-                                 @Valid @ModelAttribute("passwordChangeRequest") MemberPasswordChangeRequest passwordChangeRequest,
-                                 BindingResult bindingResult,
-                                 RedirectAttributes redirectAttributes,
-                                 Model model) {
+            @Valid @ModelAttribute("passwordChangeRequest") MemberPasswordChangeRequest passwordChangeRequest,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -540,4 +539,135 @@ public class MemberWebController {
             return Date.from(member.getPasswordChangedAt().atZone(ZoneId.systemDefault()).toInstant());
         }
     }
+
+    @PostMapping("/members/admin/{memberId}/delete")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public String deleteMember(@PathVariable Long memberId, RedirectAttributes redirectAttributes) {
+        log.info("웹 컨트롤러: 회원 삭제(탈퇴) 요청 - memberId: {}", memberId);
+
+        try {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+            Long currentUserId = memberApplicationService.getMemberIdByUsername(currentUsername);
+
+            MemberResponse targetMember = memberApplicationService.getMemberInfo(memberId);
+
+            if (currentUserId.equals(memberId)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "자기 자신의 계정은 삭제할 수 없습니다.");
+                return "redirect:/members/admin/list";
+            }
+
+            if (targetMember.getRole() == com.antock.api.member.value.Role.ADMIN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "관리자 계정은 삭제할 수 없습니다.");
+                return "redirect:/members/admin/list";
+            }
+
+            if (targetMember.getStatus() == MemberStatus.WITHDRAWN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "이미 탈퇴한 회원입니다.");
+                return "redirect:/members/admin/list";
+            }
+
+            memberApplicationService.deleteMember(memberId);
+
+            log.info("웹 컨트롤러: 회원 삭제(탈퇴) 완료 - memberId: {}, username: {}", memberId, targetMember.getUsername());
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    targetMember.getUsername() + " 회원이 탈퇴 처리되었습니다.");
+
+        } catch (BusinessException e) {
+            log.error("웹 컨트롤러: 회원 삭제 실패 (비즈니스 예외) - memberId: {}, error: {}", memberId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            log.error("웹 컨트롤러: 회원 삭제 실패 - memberId: {}", memberId, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "회원 탈퇴 처리에 실패했습니다: " + e.getMessage());
+        }
+
+        return "redirect:/members/admin/list";
+    }
+
+    @PostMapping("/members/withdraw")
+    public String withdrawSelf(HttpServletRequest request, HttpServletResponse response,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/members/login";
+            }
+
+            String username = authentication.getName();
+            Long memberId = memberApplicationService.getMemberIdByUsername(username);
+            if (memberId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "회원 정보를 찾을 수 없습니다.");
+                return "redirect:/members/profile";
+            }
+
+            MemberResponse currentMember = memberApplicationService.getMemberInfo(memberId);
+
+            if (currentMember.getRole() == com.antock.api.member.value.Role.ADMIN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "관리자는 본인 탈퇴를 할 수 없습니다. 다른 관리자에게 문의하세요.");
+                return "redirect:/members/profile";
+            }
+
+            if (currentMember.getStatus() == MemberStatus.WITHDRAWN) {
+                redirectAttributes.addFlashAttribute("errorMessage", "이미 탈퇴한 회원입니다.");
+                return "redirect:/members/profile";
+            }
+
+            log.info("사용자 본인 탈퇴 요청 - memberId: {}, username: {}", memberId, username);
+
+            memberApplicationService.deleteMember(memberId);
+
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            clearAllAuthCookies(response);
+            SecurityContextHolder.clearContext();
+
+            log.info("사용자 본인 탈퇴 완료 - memberId: {}, username: {}", memberId, username);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "회원 탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+
+            return "redirect:/members/login";
+
+        } catch (BusinessException e) {
+            log.error("사용자 본인 탈퇴 실패 (비즈니스 예외): {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/members/profile";
+        } catch (Exception e) {
+            log.error("사용자 본인 탈퇴 실패", e);
+            redirectAttributes.addFlashAttribute("errorMessage", "탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/members/profile";
+        }
+    }
+    @PostMapping("/members/admin/{memberId}/role")
+    public String changeMemberRole(@PathVariable Long memberId,
+                                   @RequestParam Role role,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/members/login";
+            }
+
+            String username = authentication.getName();
+            Long approverId = memberApplicationService.getMemberIdByUsername(username);
+
+            if (approverId == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보를 찾을 수 없습니다.");
+                return "redirect:/members/admin/list";
+            }
+
+            memberApplicationService.changeMemberRole(memberId, role, approverId);
+            redirectAttributes.addFlashAttribute("successMessage", "회원 역할이 변경되었습니다.");
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "역할 변경에 실패했습니다: " + e.getMessage());
+        }
+
+        return "redirect:/members/admin/list";
+    }
+
 }

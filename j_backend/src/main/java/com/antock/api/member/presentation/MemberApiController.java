@@ -13,15 +13,6 @@ import com.antock.api.member.value.Role;
 import com.antock.global.common.response.ApiResponse;
 import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -210,23 +200,7 @@ public class MemberApiController {
         }
     }
 
-    @PostMapping("/admin/{memberId}/role")
-    public ApiResponse<MemberResponse> changeRole(
-            @PathVariable Long memberId,
-            @RequestParam Role role) {
-
-        log.info("회원 역할 변경 요청 - memberId: {}, role: {}", memberId, role);
-
-        try {
-            MemberResponse response = memberApplicationService.changeRole(memberId, role);
-            return ApiResponse.success(response, "회원 역할이 변경되었습니다.");
-        } catch (Exception e) {
-            log.error("회원 역할 변경 실패 - memberId: {}", memberId, e);
-            return ApiResponse.error("회원 역할 변경에 실패했습니다: " + e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/admin/{memberId}")
+    @DeleteMapping("/admin/{memberId}/delete")
     public ApiResponse<Void> deleteMember(@PathVariable Long memberId) {
         log.info("회원 삭제 요청 - memberId: {}", memberId);
 
@@ -286,4 +260,25 @@ public class MemberApiController {
 
         return request.getRemoteAddr();
     }
+
+
+    @PostMapping("/admin/{memberId}/role")
+    public ApiResponse<MemberResponse> changeMemberRole(
+            @PathVariable Long memberId,
+            @RequestParam Role role,
+            @CurrentUser AuthenticatedUser approver) {
+
+        log.info("회원 역할 변경 요청 - memberId: {}, newRole: {}, approver: {}",
+                memberId, role, approver.getUsername());
+
+        try {
+            MemberResponse response = memberApplicationService.changeMemberRole(memberId, role, approver.getId());
+            return ApiResponse.success(response, "회원 역할이 변경되었습니다.");
+        } catch (Exception e) {
+            log.error("회원 역할 변경 실패 - memberId: {}, role: {}", memberId, role, e);
+            return ApiResponse.error("회원 역할 변경에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+
 }
