@@ -26,7 +26,8 @@ public class CoSellerRestController {
         log.info("코셀러 데이터 저장 요청: {}", regionRequestDto);
 
         try {
-            int savedCount = cosellerService.saveCoSeller(regionRequestDto, user.getUsername());
+            String username = (user != null) ? user.getUsername() : "system";
+            int savedCount = cosellerService.saveCoSeller(regionRequestDto, username);
             return ApiResponse.success(savedCount, "데이터 저장이 완료되었습니다.");
         } catch (Exception e) {
             log.error("코셀러 데이터 저장 실패", e);

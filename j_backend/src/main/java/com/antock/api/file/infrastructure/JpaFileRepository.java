@@ -18,4 +18,6 @@ public interface JpaFileRepository extends JpaRepository<File, Long> {
     List<File> findByKeyword(@Param("keyword") String keyword);
 
     Optional<File> findByMetadataStoredFileName(String storedFileName);
+
+    Optional<File> findByMetadataOriginalFileName(String originalFileName);
 }

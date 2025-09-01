@@ -2,6 +2,7 @@ package com.antock.api.file.infrastructure.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +14,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 @Slf4j
+@Profile("prod")
 @Component
 public class LocalStorageStrategy implements FileStorageStrategy {
 
-    @Value("${file.upload-dir:/tmp/uploads}")
+    @Value("${file.upload.path:./uploads}")
     private String uploadDir;
 
     @Override

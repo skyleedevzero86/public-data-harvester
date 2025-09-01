@@ -28,8 +28,7 @@ public class CorpMastHistory extends BaseEntity {
     private String bizNo;
     private String result;
 
-    @Lob
-    @Column
+    @Column(name = "message", columnDefinition = "TEXT")
     private String message;
 
     private LocalDateTime timestamp;

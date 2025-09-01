@@ -200,22 +200,6 @@ public class MemberApiController {
         }
     }
 
-    @PostMapping("/admin/{memberId}/role")
-    public ApiResponse<MemberResponse> changeRole(
-            @PathVariable Long memberId,
-            @RequestParam Role role) {
-
-        log.info("회원 역할 변경 요청 - memberId: {}, role: {}", memberId, role);
-
-        try {
-            MemberResponse response = memberApplicationService.changeRole(memberId, role);
-            return ApiResponse.success(response, "회원 역할이 변경되었습니다.");
-        } catch (Exception e) {
-            log.error("회원 역할 변경 실패 - memberId: {}", memberId, e);
-            return ApiResponse.error("회원 역할 변경에 실패했습니다: " + e.getMessage());
-        }
-    }
-
     @DeleteMapping("/admin/{memberId}/delete")
     public ApiResponse<Void> deleteMember(@PathVariable Long memberId) {
         log.info("회원 삭제 요청 - memberId: {}", memberId);
@@ -278,7 +262,6 @@ public class MemberApiController {
     }
 
 
-
     @PostMapping("/admin/{memberId}/role")
     public ApiResponse<MemberResponse> changeMemberRole(
             @PathVariable Long memberId,
@@ -296,5 +279,6 @@ public class MemberApiController {
             return ApiResponse.error("회원 역할 변경에 실패했습니다: " + e.getMessage());
         }
     }
+
 
 }
