@@ -1,6 +1,7 @@
 package com.antock.api.corpmanual.application.dto.response;
 
 import com.antock.api.coseller.domain.CorpMast;
+import com.antock.global.utils.NumberFormatUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -83,6 +84,18 @@ public class CorpMastManualResponse {
         return (siNm != null ? siNm : "") + " " + (sggNm != null ? sggNm : "");
     }
 
+    @Schema(description = "포맷된 ID (콤마 포함)", example = "1,234", accessMode = Schema.AccessMode.READ_ONLY)
+    @JsonProperty("formattedId")
+    public String getFormattedId() {
+        return NumberFormatUtil.formatLong(id);
+    }
+
+    @Schema(description = "포맷된 지역코드 (콤마 포함)", example = "11,680", accessMode = Schema.AccessMode.READ_ONLY)
+    @JsonProperty("formattedRegionCd")
+    public String getFormattedRegionCd() {
+        return NumberFormatUtil.formatStringNumber(regionCd);
+    }
+
     public static CorpMastManualResponse from(CorpMast entity) {
         return CorpMastManualResponse.builder()
                 .id(entity.getId())
@@ -95,6 +108,8 @@ public class CorpMastManualResponse {
                 .sggNm(entity.getSggNm())
                 .username(entity.getUsername())
                 .description(entity.getDescription())
+                .createDate(entity.getCreateDate())
+                .modifyDate(entity.getModifyDate())
                 .build();
     }
 }

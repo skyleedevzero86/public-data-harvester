@@ -32,7 +32,10 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
 
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-                                  NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+            NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+
+        CurrentUser currentUserAnnotation = parameter.getParameterAnnotation(CurrentUser.class);
+        boolean required = currentUserAnnotation != null ? currentUserAnnotation.required() : true;
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
@@ -45,7 +48,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
                     try {
                         if (!jwtTokenProvider.validateToken(token)) {
                             log.warn("Invalid token provided for CurrentUser resolution");
-                            return null;
+                            return required ? null : createDefaultUser();
                         }
 
                         Claims claims = jwtTokenProvider.parseClaims(token);
@@ -53,7 +56,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
                         String tokenType = claims.get("type", String.class);
                         if (!"ACCESS".equals(tokenType)) {
                             log.warn("Invalid token type for CurrentUser: {}", tokenType);
-                            return null;
+                            return required ? null : createDefaultUser();
                         }
 
                         AuthenticatedUser user = AuthenticatedUser.builder()
@@ -68,13 +71,23 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
 
                     } catch (Exception e) {
                         log.error("토큰에서 사용자 정보 추출 실패: {}", e.getMessage());
+                        return required ? null : createDefaultUser();
                     }
                 }
             }
         }
 
         log.warn("CurrentUser 정보를 생성할 수 없음 - 인증되지 않은 요청");
-        return null;
+        return required ? null : createDefaultUser();
+    }
+
+    private AuthenticatedUser createDefaultUser() {
+        return AuthenticatedUser.builder()
+                .id(0L)
+                .username("system")
+                .nickname("시스템")
+                .role("SYSTEM")
+                .build();
     }
 
     private String extractTokenFromRequest(HttpServletRequest request) {

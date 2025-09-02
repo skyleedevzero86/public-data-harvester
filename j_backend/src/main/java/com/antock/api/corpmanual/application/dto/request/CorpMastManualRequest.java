@@ -103,7 +103,64 @@ public class CorpMastManualRequest {
 
     public boolean hasSearchCondition() {
         return getBizNmForSearch() != null || getBizNoForSearch() != null ||
-                getSellerIdForSearch() != null || getCorpRegNoForSearch() != null ||
+                getBizNoForSearch() != null || getCorpRegNoForSearch() != null ||
                 getCityForSearch() != null || getDistrictForSearch() != null;
     }
+
+    public String getBizNm() {
+        return bizNm;
+    }
+
+    public String getBizNo() {
+        return bizNo;
+    }
+
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    public String getCorpRegNo() {
+        return corpRegNo;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public int getTotalPages(long totalElements) {
+        return (int) Math.ceil((double) totalElements / size);
+    }
+
+    public boolean hasNextPage(long totalElements) {
+        return (page + 1) < getTotalPages(totalElements);
+    }
+
+    public boolean hasPreviousPage() {
+        return page > 0;
+    }
+
+    public int getNextPage() {
+        return page + 1;
+    }
+
+    public int getPreviousPage() {
+        return Math.max(0, page - 1);
+    }
+
+    public String getSort() {
+        return sort;
+    }
+
+    public int getPage() {
+        return page;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
 }

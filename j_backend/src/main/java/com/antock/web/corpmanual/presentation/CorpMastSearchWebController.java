@@ -3,6 +3,7 @@ package com.antock.web.corpmanual.presentation;
 import com.antock.api.corpmanual.application.dto.request.CorpMastForm;
 import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
+import com.antock.api.corpmanual.application.dto.response.CorpMastSearchResponse;
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,11 +42,11 @@ public class CorpMastSearchWebController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        Page<CorpMastManualResponse> corpList = null;
+        Page<CorpMastSearchResponse> corpList = null;
         if (hasSearchCondition(form)) {
-            corpList = corpMastService.search(form, pageable, username, isAdmin);
+            CorpMastManualRequest searchRequest = convertFormToRequest(form);
+            corpList = corpMastService.searchWithPagination(searchRequest, page, size, "id", "desc");
         } else {
-
             corpList = Page.empty(pageable);
         }
 
@@ -63,6 +64,16 @@ public class CorpMastSearchWebController {
                 (form.getSggNm() != null && !form.getSggNm().trim().isEmpty());
     }
 
+    private CorpMastManualRequest convertFormToRequest(CorpMastForm form) {
+        CorpMastManualRequest request = new CorpMastManualRequest();
+        request.setBizNm(form.getBizNm());
+        request.setBizNo(form.getBizNo());
+        request.setCorpRegNo(form.getCorpRegNo());
+        request.setCity(form.getSiNm());
+        request.setDistrict(form.getSggNm());
+        return request;
+    }
+
     @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("form", new CorpMastForm());
@@ -71,64 +82,63 @@ public class CorpMastSearchWebController {
 
     @PostMapping("/create")
     public String create(@ModelAttribute CorpMastForm form) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        corpMastService.save(form, username);
+        log.warn("법인 생성 기능은 아직 구현되지 않았습니다.");
         return "redirect:/corp/list";
     }
 
     @GetMapping("/edit/{id}")
     public String editForm(@PathVariable Long id, Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-        CorpMastManualResponse corp = corpMastService.getById(id, username, isAdmin);
-        CorpMastForm form = new CorpMastForm();
+        try {
+            CorpMastManualResponse corp = corpMastService.getById(id);
+            CorpMastForm form = new CorpMastForm();
 
-        form.setId(corp.getId());
-        form.setSellerId(corp.getSellerId());
-        form.setBizNm(corp.getBizNm());
-        form.setBizNo(corp.getBizNo());
-        form.setCorpRegNo(corp.getCorpRegNo());
-        form.setRegionCd(corp.getRegionCd());
-        form.setSiNm(corp.getSiNm());
-        form.setSggNm(corp.getSggNm());
-        form.setDescription(corp.getDescription());
-        model.addAttribute("form", form);
-        return "corp/form";
+            form.setId(corp.getId());
+            form.setSellerId(corp.getSellerId());
+            form.setBizNm(corp.getBizNm());
+            form.setBizNo(corp.getBizNo());
+            form.setCorpRegNo(corp.getCorpRegNo());
+            form.setRegionCd(corp.getRegionCd());
+            form.setSiNm(corp.getSiNm());
+            form.setSggNm(corp.getSggNm());
+            form.setDescription(corp.getDescription());
+            model.addAttribute("form", form);
+            return "corp/form";
+        } catch (Exception e) {
+            log.error("법인 정보 조회 실패: ID = {}", id, e);
+            model.addAttribute("errorMessage", "법인 정보를 찾을 수 없습니다.");
+            return "redirect:/corp/list";
+        }
     }
 
     @PostMapping("/edit/{id}")
     public String edit(@PathVariable Long id, @ModelAttribute CorpMastForm form) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-        corpMastService.update(id, form, username, isAdmin);
+        log.warn("법인 수정 기능은 아직 구현되지 않았습니다.");
         return "redirect:/corp/list";
     }
 
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-        corpMastService.delete(id, username, isAdmin);
+        log.warn("법인 삭제 기능은 아직 구현되지 않았습니다.");
         return "redirect:/corp/list";
     }
 
     @GetMapping("/modify/{id}")
     public String Modify(@PathVariable Long id, Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-        CorpMastManualResponse corp = corpMastService.getById(id, username, isAdmin);
-        model.addAttribute("corp", corp);
-        model.addAttribute("isAdmin", isAdmin);
-        return "corp/modify";
+        try {
+            CorpMastManualResponse corp = corpMastService.getById(id);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            boolean isAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+
+            model.addAttribute("corp", corp);
+            model.addAttribute("isAdmin", isAdmin);
+            return "corp/list";
+        } catch (Exception e) {
+            log.error("법인 정보 조회 실패: ID = {}", id, e);
+            model.addAttribute("errorMessage", "법인 정보를 찾을 수 없습니다.");
+            return "redirect:/corp/list";
+        }
     }
 
     @GetMapping("/search")
@@ -138,7 +148,7 @@ public class CorpMastSearchWebController {
 
         log.debug("법인 검색 페이지 요청: {}", searchRequest);
 
-        Page<CorpMastManualResponse> corpList = null;
+        List<CorpMastSearchResponse> corpList = null;
         Map<String, Object> statistics = null;
 
         if (searchRequest.hasSearchCondition()) {
