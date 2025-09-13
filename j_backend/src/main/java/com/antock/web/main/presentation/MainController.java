@@ -30,9 +30,15 @@ public class MainController {
             topRegionStat = new RegionStatDto();
         }
 
+        List<RegionStatDto> regionStats = regionStatService.getAllRegionStats();
+        if (regionStats.size() > 5) {
+            regionStats = regionStats.subList(0, 5);
+        }
+
         model.addAttribute("recentActivities", recentActivities);
         model.addAttribute("stats", stats);
         model.addAttribute("topRegionStat", topRegionStat);
+        model.addAttribute("regionStats", regionStats);
         return "main/index";
     }
 }

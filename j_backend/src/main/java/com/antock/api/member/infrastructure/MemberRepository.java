@@ -21,153 +21,156 @@ import java.util.Optional;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Optional<Member> findByUsername(String username);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Optional<Member> findByUsername(String username);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Optional<Member> findByEmail(String email);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Optional<Member> findByEmail(String email);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Optional<Member> findByApiKey(String apiKey);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Optional<Member> findByApiKey(String apiKey);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    boolean existsByUsername(String username);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        boolean existsByUsername(String username);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    boolean existsByEmail(String email);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        boolean existsByEmail(String email);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Page<Member> findByStatus(MemberStatus status, Pageable pageable);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Page<Member> findByStatus(MemberStatus status, Pageable pageable);
 
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Page<Member> findByRole(Role role, Pageable pageable);
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Page<Member> findByRole(Role role, Pageable pageable);
 
-    @Query("SELECT m FROM Member m WHERE m.status = :status AND m.createDate >= :fromDate")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    List<Member> findPendingMembersAfter(@Param("status") MemberStatus status,
-                                         @Param("fromDate") LocalDateTime fromDate);
+        @Query("SELECT m FROM Member m WHERE m.status = :status AND m.createDate >= :fromDate")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        List<Member> findPendingMembersAfter(@Param("status") MemberStatus status,
+                        @Param("fromDate") LocalDateTime fromDate);
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.status = :status")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countByStatus(@Param("status") MemberStatus status);
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.status = :status")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countByStatus(@Param("status") MemberStatus status);
 
-    @Query("SELECT m FROM Member m WHERE m.accountLockedAt IS NOT NULL AND m.accountLockedAt < :unlockTime")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
-    })
-    List<Member> findLockedMembersBeforeUnlockTime(@Param("unlockTime") LocalDateTime unlockTime);
+        @Query("SELECT m FROM Member m WHERE m.accountLockedAt IS NOT NULL AND m.accountLockedAt < :unlockTime")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
+        })
+        List<Member> findLockedMembersBeforeUnlockTime(@Param("unlockTime") LocalDateTime unlockTime);
 
-    @Query("SELECT m FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
-    })
-    List<Member> findMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
+        @Query("SELECT m FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
+        })
+        List<Member> findMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt < :beforeDate AND m.status = 'APPROVED'")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countMembersWithPasswordChangedBefore(@Param("beforeDate") LocalDateTime beforeDate);
 
-    @Query("SELECT COUNT(mph) FROM MemberPasswordHistory mph WHERE mph.createdAt >= :fromDate")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countPasswordChangesAfter(@Param("fromDate") LocalDateTime fromDate);
+        @Query("SELECT COUNT(mph) FROM MemberPasswordHistory mph WHERE mph.createdAt >= :fromDate")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countPasswordChangesAfter(@Param("fromDate") LocalDateTime fromDate);
 
-    @Query("SELECT m FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
-    })
-    List<Member> findMembersWithNullPasswordChangedAt();
+        @Query("SELECT m FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
+        })
+        List<Member> findMembersWithNullPasswordChangedAt();
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countMembersWithNullPasswordChangedAt();
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.passwordChangedAt IS NULL AND m.status = 'APPROVED'")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countMembersWithNullPasswordChangedAt();
 
-    @Query("SELECT m FROM Member m WHERE m.lastPasswordChangeDate = :date")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
-    })
-    List<Member> findMembersByLastPasswordChangeDate(@Param("date") LocalDate date);
+        @Query("SELECT m FROM Member m WHERE m.lastPasswordChangeDate = :date")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "100")
+        })
+        List<Member> findMembersByLastPasswordChangeDate(@Param("date") LocalDate date);
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.lastPasswordChangeDate = :date AND m.passwordChangeCount >= :count")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countMembersExceedingDailyLimit(@Param("date") LocalDate date, @Param("count") int count);
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.lastPasswordChangeDate = :date AND m.passwordChangeCount >= :count")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countMembersExceedingDailyLimit(@Param("date") LocalDate date, @Param("count") int count);
 
-    @Modifying
-    @Query(value = "UPDATE members SET login_fail_count = :failCount, status = :status, account_locked_at = :lockedAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
-    int updateLoginFailBySql(@Param("memberId") Long memberId,
-                             @Param("failCount") Integer failCount,
-                             @Param("status") String status,
-                             @Param("lockedAt") LocalDateTime lockedAt);
+        @Modifying
+        @Query(value = "UPDATE members SET login_fail_count = :failCount, status = :status, account_locked_at = :lockedAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+        int updateLoginFailBySql(@Param("memberId") Long memberId,
+                        @Param("failCount") Integer failCount,
+                        @Param("status") String status,
+                        @Param("lockedAt") LocalDateTime lockedAt);
 
-    @Modifying
-    @Query(value = "UPDATE members SET login_fail_count = :failCount, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
-    int updateLoginFailCountOnly(@Param("memberId") Long memberId, @Param("failCount") Integer failCount);
+        @Modifying
+        @Query(value = "UPDATE members SET login_fail_count = :failCount, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+        int updateLoginFailCountOnly(@Param("memberId") Long memberId, @Param("failCount") Integer failCount);
 
-    @Query(value = "SELECT login_fail_count FROM members WHERE id = :memberId", nativeQuery = true)
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Integer getCurrentLoginFailCount(@Param("memberId") Long memberId);
+        @Query(value = "SELECT login_fail_count FROM members WHERE id = :memberId", nativeQuery = true)
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Integer getCurrentLoginFailCount(@Param("memberId") Long memberId);
 
-    @Query("SELECT m FROM Member m WHERE (:status IS NULL OR m.status = :status) AND (:role IS NULL OR m.role = :role)")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    Page<Member> findByStatusAndRole(@Param("status") MemberStatus status,
-                                     @Param("role") Role role,
-                                     Pageable pageable);
+        @Query("SELECT m FROM Member m WHERE (:status IS NULL OR m.status = :status) AND (:role IS NULL OR m.role = :role)")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        Page<Member> findByStatusAndRole(@Param("status") MemberStatus status,
+                        @Param("role") Role role,
+                        Pageable pageable);
 
-    @Query("SELECT m.id FROM Member m WHERE m.id IN :ids")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "1000")
-    })
-    List<Long> findIdsByIdIn(@Param("ids") List<Long> ids);
+        @Query("SELECT m.id FROM Member m WHERE m.id IN :ids")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE, value = "1000")
+        })
+        List<Long> findIdsByIdIn(@Param("ids") List<Long> ids);
 
-    @Query("SELECT NEW com.antock.api.member.application.dto.response.MemberStatsDto(m.status, COUNT(m)) FROM Member m GROUP BY m.status")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    List<com.antock.api.member.application.dto.response.MemberStatsDto> getMemberStats();
+        @Query("SELECT NEW com.antock.api.member.application.dto.response.MemberStatsDto(m.status, COUNT(m)) FROM Member m GROUP BY m.status")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        List<com.antock.api.member.application.dto.response.MemberStatsDto> getMemberStats();
 
-    @Modifying
-    @Query(value = "UPDATE members SET login_fail_count = 0, last_login_at = :lastLoginAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
-    int updateLoginSuccessBySql(@Param("memberId") Long memberId,
-                                @Param("lastLoginAt") LocalDateTime lastLoginAt);
+        @Modifying
+        @Query(value = "UPDATE members SET login_fail_count = 0, last_login_at = :lastLoginAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+        int updateLoginSuccessBySql(@Param("memberId") Long memberId,
+                        @Param("lastLoginAt") LocalDateTime lastLoginAt);
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countByRole(@Param("role") Role role);
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countByRole(@Param("role") Role role);
 
-    @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role AND m.status = :status")
-    @QueryHints({
-            @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
-    })
-    long countByRoleAndStatus(@Param("role") Role role, @Param("status") MemberStatus status);
+        @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role AND m.status = :status")
+        @QueryHints({
+                        @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
+        })
+        long countByRoleAndStatus(@Param("role") Role role, @Param("status") MemberStatus status);
+
+        @Query("SELECT m FROM Member m WHERE m.username = :username AND m.email = :email")
+        Optional<Member> findByUsernameAndEmail(@Param("username") String username, @Param("email") String email);
 }

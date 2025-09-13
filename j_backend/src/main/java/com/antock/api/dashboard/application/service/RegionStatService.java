@@ -3,6 +3,7 @@ package com.antock.api.dashboard.application.service;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.dashboard.application.dto.RegionStatDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegionStatService {
@@ -29,7 +31,13 @@ public class RegionStatService {
     }
 
     public Page<RegionStatDto> getRegionStatsWithPaging(Pageable pageable, String city, String district) {
+        log.info("Getting region stats with paging - page: {}, size: {}, city: {}, district: {}",
+                pageable.getPageNumber(), pageable.getPageSize(), city, district);
+
         Page<Object[]> rawStatsPage = corpMastRepository.getRegionStatsWithPaging(pageable, city, district);
+
+        log.info("Raw stats page - total: {}, current page: {}, content size: {}",
+                rawStatsPage.getTotalElements(), rawStatsPage.getNumber(), rawStatsPage.getContent().size());
 
         return rawStatsPage.map(this::convertToRegionStatDto);
     }

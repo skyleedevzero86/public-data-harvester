@@ -1,7 +1,6 @@
 package com.antock.api.coseller.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.dashboard.application.dto.RegionStatDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,8 +43,7 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpM
                         "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
                         "AND (:city IS NULL OR c.siNm = :city) " +
                         "AND (:district IS NULL OR c.sggNm = :district) " +
-                        "GROUP BY c.siNm, c.sggNm " +
-                        "ORDER BY COUNT(c) DESC")
+                        "GROUP BY c.siNm, c.sggNm")
         Page<Object[]> getRegionStatsWithPaging(
                         Pageable pageable,
                         @Param("city") String city,

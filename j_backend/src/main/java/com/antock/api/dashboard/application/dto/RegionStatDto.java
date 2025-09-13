@@ -19,7 +19,8 @@ import lombok.NoArgsConstructor;
                   "totalCount": 15423,
                   "validCorpRegNoCount": 15000,
                   "validRegionCdCount": 15400,
-                  "formattedCount": "15,423"
+                  "formattedCount": "15,423",
+                  "completionRate": 76.95
                 }
                 """)
 public class RegionStatDto {
@@ -43,6 +44,9 @@ public class RegionStatDto {
         @Schema(description = "포맷된 법인 수 (천 단위 구분자 포함)", example = "15,423", requiredMode = Schema.RequiredMode.REQUIRED)
         private String formattedCount;
 
+        @Schema(description = "데이터 완성도 (백분율)", example = "76.95", minimum = "0.0", maximum = "100.0", requiredMode = Schema.RequiredMode.REQUIRED)
+        private double completionRate;
+
         public RegionStatDto(String city, String district, long totalCount, long validCorpRegNoCount,
                         long validRegionCdCount) {
                 this.city = city;
@@ -50,16 +54,7 @@ public class RegionStatDto {
                 this.totalCount = totalCount;
                 this.validCorpRegNoCount = validCorpRegNoCount;
                 this.validRegionCdCount = validRegionCdCount;
-        }
-
-        public static RegionStatDto from(Object[] rawData) {
-                return RegionStatDto.builder()
-                                .city((String) rawData[0])
-                                .district((String) rawData[1])
-                                .totalCount(((Number) rawData[2]).longValue())
-                                .validCorpRegNoCount(rawData.length > 3 ? ((Number) rawData[3]).longValue() : 0)
-                                .validRegionCdCount(rawData.length > 4 ? ((Number) rawData[4]).longValue() : 0)
-                                .build();
+                this.completionRate = calculateCompletionRate();
         }
 
         public String getFormattedCount() {
@@ -67,6 +62,16 @@ public class RegionStatDto {
                         formattedCount = NumberFormatUtil.formatNumber(totalCount);
                 }
                 return formattedCount;
+        }
+
+        private double calculateCompletionRate() {
+                if (totalCount == 0) {
+                        return 0.0;
+                }
+                double corpRegNoRate = (double) validCorpRegNoCount / totalCount * 100;
+                double regionCdRate = (double) validRegionCdCount / totalCount * 100;
+
+                return Math.round((corpRegNoRate + regionCdRate) / 2 * 100.0) / 100.0;
         }
 
         @Override
@@ -78,6 +83,7 @@ public class RegionStatDto {
                                 ", validCorpRegNoCount=" + validCorpRegNoCount +
                                 ", validRegionCdCount=" + validRegionCdCount +
                                 ", formattedCount='" + getFormattedCount() + '\'' +
+                                ", completionRate=" + completionRate +
                                 '}';
         }
 }

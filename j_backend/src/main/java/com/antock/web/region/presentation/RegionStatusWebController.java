@@ -15,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,17 +36,25 @@ public class RegionStatusWebController {
             @RequestParam(required = false) String district,
             Model model) {
 
+        log.info("Region status request - page: {}, size: {}, city: {}, district: {}", page, size, city, district);
+
+        String actualCity = StringUtils.hasText(city) ? city : null;
+        String actualDistrict = StringUtils.hasText(district) ? district : null;
+
         Sort sort = Sort.by(Sort.Direction.DESC, "totalCount");
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<RegionStatDto> regionStats = regionStatService.getRegionStatsWithPaging(
-                pageable, city, district);
+                pageable, actualCity, actualDistrict);
+
+        log.info("Retrieved region stats - total: {}, current page: {}, content size: {}",
+                regionStats.getTotalElements(), regionStats.getNumber(), regionStats.getContent().size());
 
         List<City> cities = Arrays.asList(City.values());
 
         List<District> districts;
-        if (city != null && !city.isEmpty()) {
-            districts = District.getDistrictsByCity(city);
+        if (actualCity != null) {
+            districts = District.getDistrictsByCity(actualCity);
         } else {
             districts = Arrays.asList(District.values());
         }
@@ -53,8 +62,8 @@ public class RegionStatusWebController {
         model.addAttribute("regionStats", regionStats.getContent());
         model.addAttribute("cities", cities);
         model.addAttribute("districts", districts);
-        model.addAttribute("selectedCity", city);
-        model.addAttribute("selectedDistrict", district);
+        model.addAttribute("selectedCity", actualCity);
+        model.addAttribute("selectedDistrict", actualDistrict);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", regionStats.getTotalPages());
         model.addAttribute("totalElements", regionStats.getTotalElements());

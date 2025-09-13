@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="_csrf" content="${_csrf.token}"/>
     <meta name="_csrf_header" content="${_csrf.headerName}"/>
-    <title>회원 관리 - Antock System</title>
+    <title>회원 관리 - 통신판매자사업관리시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -28,36 +28,36 @@
             padding: 10px 20px 5px 20px;
         }
 
-        .custom-dropdown .dropdown-menu { 
-            min-width: 220px !important; 
+        .custom-dropdown .dropdown-menu {
+            min-width: 220px !important;
         }
 
         .table th, .table td {
             vertical-align: middle;
             text-align: center;
         }
-        
+
         .table th:first-child, .table td:first-child {
             text-align: center;
         }
-        
+
         .table th:nth-child(2), .table td:nth-child(2) {
             text-align: left;
         }
-        
+
         .table th:nth-child(3), .table td:nth-child(3) {
             text-align: left;
         }
-        
+
         .table th:nth-child(4), .table td:nth-child(4) {
             text-align: left;
         }
-        
+
         .table th:last-child, .table td:last-child {
             min-width: 50px;
             text-align: center;
         }
-        
+
         .table th:nth-last-child(2), .table td:nth-last-child(2) {
             min-width: 250px;
             text-align: center;
@@ -122,23 +122,86 @@
             font-size: 2.5rem;
             opacity: 0.8;
         }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 40px 0 20px 0;
+            margin-top: 60px;
+        }
+
+        .footer-logo {
+            margin-bottom: 30px;
+        }
+
+        .footer-logo .festival-number {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .footer-contact {
+            margin-bottom: 25px;
+        }
+
+        .footer-contact .contact-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #f8f9fa;
+        }
+
+        .footer-contact .contact-address {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .footer-contact .contact-phone {
+            font-size: 0.9rem;
+            color: #adb5bd;
+        }
+
+        .footer-contact .contact-email {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .footer-copyright {
+            border-top: 1px solid #495057;
+            padding-top: 20px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> Antock System
+            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
         </a>
         <div class="navbar-nav ms-auto">
             <a class="nav-link" href="/members/profile">
                 <i class="bi bi-person-circle"></i> 내 프로필
             </a>
-            <a class="nav-link" href="/members/admin/pending">
-                <i class="bi bi-clock"></i> 승인 대기
-                <c:if test="${pendingCount > 0}">
-                    <span class="badge bg-warning text-dark ms-1">${pendingCount}</span>
-                </c:if>
+            <c:if test="${member.role == 'ADMIN' || member.role == 'MANAGER'}">
+                <a class="nav-link" href="/members/admin/pending">
+                    <i class="bi bi-clock"></i> 승인 대기
+                </a>
+            </c:if>
+            <a class="nav-link" href="/web/files">
+                <i class="bi bi-clock"></i> 파일 관리
             </a>
             <a class="nav-link" href="/members/logout">
                 <i class="bi bi-box-arrow-right"></i> 로그아웃
@@ -445,7 +508,6 @@
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li><h6 class="dropdown-header"><i class="bi bi-gear"></i> 상태 관리</h6></li>
 
-                                                    <!-- 승인 버튼 -->
                                                     <c:if test="${member.status == 'PENDING' || member.status == 'REJECTED'}">
                                                         <li>
                                                             <form method="post" action="/members/admin/${member.id}/approve" class="d-inline">
@@ -458,7 +520,6 @@
                                                         </li>
                                                     </c:if>
 
-                                                    <!-- 정지 버튼 -->
                                                     <c:if test="${member.status == 'APPROVED'}">
                                                         <li>
                                                             <form method="post" action="/members/admin/${member.id}/suspend" class="d-inline">
@@ -471,7 +532,6 @@
                                                         </li>
                                                     </c:if>
 
-                                                    <!-- 정지 해제 버튼 -->
                                                     <c:if test="${member.status == 'SUSPENDED' || member.loginFailCount >= 5}">
                                                         <li>
                                                             <form method="post" action="/members/admin/${member.id}/unlock" class="d-inline">
@@ -484,7 +544,6 @@
                                                         </li>
                                                     </c:if>
 
-                                                    <!-- 거부 버튼 -->
                                                     <c:if test="${member.status == 'PENDING'}">
                                                         <li>
                                                             <form method="post" action="/members/admin/${member.id}/reject" class="d-inline">
@@ -497,7 +556,6 @@
                                                         </li>
                                                     </c:if>
 
-                                                    <!-- 승인 대기로 되돌리기 버튼 -->
                                                     <c:if test="${member.status == 'REJECTED' || member.status == 'SUSPENDED' || member.status == 'WITHDRAWN'}">
                                                         <li>
                                                             <form method="post" action="/members/admin/${member.id}/reset-to-pending" class="d-inline">
@@ -587,6 +645,39 @@
     </div>
 </div>
 
+<footer class="footer">
+    <div class="footer-container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="footer-logo">
+                    <div class="festival-number"></div>
+                    <div class="main-title">public-data-harvester</div>
+                    <div class="sub-title">CHUNGJANG STREET FESTIVAL OF RECOLLECTION</div>
+                </div>
+
+                <div class="footer-contact">
+                    <div class="contact-title">통신판매사업자 정보 관리시스템</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="footer-contact">
+                    <div class="contact-title">궁금하면 500원</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                    <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-copyright">
+            ⓒ public-data-harvester. ALL RIGHT RESERVED.
+        </div>
+    </div>
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterByStatus(status) {
@@ -622,11 +713,11 @@
     document.addEventListener('DOMContentLoaded', function() {
         const statusFilter = document.getElementById('statusFilter');
         const roleFilter = document.getElementById('roleFilter');
-        
+
         if (statusFilter.value) {
             statusFilter.classList.add('filter-active');
         }
-        
+
         if (roleFilter.value) {
             roleFilter.classList.add('filter-active');
         }

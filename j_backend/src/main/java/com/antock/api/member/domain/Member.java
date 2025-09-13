@@ -99,6 +99,21 @@ public class Member extends BaseTimeEntity {
                 getId(), this.passwordChangedAt, this.passwordChangeCount);
     }
 
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+        this.passwordChangedAt = LocalDateTime.now();
+
+        LocalDate today = LocalDate.now();
+        if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
+            this.passwordChangeCount = 1;
+            this.lastPasswordChangeDate = today;
+        } else {
+            this.passwordChangeCount = (this.passwordChangeCount == null ? 0 : this.passwordChangeCount) + 1;
+        }
+
+        log.info("비밀번호 업데이트 완료 - memberId: {}, passwordChangedAt: {}", getId(), this.passwordChangedAt);
+    }
+
     public boolean canChangePassword() {
         LocalDate today = LocalDate.now();
         if (this.lastPasswordChangeDate == null || !this.lastPasswordChangeDate.equals(today)) {
@@ -296,5 +311,4 @@ public class Member extends BaseTimeEntity {
         this.loginFailCount = 0;
         log.info("회원 상태를 승인 대기로 재설정: memberId={}, username={}", this.getId(), this.username);
     }
-
 }

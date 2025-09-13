@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="_csrf" content="${_csrf.token}"/>
     <meta name="_csrf_header" content="${_csrf.headerName}"/>
-    <title>법인 정보 검색 - Antock System</title>
+    <title>법인 목록 - 통신판매사업자관리 시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -59,13 +59,6 @@
             color: white;
             padding: 15px 20px;
             border-radius: 10px 10px 0 0;
-            margin: 0;
-        }
-
-        .results-summary {
-            background: #e3f2fd;
-            padding: 15px 20px;
-            border-bottom: 1px solid #dee2e6;
             margin: 0;
         }
 
@@ -137,6 +130,13 @@
             font-weight: 600;
         }
 
+        .btn-create {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            padding: 10px 30px;
+            font-weight: 600;
+        }
+
         .stats-card {
             background: linear-gradient(45deg, #28a745, #20c997);
             color: white;
@@ -155,6 +155,80 @@
             font-size: 0.9rem;
             opacity: 0.9;
         }
+
+        .filter-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-active {
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 40px 0 20px 0;
+            margin-top: 60px;
+        }
+
+        .footer-logo {
+            margin-bottom: 30px;
+        }
+
+        .footer-logo .festival-number {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .footer-contact {
+            margin-bottom: 25px;
+        }
+
+        .footer-contact .contact-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #f8f9fa;
+        }
+
+        .footer-contact .contact-address {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .footer-contact .contact-phone {
+            font-size: 0.9rem;
+            color: #adb5bd;
+        }
+
+        .footer-contact .contact-email {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .footer-copyright {
+            border-top: 1px solid #495057;
+            padding-top: 20px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
     </style>
 </head>
 <body>
@@ -162,7 +236,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> Antock System
+            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
         </a>
         <div class="navbar-nav ms-auto">
             <a class="nav-link" href="/members/profile">
@@ -181,10 +255,10 @@
 <div class="container-fluid mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-building"></i> 법인 정보 검색</h2>
+        <h2><i class="bi bi-building"></i> 법인 목록</h2>
         <div>
-            <a href="/api/v1/corp/export?${pageContext.request.queryString}" class="btn btn-success">
-                <i class="bi bi-file-earmark-excel"></i> Excel 다운로드
+            <a href="/corp/create" class="btn btn-success btn-create">
+                <i class="bi bi-plus-circle"></i> 신규등록
             </a>
         </div>
     </div>
@@ -201,49 +275,32 @@
             <i class="bi bi-search"></i> 검색 조건
         </h5>
 
-        <form method="GET" action="/corp/search" class="search-form">
+        <form method="GET" action="/corp/list" class="search-form">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label for="bizNm" class="form-label">법인명</label>
                     <input type="text" class="form-control" id="bizNm" name="bizNm"
-                           value="${searchRequest.bizNm}" placeholder="법인명을 입력하세요">
+                           value="${form.bizNm}" placeholder="법인명을 입력하세요">
                 </div>
                 <div class="col-md-6">
                     <label for="bizNo" class="form-label">사업자번호</label>
                     <input type="text" class="form-control" id="bizNo" name="bizNo"
-                           value="${searchRequest.bizNo}" placeholder="000-00-00000">
-                </div>
-                <div class="col-md-6">
-                    <label for="sellerId" class="form-label">판매자ID</label>
-                    <input type="text" class="form-control" id="sellerId" name="sellerId"
-                           value="${searchRequest.sellerId}" placeholder="판매자ID를 입력하세요">
+                           value="${form.bizNo}" placeholder="000-00-00000">
                 </div>
                 <div class="col-md-6">
                     <label for="corpRegNo" class="form-label">법인등록번호</label>
                     <input type="text" class="form-control" id="corpRegNo" name="corpRegNo"
-                           value="${searchRequest.corpRegNo}" placeholder="법인등록번호를 입력하세요">
+                           value="${form.corpRegNo}" placeholder="법인등록번호를 입력하세요">
                 </div>
                 <div class="col-md-6">
-                    <label for="city" class="form-label">시/도</label>
-                    <select class="form-select" id="city" name="city" onchange="loadDistricts()">
-                        <option value="">전체</option>
-                        <c:forEach var="cityOption" items="${cities}">
-                            <option value="${cityOption}" ${searchRequest.city == cityOption ? 'selected' : ''}>
-                                    ${cityOption}
-                            </option>
-                        </c:forEach>
-                    </select>
+                    <label for="siNm" class="form-label">시/도</label>
+                    <input type="text" class="form-control" id="siNm" name="siNm"
+                           value="${form.siNm}" placeholder="시/도를 입력하세요">
                 </div>
                 <div class="col-md-6">
-                    <label for="district" class="form-label">구/군</label>
-                    <select class="form-select" id="district" name="district">
-                        <option value="">전체</option>
-                        <c:forEach var="districtOption" items="${districts}">
-                            <option value="${districtOption}" ${searchRequest.district == districtOption ? 'selected' : ''}>
-                                    ${districtOption}
-                            </option>
-                        </c:forEach>
-                    </select>
+                    <label for="sggNm" class="form-label">구/군</label>
+                    <input type="text" class="form-control" id="sggNm" name="sggNm"
+                           value="${form.sggNm}" placeholder="구/군을 입력하세요">
                 </div>
             </div>
 
@@ -264,44 +321,13 @@
             <div class="results-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-list-ul"></i> 검색 결과
+                        <i class="bi bi-list-ul"></i> 법인 목록
                     </h5>
                     <span class="badge bg-light text-dark fs-6">
                         총 ${corpList.totalElements}건
                     </span>
                 </div>
             </div>
-
-            <c:if test="${statistics != null && statistics.totalCount > 0}">
-                <div class="results-summary">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="stats-card">
-                                <div class="stats-number">${statistics.totalCount}</div>
-                                <div class="stats-label">검색된 법인 수</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stats-card">
-                                <div class="stats-number">${corpList.totalPages}</div>
-                                <div class="stats-label">총 페이지 수</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stats-card">
-                                <div class="stats-number">${corpList.number + 1}</div>
-                                <div class="stats-label">현재 페이지</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stats-card">
-                                <div class="stats-number">${corpList.numberOfElements}</div>
-                                <div class="stats-label">현재 페이지 결과</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </c:if>
 
             <c:choose>
                 <c:when test="${not empty corpList.content}">
@@ -312,11 +338,11 @@
                                 <th width="5%">No</th>
                                 <th width="20%">법인명</th>
                                 <th width="12%">사업자번호</th>
-                                <th width="15%">판매자ID</th>
                                 <th width="15%">법인등록번호</th>
-                                <th width="15%">주소</th>
+                                <th width="15%">시/도</th>
+                                <th width="15%">구/군</th>
                                 <th width="10%">등록자</th>
-                                <th width="8%">상세</th>
+                                <th width="8%">관리</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -326,30 +352,40 @@
                                             ${corpList.totalElements - (corpList.number * corpList.size) - status.index}
                                     </td>
                                     <td>
-                                            <span class="corp-name" onclick="viewDetail(${corp.id})">
-                                                    ${corp.bizNm}
-                                            </span>
+                                        <span class="corp-name" onclick="viewDetail(${corp.id})">
+                                                ${corp.bizNm}
+                                        </span>
                                     </td>
                                     <td>
-                                        <span class="bizno-format">${corp.formattedBizNo}</span>
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">${corp.sellerId}</small>
+                                        <span class="bizno-format">${corp.bizNo}</span>
                                     </td>
                                     <td>
                                         <small class="text-muted">${corp.corpRegNo}</small>
                                     </td>
                                     <td>
-                                        <span class="address-info">${corp.fullAddress}</span>
+                                        <span class="address-info">${corp.siNm}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">${corp.username}</span>
+                                        <span class="address-info">${corp.sggNm}</span>
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                                onclick="viewDetail(${corp.id})">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
+                                        <span class="badge bg-info">
+                                            <c:choose>
+                                                <c:when test="${isAdmin}">${corp.username}</c:when>
+                                                <c:otherwise>본인</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/corp/modify/${corp.id}" class="btn btn-outline-warning btn-sm">
+                                                <i class="bi bi-pencil"></i> 수정
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                                    onclick="deleteCorp(${corp.id}, '${corp.bizNm}')">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -359,7 +395,7 @@
 
                     <c:if test="${corpList != null && corpList.totalPages > 1}">
                         <div class="pagination-container">
-                            <nav aria-label="검색 결과 페이징">
+                            <nav aria-label="법인 목록 페이징">
                                 <ul class="pagination justify-content-center mb-0">
                                     <c:if test="${corpList.hasPrevious()}">
                                         <li class="page-item">
@@ -390,12 +426,12 @@
                 </c:when>
                 <c:otherwise>
                     <div class="no-results">
-                        <i class="bi bi-search"></i>
-                        <h5>검색 결과가 없습니다</h5>
-                        <p class="text-muted">검색 조건을 변경하여 다시 시도해보세요.</p>
-                        <button type="button" class="btn btn-primary" onclick="resetForm()">
-                            <i class="bi bi-arrow-clockwise"></i> 검색 조건 초기화
-                        </button>
+                        <i class="bi bi-building"></i>
+                        <h5>등록된 법인 정보가 없습니다</h5>
+                        <p class="text-muted">첫 번째 법인을 등록해보세요.</p>
+                        <a href="/corp/create" class="btn btn-primary btn-create">
+                            <i class="bi bi-plus-circle"></i> 첫 번째 법인 등록하기
+                        </a>
                     </div>
                 </c:otherwise>
             </c:choose>
@@ -414,55 +450,81 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<footer class="footer">
+    <div class="footer-container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="footer-logo">
+                    <div class="festival-number"></div>
+                    <div class="main-title">public-data-harvester</div>
+                    <div class="sub-title">CHUNGJANG STREET FESTIVAL OF RECOLLECTION</div>
+                </div>
+
+                <div class="footer-contact">
+                    <div class="contact-title">통신판매사업자 정보 관리시스템</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="footer-contact">
+                    <div class="contact-title">궁금하면 500원</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                    <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-copyright">
+            ⓒ public-data-harvester. ALL RIGHT RESERVED.
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
 <script>
-    function loadDistricts() {
-        const citySelect = document.getElementById('city');
-        const districtSelect = document.getElementById('district');
-        const selectedCity = citySelect.value;
-
-        districtSelect.innerHTML = '<option value="">전체</option>';
-
-        if (selectedCity) {
-            fetch('/corp/districts/' + encodeURIComponent(selectedCity))
-                .then(response => response.json())
-                .then(districts => {
-                    districts.forEach(district => {
-                        const option = document.createElement('option');
-                        option.value = district;
-                        option.textContent = district;
-                        districtSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('구/군 목록 로딩 실패:', error);
-                });
-        }
-    }
-
     function resetForm() {
         document.getElementById('bizNm').value = '';
         document.getElementById('bizNo').value = '';
-        document.getElementById('sellerId').value = '';
         document.getElementById('corpRegNo').value = '';
-        document.getElementById('city').value = '';
-        document.getElementById('district').value = '';
+        document.getElementById('siNm').value = '';
+        document.getElementById('sggNm').value = '';
 
-        window.location.href = '/corp/search';
+        window.location.href = '/corp/list';
     }
 
-    // 상세 페이지로 이동
     function viewDetail(corpId) {
         window.location.href = '/corp/detail/' + corpId;
     }
 
-    function buildPageUrl(pageNum) {
+    function deleteCorp(corpId, bizNm) {
+        if (confirm(`'${bizNm}' 법인을 삭제하시겠습니까?`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/corp/delete/${corpId}`;
+
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_csrf';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function goToPage(pageNum) {
         const params = new URLSearchParams(window.location.search);
         params.set('page', pageNum);
-
         if (!params.has('size')) params.set('size', '20');
         if (!params.has('sort')) params.set('sort', 'id,desc');
-        return params.toString();
+        window.location.search = params.toString();
     }
 
     document.getElementById('bizNo').addEventListener('input', function(e) {
@@ -477,20 +539,6 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const city = document.getElementById('city').value;
-        if (city) {
-            loadDistricts();
-
-            setTimeout(() => {
-                const selectedDistrict = '${searchRequest.district}';
-                if (selectedDistrict) {
-                    document.getElementById('district').value = selectedDistrict;
-                }
-            }, 500);
-        }
-    });
-
     document.querySelectorAll('.search-form input').forEach(input => {
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -499,15 +547,6 @@
             }
         });
     });
-
-    function goToPage(pageNum) {
-        const params = new URLSearchParams(window.location.search);
-        params.set('page', pageNum);
-        if (!params.has('size')) params.set('size', '20');
-        if (!params.has('sort')) params.set('sort', 'id,desc');
-        window.location.search = params.toString();
-    }
-
 </script>
 
 </body>
