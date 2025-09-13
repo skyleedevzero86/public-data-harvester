@@ -48,6 +48,13 @@ public class MemberPasswordHistory {
     @Column
     private LocalDateTime timestamp;
 
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
     public MemberPasswordHistory(Member member, String passwordHash) {
         this.member = member;
         this.passwordHash = passwordHash;

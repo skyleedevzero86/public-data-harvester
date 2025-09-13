@@ -92,6 +92,11 @@ public class MemberPasswordFindWebController {
         }
     }
 
+    @GetMapping("/find/success")
+    public String findPasswordSuccess(Model model) {
+        return "member/password-find-success";
+    }
+
     private String getClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {

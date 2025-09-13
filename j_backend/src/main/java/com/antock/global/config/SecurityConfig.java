@@ -48,8 +48,14 @@ public class SecurityConfig {
                                                                 "/",
                                                                 "/members/login",
                                                                 "/members/join",
+                                                                "/members/password/find",
+                                                                "/members/password/reset",
                                                                 "/api/v1/members/login",
                                                                 "/api/v1/members/join",
+                                                                "/api/v1/members/password/find",
+                                                                "/api/v1/members/password/reset",
+                                                                "/api/v1/members/password/reset/validate",
+
                                                                 "/api/v1/corp/**",
                                                                 "/api/v1/region-stats/**",
                                                                 "/api/v1/files/**",
@@ -73,7 +79,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/coseller/save").authenticated()
                                                 .requestMatchers("/members/profile", "/members/admin/**",
-                                                                "/members/password/**")
+                                                                "/members/password/change")
                                                 .authenticated()
                                                 .anyRequest().authenticated())
 
@@ -93,8 +99,8 @@ public class SecurityConfig {
                                                                                 "img-src 'self' data: https:; " +
                                                                                 "font-src 'self' https://cdn.jsdelivr.net; "
                                                                                 +
-                                                                                "connect-src 'self'; " +
-                                                                                "media-src 'self'; " +
+                                                                                "connect-src 'self' https://cdn.jsdelivr.net; "
+                                                                                +
                                                                                 "object-src 'none'; " +
                                                                                 "frame-src 'self'; " +
                                                                                 "worker-src 'self'; " +

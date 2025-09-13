@@ -30,7 +30,8 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     @Query("DELETE FROM PasswordResetToken t WHERE t.expiresAt < :now")
     int deleteExpiredTokens(@Param("now") LocalDateTime now);
 
-    long countByMemberIdAndUsedFalse(Long memberId);
+    @Query("SELECT COUNT(t) FROM PasswordResetToken t WHERE t.member.id = :memberId AND t.used = false")
+    long countByMemberIdAndUsedFalse(@Param("memberId") Long memberId);
 
     @Query("SELECT COUNT(t) FROM PasswordResetToken t WHERE t.member.id = :memberId AND t.createDate >= :since")
     long countRecentTokensByMemberId(@Param("memberId") Long memberId, @Param("since") LocalDateTime since);
