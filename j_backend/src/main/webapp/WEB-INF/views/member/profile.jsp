@@ -6,16 +6,192 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>내 프로필 - Antock System</title>
+    <meta name="_csrf" content="${_csrf.token}"/>
+    <meta name="_csrf_header" content="${_csrf.headerName}"/>
+    <title>내 프로필 - 통신판매자사업관리시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        .dropdown-menu {
+            min-width: 200px !important;
+            padding: 10px 0;
+        }
+
+        .dropdown-menu .dropdown-item {
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .dropdown-menu .dropdown-header {
+            font-size: 1.05rem;
+            font-weight: bold;
+            padding: 10px 20px 5px 20px;
+        }
+
+        .custom-dropdown .dropdown-menu {
+            min-width: 220px !important;
+        }
+
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .table th:first-child, .table td:first-child {
+            text-align: center;
+        }
+
+        .table th:nth-child(2), .table td:nth-child(2) {
+            text-align: left;
+        }
+
+        .table th:nth-child(3), .table td:nth-child(3) {
+            text-align: left;
+        }
+
+        .table th:nth-child(4), .table td:nth-child(4) {
+            text-align: left;
+        }
+
+        .table th:last-child, .table td:last-child {
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .table th:nth-last-child(2), .table td:nth-last-child(2) {
+            min-width: 250px;
+            text-align: center;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+
+        .btn-group-sm .btn {
+            margin-right: 2px;
+        }
+
+        .locked-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .login-fail-count {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            font-size: 0.8em;
+        }
+
+        .filter-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-active {
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+
+        .status-cell {
+            white-space: nowrap;
+        }
+
+        .btn-group .dropdown-menu {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .icon-align {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        /* Footer Styles */
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 40px 0 20px 0;
+            margin-top: 60px;
+        }
+
+        .footer-logo {
+            margin-bottom: 30px;
+        }
+
+        .footer-logo .festival-number {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .footer-contact {
+            margin-bottom: 25px;
+        }
+
+        .footer-contact .contact-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #f8f9fa;
+        }
+
+        .footer-contact .contact-address {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .footer-contact .contact-phone {
+            font-size: 0.9rem;
+            color: #adb5bd;
+        }
+
+        .footer-contact .contact-email {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .footer-copyright {
+            border-top: 1px solid #495057;
+            padding-top: 20px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+    </style>
 </head>
 <body>
-
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> Antock System
+            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
         </a>
         <div class="navbar-nav ms-auto">
             <c:if test="${member.role == 'ADMIN' || member.role == 'MANAGER'}">
@@ -25,6 +201,9 @@
                 <a class="nav-link" href="/members/admin/pending">
                     <i class="bi bi-clock"></i> 승인 대기
                 </a>
+                <a class="nav-link" href="/web/files">
+                    <i class="bi bi-clock"></i> 파일 관리
+                </a>
             </c:if>
             <a class="nav-link" href="/members/logout">
                 <i class="bi bi-box-arrow-right"></i> 로그아웃
@@ -33,28 +212,34 @@
     </div>
 </nav>
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-circle"></i> 내 프로필</h2>
+    </div>
+
+    <c:if test="${not empty successMessage}">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> ${successMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
+
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> ${errorMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
+
     <div class="row">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4><i class="bi bi-person-circle"></i> 내 프로필</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> 프로필 정보</h5>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <c:if test="${not empty successMessage}">
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle"></i> ${successMessage}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    </c:if>
-
-                    <c:if test="${not empty errorMessage}">
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-triangle"></i> ${errorMessage}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    </c:if>
-
                     <form:form modelAttribute="memberUpdateRequest" method="post" action="/members/profile">
                         <div class="row">
                             <div class="col-md-6">
@@ -154,7 +339,9 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="bi bi-key"></i> API 정보</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> API 정보</h5>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -180,7 +367,9 @@
 
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5><i class="bi bi-shield-lock"></i> 비밀번호 보안</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> 비밀번호 보안</h5>
+                    </div>
                 </div>
                 <div class="card-body">
                     <c:set var="now" value="<%= new java.util.Date() %>" />
@@ -277,7 +466,9 @@
 
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5><i class="bi bi-graph-up"></i> 계정 통계</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> 계정 통계</h5>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
@@ -318,6 +509,40 @@
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="footer-logo">
+                    <div class="festival-number"></div>
+                    <div class="main-title">public-data-harvester</div>
+                    <div class="sub-title">CHUNGJANG STREET FESTIVAL OF RECOLLECTION</div>
+                </div>
+
+                <div class="footer-contact">
+                    <div class="contact-title">통신판매사업자 정보 관리시스템</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="footer-contact">
+                    <div class="contact-title">궁금하면 500원</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                    <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-copyright">
+            ⓒ public-data-harvester. ALL RIGHT RESERVED.
+        </div>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>

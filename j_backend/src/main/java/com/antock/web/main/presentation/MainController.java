@@ -15,7 +15,7 @@ import java.util.List;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/")
-public class MainController{
+public class MainController {
 
     private final DashboardService dashboardService;
     private final RegionStatService regionStatService;
@@ -23,16 +23,22 @@ public class MainController{
     @GetMapping
     public String index(Model model) {
         DashboardService.DashboardStats stats = dashboardService.getStats();
-        List<RecentActivityDto> recentActivities = dashboardService.getRecentActivities(5);
+        List<RecentActivityDto> recentActivities = dashboardService.getRecentActivities(10);
         RegionStatDto topRegionStat = regionStatService.getTopRegionStat();
 
         if (topRegionStat == null) {
             topRegionStat = new RegionStatDto();
         }
 
+        List<RegionStatDto> regionStats = regionStatService.getAllRegionStats();
+        if (regionStats.size() > 5) {
+            regionStats = regionStats.subList(0, 5);
+        }
+
         model.addAttribute("recentActivities", recentActivities);
         model.addAttribute("stats", stats);
         model.addAttribute("topRegionStat", topRegionStat);
-         return "main/index";
+        model.addAttribute("regionStats", regionStats);
+        return "main/index";
     }
 }

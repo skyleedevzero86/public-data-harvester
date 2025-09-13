@@ -5,16 +5,191 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>비밀번호 변경 - Antock System</title>
+    <meta name="_csrf" content="${_csrf.token}"/>
+    <meta name="_csrf_header" content="${_csrf.headerName}"/>
+    <title>비밀번호 변경 - 통신판매자사업관리시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        .dropdown-menu {
+            min-width: 200px !important;
+            padding: 10px 0;
+        }
+
+        .dropdown-menu .dropdown-item {
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .dropdown-menu .dropdown-header {
+            font-size: 1.05rem;
+            font-weight: bold;
+            padding: 10px 20px 5px 20px;
+        }
+
+        .custom-dropdown .dropdown-menu {
+            min-width: 220px !important;
+        }
+
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .table th:first-child, .table td:first-child {
+            text-align: center;
+        }
+
+        .table th:nth-child(2), .table td:nth-child(2) {
+            text-align: left;
+        }
+
+        .table th:nth-child(3), .table td:nth-child(3) {
+            text-align: left;
+        }
+
+        .table th:nth-child(4), .table td:nth-child(4) {
+            text-align: left;
+        }
+
+        .table th:last-child, .table td:last-child {
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .table th:nth-last-child(2), .table td:nth-last-child(2) {
+            min-width: 250px;
+            text-align: center;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+
+        .btn-group-sm .btn {
+            margin-right: 2px;
+        }
+
+        .locked-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .login-fail-count {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            font-size: 0.8em;
+        }
+
+        .filter-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-active {
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+
+        .status-cell {
+            white-space: nowrap;
+        }
+
+        .btn-group .dropdown-menu {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .icon-align {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 40px 0 20px 0;
+            margin-top: 60px;
+        }
+
+        .footer-logo {
+            margin-bottom: 30px;
+        }
+
+        .footer-logo .festival-number {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .footer-contact {
+            margin-bottom: 25px;
+        }
+
+        .footer-contact .contact-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #f8f9fa;
+        }
+
+        .footer-contact .contact-address {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .footer-contact .contact-phone {
+            font-size: 0.9rem;
+            color: #adb5bd;
+        }
+
+        .footer-contact .contact-email {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .footer-copyright {
+            border-top: 1px solid #495057;
+            padding-top: 20px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+    </style>
 </head>
 <body>
-
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> Antock System
+            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
         </a>
         <div class="navbar-nav ms-auto">
             <a class="nav-link" href="/members/profile">
@@ -27,38 +202,47 @@
     </div>
 </nav>
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-key"></i> 비밀번호 변경</h2>
+    </div>
+
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h4><i class="bi bi-key"></i> 비밀번호 변경</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> 비밀번호 변경</h5>
+                    </div>
                 </div>
                 <div class="card-body">
-
                     <c:if test="${param.debug == 'true'}">
-                        <div class="alert alert-info">
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="bi bi-info-circle"></i>
                             <strong>디버그 정보:</strong><br>
                             - isPasswordChangeRequired: ${isPasswordChangeRequired}<br>
                             - isPasswordChangeRecommended: ${isPasswordChangeRecommended}<br>
                             - todayChangeCount: ${todayChangeCount}<br>
                             - passwordChangeRequest: ${passwordChangeRequest != null ? 'exists' : 'null'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     </c:if>
 
                     <c:if test="${isPasswordChangeRequired}">
-                        <div class="alert alert-danger" role="alert">
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-triangle"></i>
                             <strong>비밀번호 변경 필요</strong><br>
                             90일이 지난 비밀번호입니다. 보안을 위해 새 비밀번호로 변경해주세요.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     </c:if>
 
                     <c:if test="${isPasswordChangeRecommended && !isPasswordChangeRequired}">
-                        <div class="alert alert-warning" role="alert">
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <i class="bi bi-info-circle"></i>
                             <strong>비밀번호 변경 권장</strong><br>
                             80일이 지난 비밀번호입니다. 보안을 위해 새 비밀번호로 변경을 권장합니다.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     </c:if>
 
@@ -76,7 +260,7 @@
                         </div>
                     </c:if>
 
-                    <div class="alert ${todayChangeCount >= 3 ? 'alert-danger' : 'alert-info'}">
+                    <div class="alert ${todayChangeCount >= 3 ? 'alert-danger' : 'alert-info'} alert-dismissible fade show" role="alert">
                         <i class="bi bi-info-circle"></i>
                         <small>
                             오늘 비밀번호 변경 횟수: <strong>${todayChangeCount}/3</strong>
@@ -85,6 +269,7 @@
                                 <br><strong>⚠️ 오늘은 더 이상 변경할 수 없습니다.</strong>
                             </c:if>
                         </small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
 
                     <form:form modelAttribute="passwordChangeRequest" method="post" id="passwordChangeForm" novalidate="true">
@@ -144,7 +329,7 @@
                             <small class="form-text" id="passwordStrengthText">비밀번호를 입력하세요</small>
                         </div>
 
-                        <div class="alert alert-info">
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
                             <i class="bi bi-info-circle"></i>
                             <small>
                                 <strong>비밀번호 정책:</strong><br>
@@ -154,6 +339,7 @@
                                 • 최근 5개 비밀번호는 재사용 불가<br>
                                 • 하루 최대 3회까지 변경 가능
                             </small>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
 
                         <div class="d-grid gap-2">
@@ -176,6 +362,39 @@
         </div>
     </div>
 </div>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="footer-logo">
+                    <div class="festival-number"></div>
+                    <div class="main-title">public-data-harvester</div>
+                    <div class="sub-title">CHUNGJANG STREET FESTIVAL OF RECOLLECTION</div>
+                </div>
+
+                <div class="footer-contact">
+                    <div class="contact-title">통신판매사업자 정보 관리시스템</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="footer-contact">
+                    <div class="contact-title">궁금하면 500원</div>
+                    <div class="contact-address">대한민국 광주광역시 서구</div>
+                    <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
+                    <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-copyright">
+            ⓒ public-data-harvester. ALL RIGHT RESERVED.
+        </div>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -288,8 +507,8 @@
     });
 
     document.getElementById('passwordChangeForm').addEventListener('submit', function(e) {
-        const todayChangeCount = ${todayChangeCount};
-        if (todayChangeCount >= 3) {
+        const todayChangeCountValue = ${todayChangeCount};
+        if (todayChangeCountValue >= 3) {
             e.preventDefault();
             alert('오늘은 더 이상 비밀번호를 변경할 수 없습니다. (일일 3회 제한)');
             return false;

@@ -69,7 +69,15 @@ public enum ErrorCode {
     CSV_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "CSV002", "CSV 파일 형식이 올바르지 않습니다."),
     CSV_EMPTY_FILE(HttpStatus.BAD_REQUEST, "CSV003", "CSV 파일이 비어있습니다."),
     CSV_INVALID_HEADER(HttpStatus.BAD_REQUEST, "CSV004", "CSV 파일의 헤더가 올바르지 않습니다."),
-    CSV_DATA_ERROR(HttpStatus.BAD_REQUEST, "CSV005", "CSV 데이터에 오류가 있습니다.");
+    CSV_DATA_ERROR(HttpStatus.BAD_REQUEST, "CSV005", "CSV 데이터에 오류가 있습니다."),
+
+    PASSWORD_RESET_REQUEST_FAILED(HttpStatus.BAD_REQUEST, "P0010", "비밀번호 재설정 요청에 실패했습니다."),
+    PASSWORD_RESET_INVALID_TOKEN(HttpStatus.BAD_REQUEST, "P0011", "비밀번호 재설정 토큰이 유효하지 않습니다."),
+    PASSWORD_RESET_EXPIRED_TOKEN(HttpStatus.BAD_REQUEST, "P0012", "비밀번호 재설정 토큰이 만료되었습니다."),
+    PASSWORD_RESET_TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "P0013", "비밀번호 재설정 요청 횟수를 초과했습니다."),
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P0014", "이메일 전송에 실패했습니다."),
+    MEMBER_NOT_ACTIVE(HttpStatus.FORBIDDEN, "P0015", "비활성화된 회원입니다."),
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "P0016", "요청 횟수를 초과했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

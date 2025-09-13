@@ -1,15 +1,14 @@
 package com.antock.web.member.presentation;
 
-import com.antock.api.member.application.dto.request.MemberJoinRequest;
-import com.antock.api.member.application.dto.request.MemberPasswordChangeRequest;
-import com.antock.api.member.application.dto.request.MemberUpdateRequest;
+import com.antock.api.member.application.dto.request.*;
 import com.antock.api.member.application.dto.response.MemberLoginResponse;
 import com.antock.api.member.application.dto.response.MemberResponse;
+import com.antock.api.member.application.dto.response.PasswordFindResponse;
 import com.antock.api.member.application.dto.response.PasswordStatusResponse;
 import com.antock.api.member.application.service.MemberApplicationService;
+import com.antock.api.member.application.service.PasswordFindService;
 import com.antock.api.member.application.service.PasswordMigrationService;
 import com.antock.api.member.value.MemberStatus;
-import com.antock.api.member.application.dto.request.MemberLoginRequest;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
@@ -48,6 +47,7 @@ public class MemberWebController {
 
     private final MemberApplicationService memberApplicationService;
     private final PasswordMigrationService passwordMigrationService;
+    private final PasswordFindService passwordFindService;
 
     @PostConstruct
     public void initPasswordMigration() {
@@ -588,7 +588,7 @@ public class MemberWebController {
 
     @PostMapping("/members/withdraw")
     public String withdrawSelf(HttpServletRequest request, HttpServletResponse response,
-                               RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -642,10 +642,11 @@ public class MemberWebController {
             return "redirect:/members/profile";
         }
     }
+
     @PostMapping("/members/admin/{memberId}/role")
     public String changeMemberRole(@PathVariable Long memberId,
-                                   @RequestParam Role role,
-                                   RedirectAttributes redirectAttributes) {
+            @RequestParam Role role,
+            RedirectAttributes redirectAttributes) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -668,6 +669,89 @@ public class MemberWebController {
         }
 
         return "redirect:/members/admin/list";
+    }
+
+    @GetMapping("/members/password/find")
+    public String findPasswordForm(Model model) {
+        model.addAttribute("passwordFindRequest", new PasswordFindRequest());
+        return "member/password-find";
+    }
+
+    @PostMapping("/members/password/find")
+    public String processFindPassword(@Valid @ModelAttribute PasswordFindRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest httpRequest,
+            Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("passwordFindRequest", request);
+            return "member/password-find";
+        }
+
+        try {
+            String clientIp = getClientIp(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            PasswordFindResponse response = passwordFindService.requestPasswordReset(request, clientIp, userAgent);
+
+            redirectAttributes.addFlashAttribute("successMessage", response.getMessage());
+            redirectAttributes.addFlashAttribute("email", response.getEmail());
+            redirectAttributes.addFlashAttribute("expiryMinutes", response.getExpiryMinutes());
+
+            return "redirect:/members/password/find/success";
+        } catch (Exception e) {
+            model.addAttribute("passwordFindRequest", request);
+            model.addAttribute("errorMessage", e.getMessage());
+            return "member/password-find";
+        }
+    }
+
+    @GetMapping("/members/password/find/success")
+    public String findPasswordSuccess(Model model) {
+        return "member/password-find-success";
+    }
+
+    @GetMapping("/members/password/reset")
+    public String resetPasswordForm(@RequestParam String token, Model model) {
+        try {
+            boolean isValid = passwordFindService.validateResetToken(token);
+            if (!isValid) {
+                model.addAttribute("errorMessage", "유효하지 않거나 만료된 링크입니다.");
+                return "member/password-reset-error";
+            }
+
+            model.addAttribute("passwordResetRequest", PasswordResetRequest.builder().token(token).build());
+            return "member/password-reset";
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return "member/password-reset-error";
+        }
+    }
+
+    @PostMapping("/members/password/reset")
+    public String processResetPassword(@Valid @ModelAttribute PasswordResetRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest httpRequest,
+            Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("passwordResetRequest", request);
+            return "member/password-reset";
+        }
+
+        try {
+            String clientIp = getClientIp(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            passwordFindService.resetPassword(request, clientIp, userAgent);
+
+            redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 성공적으로 재설정되었습니다.");
+            return "redirect:/members/login";
+        } catch (Exception e) {
+            model.addAttribute("passwordResetRequest", request);
+            model.addAttribute("errorMessage", e.getMessage());
+            return "member/password-reset";
+        }
     }
 
 }
