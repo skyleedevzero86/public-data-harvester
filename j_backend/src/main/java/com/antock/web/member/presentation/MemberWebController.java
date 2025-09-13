@@ -14,7 +14,6 @@ import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,6 +53,7 @@ public class MemberWebController {
         try {
             passwordMigrationService.migratePlainTextPasswords();
         } catch (Exception e) {
+            log.error("Password migration failed", e);
         }
     }
 
@@ -219,6 +219,7 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception e) {
+                log.error("Error loading member info for profile update", e);
             }
 
             model.addAttribute("memberUpdateRequest", updateRequest);
@@ -257,6 +258,7 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
+                log.error("Error loading member info for profile update", ex);
             }
 
             model.addAttribute("memberUpdateRequest", updateRequest);
@@ -463,6 +465,7 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
+                log.error("Error loading password status", ex);
             }
 
             model.addAttribute("passwordChangeRequest", passwordChangeRequest);
@@ -482,61 +485,12 @@ public class MemberWebController {
                     }
                 }
             } catch (Exception ex) {
+                log.error("Error loading password status", ex);
             }
 
             model.addAttribute("passwordChangeRequest", passwordChangeRequest);
             model.addAttribute("errorMessage", "비밀번호 변경 중 오류가 발생했습니다: " + e.getMessage());
             return "member/password-change";
-        }
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-
-        return request.getRemoteAddr();
-    }
-
-    public static class MemberView {
-        private final MemberResponse member;
-
-        public MemberView(MemberResponse member) {
-            this.member = member;
-        }
-
-        public MemberResponse getMember() {
-            return member;
-        }
-
-        public Date getCreateDateFormatted() {
-            if (member.getCreateDate() == null)
-                return null;
-            return Date.from(member.getCreateDate().atZone(ZoneId.systemDefault()).toInstant());
-        }
-
-        public Date getLastLoginAtFormatted() {
-            if (member.getLastLoginAt() == null)
-                return null;
-            return Date.from(member.getLastLoginAt().atZone(ZoneId.systemDefault()).toInstant());
-        }
-
-        public Date getApprovedAtFormatted() {
-            if (member.getApprovedAt() == null)
-                return null;
-            return Date.from(member.getApprovedAt().atZone(ZoneId.systemDefault()).toInstant());
-        }
-
-        public Date getPasswordChangedAtFormatted() {
-            if (member.getPasswordChangedAt() == null)
-                return null;
-            return Date.from(member.getPasswordChangedAt().atZone(ZoneId.systemDefault()).toInstant());
         }
     }
 
@@ -546,7 +500,6 @@ public class MemberWebController {
         log.info("웹 컨트롤러: 회원 삭제(탈퇴) 요청 - memberId: {}", memberId);
 
         try {
-
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUsername = authentication.getName();
             Long currentUserId = memberApplicationService.getMemberIdByUsername(currentUsername);
@@ -671,87 +624,111 @@ public class MemberWebController {
         return "redirect:/members/admin/list";
     }
 
-    @GetMapping("/members/password/find")
-    public String findPasswordForm(Model model) {
-        model.addAttribute("passwordFindRequest", new PasswordFindRequest());
-        return "member/password-find";
-    }
-
-    @PostMapping("/members/password/find")
-    public String processFindPassword(@Valid @ModelAttribute PasswordFindRequest request,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
-            HttpServletRequest httpRequest,
-            Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("passwordFindRequest", request);
-            return "member/password-find";
-        }
-
-        try {
-            String clientIp = getClientIp(httpRequest);
-            String userAgent = httpRequest.getHeader("User-Agent");
-
-            PasswordFindResponse response = passwordFindService.requestPasswordReset(request, clientIp, userAgent);
-
-            redirectAttributes.addFlashAttribute("successMessage", response.getMessage());
-            redirectAttributes.addFlashAttribute("email", response.getEmail());
-            redirectAttributes.addFlashAttribute("expiryMinutes", response.getExpiryMinutes());
-
-            return "redirect:/members/password/find/success";
-        } catch (Exception e) {
-            model.addAttribute("passwordFindRequest", request);
-            model.addAttribute("errorMessage", e.getMessage());
-            return "member/password-find";
-        }
-    }
-
-    @GetMapping("/members/password/find/success")
-    public String findPasswordSuccess(Model model) {
-        return "member/password-find-success";
-    }
-
-    @GetMapping("/members/password/reset")
-    public String resetPasswordForm(@RequestParam String token, Model model) {
+    @GetMapping("/password/reset")
+    public String showPasswordResetPage(@RequestParam String token, Model model) {
         try {
             boolean isValid = passwordFindService.validateResetToken(token);
             if (!isValid) {
-                model.addAttribute("errorMessage", "유효하지 않거나 만료된 링크입니다.");
+                model.addAttribute("error", "유효하지 않거나 만료된 링크입니다.");
                 return "member/password-reset-error";
             }
 
-            model.addAttribute("passwordResetRequest", PasswordResetRequest.builder().token(token).build());
+            PasswordResetRequest passwordResetRequest = new PasswordResetRequest();
+            passwordResetRequest.setToken(token);
+            model.addAttribute("passwordResetRequest", passwordResetRequest);
+            model.addAttribute("token", token);
+
             return "member/password-reset";
         } catch (Exception e) {
-            model.addAttribute("errorMessage", e.getMessage());
+            log.error("비밀번호 재설정 페이지 오류", e);
+            model.addAttribute("error", "비밀번호 재설정 중 오류가 발생했습니다.");
             return "member/password-reset-error";
         }
     }
 
-    @PostMapping("/members/password/reset")
-    public String processResetPassword(@Valid @ModelAttribute PasswordResetRequest request,
+    @PostMapping("/password/reset")
+    public String processPasswordReset(@Valid @ModelAttribute PasswordResetRequest request,
             BindingResult bindingResult,
-            RedirectAttributes redirectAttributes,
+            Model model,
             HttpServletRequest httpRequest,
-            Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("passwordResetRequest", request);
-            return "member/password-reset";
-        }
-
+            RedirectAttributes redirectAttributes) {
         try {
+            log.info("비밀번호 재설정 요청 처리 시작 - token: {}", request.getToken());
+
+            if (bindingResult.hasErrors()) {
+                log.error("폼 검증 실패 - errors: {}", bindingResult.getAllErrors());
+                model.addAttribute("token", request.getToken());
+                return "member/password-reset";
+            }
+
             String clientIp = getClientIp(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
 
+            log.info("PasswordFindService.resetPassword 호출 시작");
             passwordFindService.resetPassword(request, clientIp, userAgent);
+            log.info("PasswordFindService.resetPassword 호출 완료");
 
-            redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 성공적으로 재설정되었습니다.");
+            redirectAttributes.addFlashAttribute("success", "비밀번호가 성공적으로 재설정되었습니다.");
+            log.info("비밀번호 재설정 성공 - 로그인 페이지로 리다이렉트");
             return "redirect:/members/login";
-        } catch (Exception e) {
-            model.addAttribute("passwordResetRequest", request);
-            model.addAttribute("errorMessage", e.getMessage());
+
+        } catch (BusinessException e) {
+            log.error("비밀번호 재설정 실패 (비즈니스 예외) - token: {}, error: {}", request.getToken(), e.getMessage(), e);
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("token", request.getToken());
             return "member/password-reset";
+        } catch (Exception e) {
+            log.error("비밀번호 재설정 중 오류 발생 - token: {}", request.getToken(), e);
+            model.addAttribute("error", "비밀번호 재설정 중 오류가 발생했습니다: " + e.getMessage());
+            return "member/password-reset-error";
         }
     }
 
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
+    }
+
+    public static class MemberView {
+        private final MemberResponse member;
+
+        public MemberView(MemberResponse member) {
+            this.member = member;
+        }
+
+        public MemberResponse getMember() {
+            return member;
+        }
+
+        public Date getCreateDateFormatted() {
+            if (member.getCreateDate() == null)
+                return null;
+            return Date.from(member.getCreateDate().atZone(ZoneId.systemDefault()).toInstant());
+        }
+
+        public Date getLastLoginAtFormatted() {
+            if (member.getLastLoginAt() == null)
+                return null;
+            return Date.from(member.getLastLoginAt().atZone(ZoneId.systemDefault()).toInstant());
+        }
+
+        public Date getApprovedAtFormatted() {
+            if (member.getApprovedAt() == null)
+                return null;
+            return Date.from(member.getApprovedAt().atZone(ZoneId.systemDefault()).toInstant());
+        }
+
+        public Date getPasswordChangedAtFormatted() {
+            if (member.getPasswordChangedAt() == null)
+                return null;
+            return Date.from(member.getPasswordChangedAt().atZone(ZoneId.systemDefault()).toInstant());
+        }
+    }
 }
