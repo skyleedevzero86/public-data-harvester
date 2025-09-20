@@ -11,6 +11,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            padding-bottom: 20px;
+        }
+
         .dropdown-menu {
             min-width: 200px !important;
             padding: 10px 0;
@@ -194,15 +207,16 @@
         }
 
         .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
+            overflow: visible !important;
         }
 
         .footer {
             background-color: #343a40;
             color: white;
             padding: 40px 0 20px 0;
-            margin-top: 60px;
+            margin-top: auto;
+            position: relative;
+            z-index: 1000;
         }
 
         .footer-logo {
@@ -214,6 +228,18 @@
             color: #adb5bd;
             margin-bottom: 5px;
             position: relative;
+        }
+
+        .footer-logo .main-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .footer-logo .sub-title {
+            font-size: 0.9rem;
+            color: #adb5bd;
         }
 
         .footer-contact {
@@ -258,6 +284,23 @@
             margin: 0 auto;
             padding: 0 20px;
         }
+
+        .table-container {
+            margin-bottom: 0;
+        }
+
+        .table-container .card {
+            margin-bottom: 0;
+        }
+
+        .table-container .card-body {
+            padding-bottom: 0;
+        }
+
+        .table-container .card-footer {
+            border-top: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -285,271 +328,275 @@
     </div>
 </nav>
 
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-graph-up"></i> 지역별 상세 통계</h2>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportToExcel()">
-                <i class="bi bi-download"></i> Excel 다운로드
-            </button>
-            <button class="btn btn-outline-secondary" onclick="refreshData()">
-                <i class="bi bi-arrow-clockwise"></i> 새로고침
-            </button>
-        </div>
-    </div>
-
-    <c:if test="${not empty successMessage}">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle"></i> ${successMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    </c:if>
-
-    <c:if test="${not empty errorMessage}">
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> ${errorMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    </c:if>
-
-    <div class="filter-container">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <h6 class="mb-0"><i class="bi bi-filter"></i> 필터</h6>
-            </div>
-            <div class="col-auto">
-                <select class="form-select ${not empty param.city ? 'filter-active' : ''}" id="cityFilter" onchange="filterByCity()">
-                    <option value="">전체 시/도</option>
-                    <c:forEach var="city" items="${cities}">
-                        <option value="${city}" ${city == param.city ? 'selected' : ''}>${city}</option>
-                    </c:forEach>
-                </select>
-            </div>
-            <div class="col-auto">
-                <select class="form-select ${not empty param.district ? 'filter-active' : ''}" id="districtFilter" onchange="filterByDistrict()">
-                    <option value="">전체 구/군</option>
-                    <c:forEach var="district" items="${districts}">
-                        <option value="${district}" ${district == param.district ? 'selected' : ''}>${district}</option>
-                    </c:forEach>
-                </select>
-            </div>
-            <div class="col-auto">
-                <c:if test="${not empty param.city or not empty param.district}">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
-                        <i class="bi bi-x-lg"></i> 필터 초기화
-                    </button>
-                </c:if>
-            </div>
-            <div class="col-auto ms-auto">
-                <small class="text-muted">
-                    총 ${totalElements}개 지역
-                    <c:if test="${not empty param.city or not empty param.district}">
-                        (필터링됨)
-                    </c:if>
-                </small>
+<div class="main-content">
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-graph-up"></i> 지역별 상세 통계</h2>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="exportToExcel()">
+                    <i class="bi bi-download"></i> Excel 다운로드
+                </button>
+                <button class="btn btn-outline-secondary" onclick="refreshData()">
+                    <i class="bi bi-arrow-clockwise"></i> 새로고침
+                </button>
             </div>
         </div>
-    </div>
 
-    <div class="row mb-4 justify-content-end">
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card bg-primary text-white mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">총 지역 수</div>
-                            <div class="fs-4 fw-bold">${totalElements}</div>
-                        </div>
-                        <div class="icon-align">
-                            <i class="bi bi-geo-alt-fill stats-icon"></i>
-                        </div>
-                    </div>
+        <c:if test="${not empty successMessage}">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> ${successMessage}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </c:if>
+
+        <c:if test="${not empty errorMessage}">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> ${errorMessage}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </c:if>
+
+        <div class="filter-container">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <h6 class="mb-0"><i class="bi bi-filter"></i> 필터</h6>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card bg-success text-white mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">현재 페이지</div>
-                            <div class="fs-4 fw-bold">${currentPage + 1}</div>
-                        </div>
-                        <div class="icon-align">
-                            <i class="bi bi-file-earmark-text-fill stats-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card bg-info text-white mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">총 페이지</div>
-                            <div class="fs-4 fw-bold">${totalPages}</div>
-                        </div>
-                        <div class="icon-align">
-                            <i class="bi bi-collection-fill stats-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card bg-warning text-white mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">페이지당 항목</div>
-                            <div class="fs-4 fw-bold">${size}</div>
-                        </div>
-                        <div class="icon-align">
-                            <i class="bi bi-list-ol stats-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-table"></i> 지역별 완성도 통계</h5>
-                <div class="d-flex gap-2">
-                    <select class="form-select" id="pageSizeSelect" style="width: auto;" onchange="changePageSize()">
-                        <option value="10" ${size == 10 ? 'selected' : ''}>10개</option>
-                        <option value="20" ${size == 20 ? 'selected' : ''}>20개</option>
-                        <option value="50" ${size == 50 ? 'selected' : ''}>50개</option>
-                        <option value="100" ${size == 100 ? 'selected' : ''}>100개</option>
+                <div class="col-auto">
+                    <select class="form-select ${not empty param.city ? 'filter-active' : ''}" id="cityFilter" onchange="filterByCity()">
+                        <option value="">전체 시/도</option>
+                        <c:forEach var="city" items="${cities}">
+                            <option value="${city}" ${city == param.city ? 'selected' : ''}>${city}</option>
+                        </c:forEach>
                     </select>
                 </div>
+                <div class="col-auto">
+                    <select class="form-select ${not empty param.district ? 'filter-active' : ''}" id="districtFilter" onchange="filterByDistrict()">
+                        <option value="">전체 구/군</option>
+                        <c:forEach var="district" items="${districts}">
+                            <option value="${district}" ${district == param.district ? 'selected' : ''}>${district}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <c:if test="${not empty param.city or not empty param.district}">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                            <i class="bi bi-x-lg"></i> 필터 초기화
+                        </button>
+                    </c:if>
+                </div>
+                <div class="col-auto ms-auto">
+                    <small class="text-muted">
+                        총 ${totalElements}개 지역
+                        <c:if test="${not empty param.city or not empty param.district}">
+                            (필터링됨)
+                        </c:if>
+                    </small>
+                </div>
             </div>
         </div>
-        <div class="card-body p-0">
-            <c:choose>
-                <c:when test="${not empty error}">
-                    <div class="text-center py-5">
-                        <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
-                        <p class="text-danger mt-3">${error}</p>
-                    </div>
-                </c:when>
-                <c:when test="${empty regionStats}">
-                    <div class="text-center py-5">
-                        <i class="bi bi-info-circle fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">데이터가 없습니다.</p>
-                    </div>
-                </c:when>
-                <c:otherwise>
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-dark">
-                            <tr>
-                                <th width="8%">순위</th>
-                                <th width="20%">지역</th>
-                                <th width="12%">총 법인 수</th>
-                                <th width="12%">유효한 법인등록번호</th>
-                                <th width="12%">유효한 지역코드</th>
-                                <th width="12%">완성도</th>
-                                <th width="12%">상세보기</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <c:forEach var="stat" items="${regionStats}" varStatus="status">
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-primary">${(currentPage * size) + status.index + 1}</span>
-                                    </td>
-                                    <td style="text-align: left;">
-                                        <div class="d-flex align-items-center">
-                                            <strong>${stat.city}</strong>
-                                        </div>
-                                        <small class="text-muted">${stat.district}</small>
-                                    </td>
-                                    <td>
-                                        <span class="fw-bold">${stat.formattedCount}</span>
-                                    </td>
-                                    <td>
-                                        <span class="text-success">${stat.validCorpRegNoCount}</span>
-                                    </td>
-                                    <td>
-                                        <span class="text-info">${stat.validRegionCdCount}</span>
-                                    </td>
-                                    <td>
-                                        <div class="completion-rate ${stat.completionRate >= 80 ? 'high' : stat.completionRate >= 60 ? 'medium' : 'low'}">
-                                            ${stat.completionRate}%
-                                        </div>
-                                        <div class="progress mt-1" style="height: 6px;">
-                                            <div class="progress-bar ${stat.completionRate >= 80 ? 'bg-success' : stat.completionRate >= 60 ? 'bg-warning' : 'bg-danger'}"
-                                                 style="width: ${stat.completionRate}%"></div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="viewDetails('${stat.city}', '${stat.district}')">
-                                                <i class="bi bi-eye"></i> 보기
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
 
-                    <c:if test="${totalPages > 1}">
-                        <div class="card-footer">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination justify-content-center mb-0">
-                                    <c:if test="${currentPage > 0}">
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=0&size=${size}&city=${param.city}&district=${param.district}">
-                                                <i class="bi bi-chevron-double-left"></i>
-                                            </a>
-                                        </li>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=${currentPage - 1}&size=${size}&city=${param.city}&district=${param.district}">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        </li>
-                                    </c:if>
-
-                                    <c:set var="startPage" value="${currentPage - 2}" />
-                                    <c:if test="${startPage < 0}">
-                                        <c:set var="startPage" value="0" />
-                                    </c:if>
-                                    <c:set var="endPage" value="${currentPage + 2}" />
-                                    <c:if test="${endPage > totalPages - 1}">
-                                        <c:set var="endPage" value="${totalPages - 1}" />
-                                    </c:if>
-                                    <c:forEach begin="${startPage}" end="${endPage}" var="pageNum">
-                                        <li class="page-item ${pageNum == currentPage ? 'active' : ''}">
-                                            <a class="page-link" href="?page=${pageNum}&size=${size}&city=${param.city}&district=${param.district}">
-                                                ${pageNum + 1}
-                                            </a>
-                                        </li>
-                                    </c:forEach>
-
-                                    <c:if test="${currentPage < totalPages - 1}">
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=${currentPage + 1}&size=${size}&city=${param.city}&district=${param.district}">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=${totalPages - 1}&size=${size}&city=${param.city}&district=${param.district}">
-                                                <i class="bi bi-chevron-double-right"></i>
-                                            </a>
-                                        </li>
-                                    </c:if>
-                                </ul>
-                            </nav>
+        <div class="row mb-4 justify-content-end">
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="card bg-primary text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-white-50 small">총 지역 수</div>
+                                <div class="fs-4 fw-bold">${totalElements}</div>
+                            </div>
+                            <div class="icon-align">
+                                <i class="bi bi-geo-alt-fill stats-icon"></i>
+                            </div>
                         </div>
-                    </c:if>
-                </c:otherwise>
-            </c:choose>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="card bg-success text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-white-50 small">현재 페이지</div>
+                                <div class="fs-4 fw-bold">${currentPage + 1}</div>
+                            </div>
+                            <div class="icon-align">
+                                <i class="bi bi-file-earmark-text-fill stats-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="card bg-info text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-white-50 small">총 페이지</div>
+                                <div class="fs-4 fw-bold">${totalPages}</div>
+                            </div>
+                            <div class="icon-align">
+                                <i class="bi bi-collection-fill stats-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="card bg-warning text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-white-50 small">페이지당 항목</div>
+                                <div class="fs-4 fw-bold">${size}</div>
+                            </div>
+                            <div class="icon-align">
+                                <i class="bi bi-list-ol stats-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-table"></i> 지역별 완성도 통계</h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="pageSizeSelect" style="width: auto;" onchange="changePageSize()">
+                                <option value="10" ${size == 10 ? 'selected' : ''}>10개</option>
+                                <option value="20" ${size == 20 ? 'selected' : ''}>20개</option>
+                                <option value="50" ${size == 50 ? 'selected' : ''}>50개</option>
+                                <option value="100" ${size == 100 ? 'selected' : ''}>100개</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <c:choose>
+                        <c:when test="${not empty error}">
+                            <div class="text-center py-5">
+                                <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                                <p class="text-danger mt-3">${error}</p>
+                            </div>
+                        </c:when>
+                        <c:when test="${empty regionStats}">
+                            <div class="text-center py-5">
+                                <i class="bi bi-info-circle fs-1 text-muted"></i>
+                                <p class="text-muted mt-3">데이터가 없습니다.</p>
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-dark">
+                                    <tr>
+                                        <th width="8%">순위</th>
+                                        <th width="20%">지역</th>
+                                        <th width="12%">총 법인 수</th>
+                                        <th width="12%">유효한 법인등록번호</th>
+                                        <th width="12%">유효한 지역코드</th>
+                                        <th width="12%">완성도</th>
+                                        <th width="12%">상세보기</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <c:forEach var="stat" items="${regionStats}" varStatus="status">
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">${(currentPage * size) + status.index + 1}</span>
+                                            </td>
+                                            <td style="text-align: left;">
+                                                <div class="d-flex align-items-center">
+                                                    <strong>${stat.city}</strong>
+                                                </div>
+                                                <small class="text-muted">${stat.district}</small>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold">${stat.formattedCount}</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-success">${stat.validCorpRegNoCount}</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-info">${stat.validRegionCdCount}</span>
+                                            </td>
+                                            <td>
+                                                <div class="completion-rate ${stat.completionRate >= 80 ? 'high' : stat.completionRate >= 60 ? 'medium' : 'low'}">
+                                                        ${stat.completionRate}%
+                                                </div>
+                                                <div class="progress mt-1" style="height: 6px;">
+                                                    <div class="progress-bar ${stat.completionRate >= 80 ? 'bg-success' : stat.completionRate >= 60 ? 'bg-warning' : 'bg-danger'}"
+                                                         style="width: ${stat.completionRate}%"></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="viewDetails('${stat.city}', '${stat.district}')">
+                                                        <i class="bi bi-eye"></i> 보기
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <c:if test="${totalPages > 1}">
+                                <div class="card-footer">
+                                    <nav aria-label="Page navigation">
+                                        <ul class="pagination justify-content-center mb-0">
+                                            <c:if test="${currentPage > 0}">
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=0&size=${size}&city=${param.city}&district=${param.district}">
+                                                        <i class="bi bi-chevron-double-left"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=${currentPage - 1}&size=${size}&city=${param.city}&district=${param.district}">
+                                                        <i class="bi bi-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                            </c:if>
+
+                                            <c:set var="startPage" value="${currentPage - 2}" />
+                                            <c:if test="${startPage < 0}">
+                                                <c:set var="startPage" value="0" />
+                                            </c:if>
+                                            <c:set var="endPage" value="${currentPage + 2}" />
+                                            <c:if test="${endPage > totalPages - 1}">
+                                                <c:set var="endPage" value="${totalPages - 1}" />
+                                            </c:if>
+                                            <c:forEach begin="${startPage}" end="${endPage}" var="pageNum">
+                                                <li class="page-item ${pageNum == currentPage ? 'active' : ''}">
+                                                    <a class="page-link" href="?page=${pageNum}&size=${size}&city=${param.city}&district=${param.district}">
+                                                            ${pageNum + 1}
+                                                    </a>
+                                                </li>
+                                            </c:forEach>
+
+                                            <c:if test="${currentPage < totalPages - 1}">
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=${currentPage + 1}&size=${size}&city=${param.city}&district=${param.district}">
+                                                        <i class="bi bi-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=${totalPages - 1}&size=${size}&city=${param.city}&district=${param.district}">
+                                                        <i class="bi bi-chevron-double-right"></i>
+                                                    </a>
+                                                </li>
+                                            </c:if>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </c:if>
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -613,7 +660,7 @@
     const currentCity = urlParams.get('city') || '';
     const currentDistrict = urlParams.get('district') || '';
     const currentSize = urlParams.get('size') || '${size}';
-    const totalPages = ${totalPages};
+    const totalPages = parseInt('${totalPages}');
 
     function changePageSize() {
         const newSize = document.getElementById('pageSizeSelect').value;
@@ -654,11 +701,11 @@
         detailContent.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">로딩중...</span></div></div>';
         document.getElementById('detailModalLabel').textContent = city + ' ' + district + ' - 상세 법인 목록';
         modal.show();
-        
+
         const encodedCity = encodeURIComponent(city);
         const encodedDistrict = encodeURIComponent(district);
         const url = '/api/v1/region-stats/details?city=' + encodedCity + '&district=' + encodedDistrict;
-        
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -670,29 +717,29 @@
                 if (data && data.success && data.data) {
                     const corps = data.data;
                     let tableHtml = '<div class="d-flex justify-content-between align-items-center mb-3">' +
-                            '<h6 class="mb-0">' + city + ' ' + district + ' - 총 ' + corps.length + '개 법인</h6>' +
-                            '<small class="text-muted">데이터 로드 완료</small>' +
+                        '<h6 class="mb-0">' + city + ' ' + district + ' - 총 ' + corps.length + '개 법인</h6>' +
+                        '<small class="text-muted">데이터 로드 완료</small>' +
                         '</div>' +
                         '<div class="table-responsive">' +
-                            '<table class="table table-hover detail-table">' +
-                                '<thead>' +
-                                    '<tr>' +
-                                        '<th>ID</th>' +
-                                        '<th>법인명</th>' +
-                                        '<th>사업자번호</th>' +
-                                        '<th>법인등록번호</th>' +
-                                        '<th>지역코드</th>' +
-                                        '<th>판매자ID</th>' +
-                                        '<th>등록자</th>' +
-                                        '<th>등록일시</th>' +
-                                    '</tr>' +
-                                '</thead>' +
-                                '<tbody>';
+                        '<table class="table table-hover detail-table">' +
+                        '<thead>' +
+                        '<tr>' +
+                        '<th>ID</th>' +
+                        '<th>법인명</th>' +
+                        '<th>사업자번호</th>' +
+                        '<th>법인등록번호</th>' +
+                        '<th>지역코드</th>' +
+                        '<th>판매자ID</th>' +
+                        '<th>등록자</th>' +
+                        '<th>등록일시</th>' +
+                        '</tr>' +
+                        '</thead>' +
+                        '<tbody>';
                     if (!corps || corps.length === 0) {
                         tableHtml += '<tr>' +
-                                '<td colspan="8" class="text-center text-muted">' +
-                                    '<i class="bi bi-info-circle"></i> 해당 지역에 등록된 법인이 없습니다.' +
-                                '</td>' +
+                            '<td colspan="8" class="text-center text-muted">' +
+                            '<i class="bi bi-info-circle"></i> 해당 지역에 등록된 법인이 없습니다.' +
+                            '</td>' +
                             '</tr>';
                     } else {
                         corps.forEach((corp, index) => {
@@ -722,33 +769,33 @@
                                 }
                             }
                             const rowHtml = '<tr>' +
-                                    '<td>' + id + '</td>' +
-                                    '<td>' + bizNm + '</td>' +
-                                    '<td>' + bizNo + '</td>' +
-                                    '<td>' + corpRegNo + '</td>' +
-                                    '<td>' + regionCd + '</td>' +
-                                    '<td>' + sellerId + '</td>' +
-                                    '<td>' + username + '</td>' +
-                                    '<td>' + formattedDate + '</td>' +
+                                '<td>' + id + '</td>' +
+                                '<td>' + bizNm + '</td>' +
+                                '<td>' + bizNo + '</td>' +
+                                '<td>' + corpRegNo + '</td>' +
+                                '<td>' + regionCd + '</td>' +
+                                '<td>' + sellerId + '</td>' +
+                                '<td>' + username + '</td>' +
+                                '<td>' + formattedDate + '</td>' +
                                 '</tr>';
                             tableHtml += rowHtml;
                         });
                     }
                     tableHtml += '</tbody>' +
-                            '</table>' +
+                        '</table>' +
                         '</div>';
                     detailContent.innerHTML = tableHtml;
                 } else {
                     detailContent.innerHTML = '<div class="alert alert-danger" role="alert">' +
-                            '<i class="bi bi-exclamation-triangle"></i> 데이터를 불러오는 중 오류가 발생했습니다.' +
-                            '<br><small>' + (data ? data.message : 'API 응답이 올바르지 않습니다') + '</small>' +
+                        '<i class="bi bi-exclamation-triangle"></i> 데이터를 불러오는 중 오류가 발생했습니다.' +
+                        '<br><small>' + (data ? data.message : 'API 응답이 올바르지 않습니다') + '</small>' +
                         '</div>';
                 }
             })
             .catch(error => {
                 detailContent.innerHTML = '<div class="alert alert-danger" role="alert">' +
-                        '<i class="bi bi-exclamation-triangle"></i> 데이터를 불러오는 중 오류가 발생했습니다.' +
-                        '<br><small>' + (error.message || '알 수 없는 오류') + '</small>' +
+                    '<i class="bi bi-exclamation-triangle"></i> 데이터를 불러오는 중 오류가 발생했습니다.' +
+                    '<br><small>' + (error.message || '알 수 없는 오류') + '</small>' +
                     '</div>';
             });
     }
