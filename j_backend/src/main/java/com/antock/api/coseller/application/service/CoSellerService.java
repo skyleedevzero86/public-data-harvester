@@ -195,54 +195,48 @@ public class CoSellerService {
 
     @Async
     public CompletableFuture<Optional<CorpMastCreateDTO>> processAsync(BizCsvInfoDto csvInfo, String username) {
-        log.info("=== processAsync 시작 ===");
-        log.info("입력 데이터 - bizNo: {}, bizNm: {}, bizAddress: {}",
-                csvInfo.getBizNo(), csvInfo.getBizNm(), csvInfo.getBizAddress());
+        try {
+            CompletableFuture<String> corpRegNoFuture = corpApiClient.getCorpRegNo(csvInfo.getBizNo());
+            CompletableFuture<RegionInfoDto> regionInfoFuture = regionApiClient.getRegionInfo(csvInfo.getBizAddress());
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(corpRegNoFuture, regionInfoFuture);
 
-        CompletableFuture<String> corpFuture = corpApiClient.getCorpRegNo(csvInfo.getBizNo());
-        CompletableFuture<RegionInfoDto> regionFuture = regionApiClient.getRegionInfo(csvInfo.getBizAddress());
+            return allFutures.thenApply(v -> {
+                String corpRegNo = corpRegNoFuture.join();
+                RegionInfoDto regionInfo = regionInfoFuture.join();
 
-        return corpFuture.thenCombine(regionFuture, (corpRegNo, regionInfo) -> {
-            log.debug("법인등록번호 API 결과: bizNo={}, corpRegNo={}", csvInfo.getBizNo(), corpRegNo);
-            log.debug("행정구역 API 결과: address={}, regionInfo={}", csvInfo.getBizAddress(), regionInfo);
-
-            log.info("API 호출 결과 - bizNo: {}, corpRegNo: '{}', regionInfo: {}",
-                    csvInfo.getBizNo(), corpRegNo, regionInfo);
-
-            if (corpRegNo == null && regionInfo == null) {
-                log.debug("API 호출 실패: bizNo={}, bizNm={}. 빈 값으로 DTO 생성합니다.",
-                        csvInfo.getBizNo(), csvInfo.getBizNm());
-                return Optional.of(
-                        CorpMastCreateDTO.builder()
-                                .sellerId(csvInfo.getSellerId())
-                                .bizNm(csvInfo.getBizNm())
-                                .bizNo(csvInfo.getBizNo())
-                                .corpRegNo("")
-                                .regionCd("")
-                                .siNm("")
-                                .sggNm("")
-                                .username(username)
-                                .build());
-            }
-
-            log.info("최종 DTO 생성 - corpRegNo: '{}'", Optional.ofNullable(corpRegNo).orElse(""));
-
-            return Optional.of(
-                    CorpMastCreateDTO.builder()
+                if (isValidCorpRegNo(corpRegNo) && isValidRegionInfo(regionInfo)) {
+                    return Optional.of(CorpMastCreateDTO.builder()
                             .sellerId(csvInfo.getSellerId())
                             .bizNm(csvInfo.getBizNm())
                             .bizNo(csvInfo.getBizNo())
-                            .corpRegNo(Optional.ofNullable(corpRegNo).orElse(""))
-                            .regionCd(regionInfo != null ? regionInfo.getRegionCd() : "")
-                            .siNm(regionInfo != null ? regionInfo.getSiNm() : "")
-                            .sggNm(regionInfo != null ? regionInfo.getSggNm() : "")
+                            .corpRegNo(corpRegNo)
+                            .regionCd(regionInfo.getRegionCd())
+                            .siNm(regionInfo.getSiNm())
+                            .sggNm(regionInfo.getSggNm())
                             .username(username)
                             .build());
-        }).exceptionally(ex -> {
-            log.error("비동기 API 처리 중 예외 발생: bizNo={}, bizNm={}. 오류: {}",
-                    csvInfo.getBizNo(), csvInfo.getBizNm(), ex.getMessage(), ex);
-            return Optional.empty();
-        });
+                }
+
+                return Optional.<CorpMastCreateDTO>empty();
+            });
+        } catch (Exception e) {
+            log.error("비동기 처리 중 오류 발생: {}", e.getMessage(), e);
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+    }
+
+    private boolean isValidCorpRegNo(String corpRegNo) {
+        return corpRegNo != null &&
+                !corpRegNo.trim().isEmpty() &&
+                !corpRegNo.startsWith("0") &&
+                !corpRegNo.contains("N/A");
+    }
+
+    private boolean isValidRegionInfo(RegionInfoDto regionInfo) {
+        return regionInfo != null &&
+                regionInfo.getRegionCd() != null &&
+                !regionInfo.getRegionCd().trim().isEmpty() &&
+                !regionInfo.getRegionCd().startsWith("0");
     }
 
     @Transactional
