@@ -68,10 +68,12 @@ public class RegionStatDto {
                 if (totalCount == 0) {
                         return 0.0;
                 }
+
                 double corpRegNoRate = (double) validCorpRegNoCount / totalCount * 100;
                 double regionCdRate = (double) validRegionCdCount / totalCount * 100;
 
-                return Math.round((corpRegNoRate + regionCdRate) / 2 * 100.0) / 100.0;
+                double averageRate = (corpRegNoRate + regionCdRate) / 2;
+                return Math.round(averageRate * 100.0) / 100.0;
         }
 
         @Override

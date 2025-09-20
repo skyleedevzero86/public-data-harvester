@@ -1,76 +1,129 @@
 package com.antock.api.dashboard.presentation;
 
+import com.antock.api.coseller.domain.CorpMast;
+import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.dashboard.application.dto.RegionStatDto;
 import com.antock.api.dashboard.application.service.RegionStatService;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import com.antock.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/region-stats")
 @RequiredArgsConstructor
 @Tag(name = "Region Statistics", description = "지역별 통계 데이터 조회 API")
-@SecurityRequirement(name = "Bearer Authentication")
 public class RegionStatApiController {
     private final RegionStatService regionStatService;
+    private final CorpMastRepository corpMastRepository;
 
-    @Operation(summary = "최상위 지역 통계 조회", description = """
-            가장 많은 법인 수를 보유한 지역의 통계 정보를 조회합니다.
-
-            ### 반환 정보
-            - 지역명 (시/도, 구/군)
-            - 해당 지역의 총 법인 수
-            - 전체 대비 비율
-            - 지역 순위
-
-            ### 활용 방안
-            - 대시보드 메인 통계 표시
-            - 주요 사업 지역 현황 파악
-            """, tags = { "Region Statistics" })
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "최상위 지역 통계 조회 성공", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionStatDto.class))),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
-            @ApiResponse(responseCode = "404", description = "통계 데이터를 찾을 수 없음", content = @Content(schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
-    })
+    @Operation(summary = "최상위 지역 통계 조회", description = "가장 많은 법인 수를 보유한 지역의 통계 정보를 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "최상위 지역 통계 조회 성공")
     @GetMapping("/top")
-    public com.antock.global.common.response.ApiResponse<RegionStatDto> getTopRegionStat() {
-        return com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, regionStatService.getTopRegionStat());
+    public ApiResponse<RegionStatDto> getTopRegionStat() {
+        return ApiResponse.of(HttpStatus.OK, regionStatService.getTopRegionStat());
     }
 
-    @Operation(summary = "전체 지역 통계 목록 조회", description = """
-            모든 지역의 통계 정보를 조회합니다.
-
-            ### 반환 정보
-            - 모든 지역(시/도, 구/군)의 통계 데이터
-            - 각 지역별 법인 수
-            - 전체 대비 비율
-            - 지역별 순위
-
-            ### 정렬 순서
-            - 법인 수 내림차순으로 정렬
-            - 동일 수인 경우 지역명 오름차순
-
-            ### 활용 방안
-            - 지역별 통계 차트 생성
-            - 지역 비교 분석
-            - 어드민 대시보드 표시
-            """, tags = { "Region Statistics" })
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "전체 지역 통계 목록 조회 성공", content = @Content(mediaType = "application/json", schema = @Schema(implementation = List.class))),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content(schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
-    })
+    @Operation(summary = "전체 지역 통계 목록 조회", description = "모든 지역의 통계 정보를 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "전체 지역 통계 목록 조회 성공")
     @GetMapping
-    public com.antock.global.common.response.ApiResponse<List<RegionStatDto>> getAllRegionStats() {
-        return com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, regionStatService.getAllRegionStats());
+    public ApiResponse<List<RegionStatDto>> getAllRegionStats() {
+        return ApiResponse.of(HttpStatus.OK, regionStatService.getAllRegionStats());
     }
+
+    @Operation(summary = "지역별 통계 페이징 조회", description = "지역별 통계를 페이징하여 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "지역별 통계 페이징 조회 성공")
+    @GetMapping("/paged")
+    public ApiResponse<Page<RegionStatDto>> getRegionStatsWithPaging(
+            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "25") int size,
+            @Parameter(description = "시/도") @RequestParam(required = false) String city,
+            @Parameter(description = "구/군") @RequestParam(required = false) String district) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("completionRate").descending());
+        Page<RegionStatDto> result = regionStatService.getRegionStatsWithPaging(pageable, city, district);
+        return ApiResponse.of(HttpStatus.OK, result);
+    }
+
+    @Operation(summary = "시/도 목록 조회", description = "등록된 시/도 목록을 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "시/도 목록 조회 성공")
+    @GetMapping("/cities")
+    public ApiResponse<List<String>> getCities() {
+        return ApiResponse.of(HttpStatus.OK, regionStatService.getCities());
+    }
+
+    @Operation(summary = "구/군 목록 조회", description = "특정 시/도의 구/군 목록을 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "구/군 목록 조회 성공")
+    @GetMapping("/districts")
+    public ApiResponse<List<String>> getDistricts(
+            @Parameter(description = "시/도") @RequestParam String city) {
+        return ApiResponse.of(HttpStatus.OK, regionStatService.getDistrictsByCity(city));
+    }
+
+    @Operation(summary = "지역별 상세 법인 목록 조회", description = "특정 지역의 법인 목록을 조회합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "상세 법인 목록 조회 성공")
+    @GetMapping("/details")
+    public ApiResponse<List<CorpMast>> getRegionDetails(
+            @Parameter(description = "시/도") @RequestParam String city,
+            @Parameter(description = "구/군") @RequestParam String district) {
+
+        List<CorpMast> corpList;
+        if (city != null && !city.isEmpty() && district != null && !district.isEmpty()) {
+            corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
+        } else if (city != null && !city.isEmpty()) {
+            corpList = corpMastRepository.findBySiNm(city);
+        } else {
+            corpList = corpMastRepository.findAll();
+        }
+
+        return ApiResponse.of(HttpStatus.OK, corpList);
+    }
+
+    @Operation(summary = "Excel 다운로드", description = "지역별 통계와 상세 법인 목록을 Excel 파일로 다운로드합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Excel 다운로드 성공")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportToExcel(
+            @Parameter(description = "시/도") @RequestParam(required = false) String city,
+            @Parameter(description = "구/군") @RequestParam(required = false) String district) {
+
+        try {
+            byte[] excelData = regionStatService.exportToExcel(city, district);
+
+            String fileName = "지역별통계_";
+            if (city != null && !city.isEmpty()) {
+                fileName += city;
+                if (district != null && !district.isEmpty()) {
+                    fileName += "_" + district;
+                }
+            } else {
+                fileName += "전체";
+            }
+            fileName += "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName)
+                    .header("Content-Length", String.valueOf(excelData.length))
+                    .body(excelData);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 }
