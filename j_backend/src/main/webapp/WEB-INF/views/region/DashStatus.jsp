@@ -324,7 +324,7 @@
           <i class="bi bi-table"></i> 지역별 상세 통계
         </h5>
         <div class="d-flex align-items-center">
-                        <span class="text-muted me-3">
+                        <span class="text-white me-3 fw-semibold" style="font-size: 0.95rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
                             총 ${totalElements}개 지역 (${currentPage + 1}/${totalPages} 페이지)
                         </span>
           <div class="btn-group" role="group">
@@ -674,9 +674,9 @@
     const district = urlParams.get('district') || '';
     let exportUrl = '/api/v1/region-stats/export';
     if (city) {
-      exportUrl += `?city=${encodeURIComponent(city)}`;
+      exportUrl += '?city=' + encodeURIComponent(city);
       if (district) {
-        exportUrl += `&district=${encodeURIComponent(district)}`;
+        exportUrl += '&district=' + encodeURIComponent(district);
       }
     }
     window.open(exportUrl, '_blank');
