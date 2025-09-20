@@ -532,6 +532,7 @@
     }
   }
   function viewDetails(city, district) {
+    console.log('viewDetails called with city:', city, 'district:', district);
     const modal = new bootstrap.Modal(document.getElementById('detailModal'));
     const modalTitle = document.getElementById('modalRegionTitle');
     const detailContent = document.getElementById('detailContent');
@@ -548,11 +549,21 @@
     fetchRegionDetails(city, district);
   }
   function fetchRegionDetails(city, district) {
+    console.log('fetchRegionDetails called with city:', city, 'district:', district);
     const encodedCity = encodeURIComponent(city);
     const encodedDistrict = encodeURIComponent(district);
-    fetch(`/api/v1/region-stats/details?city=${encodedCity}&district=${encodedDistrict}`)
-            .then(response => response.json())
+    console.log('Encoded parameters - city:', encodedCity, 'district:', encodedDistrict);
+    
+    const url = `/api/v1/region-stats/details?city=${encodedCity}&district=${encodedDistrict}`;
+    console.log('Fetching URL:', url);
+    
+    fetch(url)
+            .then(response => {
+              console.log('Response status:', response.status);
+              return response.json();
+            })
             .then(data => {
+              console.log('API Response:', data);
               if (data.success && data.data) {
                 displayRegionDetails(data.data, city, district);
               } else {
@@ -560,6 +571,7 @@
               }
             })
             .catch(error => {
+              console.error('Fetch error:', error);
               displayError('데이터를 가져오는 중 오류가 발생했습니다.');
             });
   }
@@ -586,26 +598,57 @@
                                 <th>번호</th>
                                 <th>법인명</th>
                                 <th>법인등록번호</th>
-                                <th>대표자명</th>
-                                <th>사업자등록번호</th>
+                                <th>판매자ID</th>
+                                <th>사업자번호</th>
                                 <th>주소</th>
-                                <th>업태</th>
-                                <th>종목</th>
+                                <th>지역코드</th>
+                                <th>등록자</th>
+                                <th>등록일시</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
     corpList.forEach((corp, index) => {
+      const id = corp.id || '-';
+      const bizNm = corp.bizNm || '-';
+      const corpRegNo = corp.corpRegNo || '-';
+      const sellerId = corp.sellerId || '-';
+      const bizNo = corp.bizNo || '-';
+      const regionCd = corp.regionCd || '-';
+      const siNm = corp.siNm || '-';
+      const sggNm = corp.sggNm || '-';
+      const username = corp.username || '-';
+      const description = corp.description || '-';
+      let formattedDate = '-';
+      if (corp.createDate) {
+        try {
+          const createDate = new Date(corp.createDate);
+          if (!isNaN(createDate.getTime())) {
+            formattedDate = createDate.toLocaleString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+          }
+        } catch (e) {
+          console.error('Date parsing error:', e);
+        }
+      }
+      
       tableHtml += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td class="fw-bold">${corp.corpNm || '-'}</td>
-                        <td>${corp.corpRegNo || '-'}</td>
-                        <td>${corp.reprNm || '-'}</td>
-                        <td>${corp.bizRegNo || '-'}</td>
-                        <td class="text-start">${corp.addr || '-'}</td>
-                        <td>${corp.bizTp || '-'}</td>
-                        <td>${corp.bizItem || '-'}</td>
+                        <td class="fw-bold">${bizNm}</td>
+                        <td>${corpRegNo}</td>
+                        <td>${sellerId}</td>
+                        <td>${bizNo}</td>
+                        <td class="text-start">${siNm} ${sggNm}</td>
+                        <td>${regionCd}</td>
+                        <td>${username}</td>
+                        <td>${formattedDate}</td>
                     </tr>
                 `;
     });

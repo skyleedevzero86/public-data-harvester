@@ -48,6 +48,16 @@ public class RegionStatService {
             log.info("Raw stats page - total: {}, current page: {}, content size: {}",
                     rawStatsPage.getTotalElements(), rawStatsPage.getNumber(), rawStatsPage.getContent().size());
 
+            List<RegionStatDto> result = rawStatsPage.getContent().stream()
+                    .map(this::convertToRegionStatDto)
+                    .collect(Collectors.toList());
+
+            log.info("Converted {} region stats", result.size());
+            for (RegionStatDto dto : result) {
+                log.info("RegionStatDto: city='{}', district='{}', totalCount={}",
+                        dto.getCity(), dto.getDistrict(), dto.getTotalCount());
+            }
+
             return rawStatsPage.map(this::convertToRegionStatDto);
         } catch (Exception e) {
             log.error("Error getting region stats with paging", e);

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/region-stats")
 @RequiredArgsConstructor
@@ -78,19 +80,80 @@ public class RegionStatApiController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "상세 법인 목록 조회 성공")
     @GetMapping("/details")
     public ApiResponse<List<CorpMast>> getRegionDetails(
-            @Parameter(description = "시/도") @RequestParam String city,
-            @Parameter(description = "구/군") @RequestParam String district) {
+            jakarta.servlet.http.HttpServletRequest request) {
 
-        List<CorpMast> corpList;
-        if (city != null && !city.isEmpty() && district != null && !district.isEmpty()) {
-            corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
-        } else if (city != null && !city.isEmpty()) {
-            corpList = corpMastRepository.findBySiNm(city);
-        } else {
-            corpList = corpMastRepository.findAll();
+        String city = null;
+        String district = null;
+
+        try {
+            log.info("Request URL: {}", request.getRequestURL());
+            log.info("Query String: {}", request.getQueryString());
+
+            city = request.getParameter("city");
+            district = request.getParameter("district");
+
+            log.info("Getting region details - original city: '{}', original district: '{}'", city, district);
+
+            String decodedCity = city;
+            String decodedDistrict = district;
+
+            if (city != null && !city.trim().isEmpty()) {
+                try {
+                    decodedCity = java.net.URLDecoder.decode(city, "UTF-8");
+                } catch (Exception e) {
+                    log.warn("Failed to decode city parameter: '{}', using original", city);
+                    decodedCity = city;
+                }
+            }
+
+            if (district != null && !district.trim().isEmpty()) {
+                try {
+                    decodedDistrict = java.net.URLDecoder.decode(district, "UTF-8");
+                } catch (Exception e) {
+                    log.warn("Failed to decode district parameter: '{}', using original", district);
+                    decodedDistrict = district;
+                }
+            }
+
+            log.info("Getting region details - decoded city: '{}', decoded district: '{}'", decodedCity,
+                    decodedDistrict);
+
+            List<CorpMast> corpList;
+            if (decodedCity != null && !decodedCity.trim().isEmpty() && decodedDistrict != null
+                    && !decodedDistrict.trim().isEmpty()) {
+                String trimmedCity = decodedCity.trim();
+                String trimmedDistrict = decodedDistrict.trim();
+                log.info("Searching for corps with city: '{}' and district: '{}'", trimmedCity, trimmedDistrict);
+                corpList = corpMastRepository.findBySiNmAndSggNm(trimmedCity, trimmedDistrict);
+                log.info("Found {} corps for city: '{}' and district: '{}'", corpList.size(), trimmedCity,
+                        trimmedDistrict);
+
+                if (corpList.isEmpty()) {
+                    log.warn("No corps found. Let's check what's in the database...");
+                    List<CorpMast> allCorps = corpMastRepository.findAll();
+                    log.info("Total corps in database: {}", allCorps.size());
+
+                    List<CorpMast> cityCorps = corpMastRepository.findBySiNm(trimmedCity);
+                    log.info("Corps in city '{}': {}", trimmedCity, cityCorps.size());
+
+                    if (!cityCorps.isEmpty()) {
+                        log.info("Sample city corps: {}",
+                                cityCorps.get(0).getSiNm() + " " + cityCorps.get(0).getSggNm());
+                    }
+                }
+            } else if (decodedCity != null && !decodedCity.trim().isEmpty()) {
+                corpList = corpMastRepository.findBySiNm(decodedCity.trim());
+                log.info("Found {} corps for city: '{}'", corpList.size(), decodedCity);
+            } else {
+                log.warn("No city or district provided, returning empty list");
+                corpList = List.of();
+            }
+
+            return ApiResponse.of(HttpStatus.OK, corpList);
+        } catch (Exception e) {
+            log.error("Error getting region details for city: '{}', district: '{}'", city, district, e);
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "데이터 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
-
-        return ApiResponse.of(HttpStatus.OK, corpList);
     }
 
     @Operation(summary = "Excel 다운로드", description = "지역별 통계와 상세 법인 목록을 Excel 파일로 다운로드합니다.")

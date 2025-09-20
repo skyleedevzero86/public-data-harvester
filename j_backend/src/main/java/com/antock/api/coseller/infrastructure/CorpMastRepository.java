@@ -34,33 +34,31 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpM
         long countValidRegionCd();
 
         @Query("SELECT c.siNm as city, c.sggNm as district, COUNT(c) as totalCount, " +
-                "SUM(CASE WHEN c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%' THEN 1 ELSE 0 END) as validCorpRegNoCount, " +
-                "SUM(CASE WHEN c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%' THEN 1 ELSE 0 END) as validRegionCdCount " +
-                "FROM CorpMast c " +
-                "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
-                "GROUP BY c.siNm, c.sggNm " +
-                "ORDER BY COUNT(c) DESC")
+                        "SUM(CASE WHEN c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%' THEN 1 ELSE 0 END) as validCorpRegNoCount, "
+                        +
+                        "SUM(CASE WHEN c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%' THEN 1 ELSE 0 END) as validRegionCdCount "
+                        +
+                        "FROM CorpMast c " +
+                        "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
+                        "GROUP BY c.siNm, c.sggNm " +
+                        "ORDER BY COUNT(c) DESC")
         List<Object[]> getRegionStats();
 
         @Query("SELECT c.siNm as city, c.sggNm as district, COUNT(c) as totalCount, " +
-                "SUM(CASE WHEN c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%' THEN 1 ELSE 0 END) as validCorpRegNoCount, " +
-                "SUM(CASE WHEN c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%' THEN 1 ELSE 0 END) as validRegionCdCount " +
-                "FROM CorpMast c " +
-                "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
-                "AND (:city IS NULL OR :city = '' OR c.siNm = :city) " +
-                "AND (:district IS NULL OR :district = '' OR c.sggNm = :district) " +
-                "GROUP BY c.siNm, c.sggNm " +
-                "ORDER BY " +
-                "CASE WHEN (:city IS NULL OR :city = '') AND (:district IS NULL OR :district = '') THEN " +
-                "  (SUM(CASE WHEN c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%' THEN 1 ELSE 0 END) + " +
-                "   SUM(CASE WHEN c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%' THEN 1 ELSE 0 END)) / 2.0 " +
-                "ELSE " +
-                "  COUNT(c) " +
-                "END DESC")
+                        "SUM(CASE WHEN c.corpRegNo IS NOT NULL AND c.corpRegNo <> '' AND c.corpRegNo NOT LIKE '0%' AND c.corpRegNo NOT LIKE '%N/A%' THEN 1 ELSE 0 END) as validCorpRegNoCount, "
+                        +
+                        "SUM(CASE WHEN c.regionCd IS NOT NULL AND c.regionCd <> '' AND c.regionCd NOT LIKE '0%' THEN 1 ELSE 0 END) as validRegionCdCount "
+                        +
+                        "FROM CorpMast c " +
+                        "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
+                        "AND (:city IS NULL OR :city = '' OR c.siNm = :city) " +
+                        "AND (:district IS NULL OR :district = '' OR c.sggNm = :district) " +
+                        "GROUP BY c.siNm, c.sggNm " +
+                        "ORDER BY COUNT(c) DESC")
         Page<Object[]> getRegionStatsWithPaging(
-                Pageable pageable,
-                @Param("city") String city,
-                @Param("district") String district);
+                        Pageable pageable,
+                        @Param("city") String city,
+                        @Param("district") String district);
 
         @Query("SELECT DISTINCT c.siNm FROM CorpMast c WHERE c.siNm IS NOT NULL AND c.siNm != '' ORDER BY c.siNm")
         List<String> findDistinctCities();
