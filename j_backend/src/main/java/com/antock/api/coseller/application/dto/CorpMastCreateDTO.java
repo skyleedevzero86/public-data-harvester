@@ -18,6 +18,11 @@ public class CorpMastCreateDTO {
     private String siNm;
     private String sggNm;
     private String username;
+    private String repNm; // 대표자명
+    private String estbDt; // 설립일자
+    private String roadNmAddr; // 도로명주소
+    private String jibunAddr; // 지번주소
+    private String corpStatus; // 법인상태
 
     public CorpMast toEntity() {
         return CorpMast.builder()
@@ -29,6 +34,11 @@ public class CorpMastCreateDTO {
                 .siNm(this.siNm != null ? this.siNm : "")
                 .sggNm(this.sggNm != null ? this.sggNm : "")
                 .username(this.username != null ? this.username : "")
+                .repNm(this.repNm != null ? this.repNm : "")
+                .estbDt(this.estbDt != null ? this.estbDt : "")
+                .roadNmAddr(this.roadNmAddr != null ? this.roadNmAddr : "")
+                .jibunAddr(this.jibunAddr != null ? this.jibunAddr : "")
+                .corpStatus(this.corpStatus != null ? this.corpStatus : "")
                 .build();
     }
 }

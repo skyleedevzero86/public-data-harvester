@@ -12,23 +12,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "corp_mast",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "CORP_MAST_UNIQUE", columnNames = { "biz_no" })
-        },
-        indexes = {
-                @Index(name = "idx_corp_mast_biz_no", columnList = "biz_no"),
-                @Index(name = "idx_corp_mast_corp_reg_no", columnList = "corp_reg_no"),
-                @Index(name = "idx_corp_mast_seller_id", columnList = "seller_id"),
-                @Index(name = "idx_corp_mast_username", columnList = "username"),
-                @Index(name = "idx_corp_mast_location", columnList = "si_nm, sgg_nm"),
-                @Index(name = "idx_corp_mast_region_cd", columnList = "region_cd")
-        })
+@Table(name = "corp_mast", uniqueConstraints = {
+        @UniqueConstraint(name = "CORP_MAST_UNIQUE", columnNames = { "biz_no" })
+}, indexes = {
+        @Index(name = "idx_corp_mast_biz_no", columnList = "biz_no"),
+        @Index(name = "idx_corp_mast_corp_reg_no", columnList = "corp_reg_no"),
+        @Index(name = "idx_corp_mast_seller_id", columnList = "seller_id"),
+        @Index(name = "idx_corp_mast_username", columnList = "username"),
+        @Index(name = "idx_corp_mast_location", columnList = "si_nm, sgg_nm"),
+        @Index(name = "idx_corp_mast_region_cd", columnList = "region_cd")
+})
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@ToString(exclude = {"histories"})
+@ToString(exclude = { "histories" })
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class CorpMast extends BaseTimeEntity {
 
@@ -63,6 +61,21 @@ public class CorpMast extends BaseTimeEntity {
 
     @Column(length = 2000)
     private String description;
+
+    @Column(length = 100)
+    private String repNm;
+
+    @Column(length = 20)
+    private String estbDt;
+
+    @Column(length = 200)
+    private String roadNmAddr;
+
+    @Column(length = 200)
+    private String jibunAddr;
+
+    @Column(length = 50)
+    private String corpStatus;
 
     @OneToMany(mappedBy = "corpMast", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @BatchSize(size = 100)
@@ -110,6 +123,26 @@ public class CorpMast extends BaseTimeEntity {
         this.description = description != null ? description.trim() : "";
     }
 
+    public void setRepNm(String repNm) {
+        this.repNm = repNm != null ? repNm.trim() : "";
+    }
+
+    public void setEstbDt(String estbDt) {
+        this.estbDt = estbDt != null ? estbDt.trim() : "";
+    }
+
+    public void setRoadNmAddr(String roadNmAddr) {
+        this.roadNmAddr = roadNmAddr != null ? roadNmAddr.trim() : "";
+    }
+
+    public void setJibunAddr(String jibunAddr) {
+        this.jibunAddr = jibunAddr != null ? jibunAddr.trim() : "";
+    }
+
+    public void setCorpStatus(String corpStatus) {
+        this.corpStatus = corpStatus != null ? corpStatus.trim() : "";
+    }
+
     public void addHistory(CorpMastHistory history) {
         this.histories.add(history);
         history.setCorpMast(this);
@@ -120,7 +153,8 @@ public class CorpMast extends BaseTimeEntity {
     }
 
     public String getFormattedBizNo() {
-        if (bizNo == null || bizNo.length() != 10) return bizNo;
+        if (bizNo == null || bizNo.length() != 10)
+            return bizNo;
         return String.format("%s-%s-%s",
                 bizNo.substring(0, 3),
                 bizNo.substring(3, 5),

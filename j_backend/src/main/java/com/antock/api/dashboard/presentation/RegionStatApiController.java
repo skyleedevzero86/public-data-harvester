@@ -5,10 +5,8 @@ import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.dashboard.application.dto.RegionStatDto;
 import com.antock.api.dashboard.application.service.RegionStatService;
 import com.antock.global.common.response.ApiResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,87 +20,161 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/region-stats")
 @RequiredArgsConstructor
-@Tag(name = "Region Statistics", description = "지역별 통계 데이터 조회 API")
 public class RegionStatApiController {
     private final RegionStatService regionStatService;
     private final CorpMastRepository corpMastRepository;
 
-    @Operation(summary = "최상위 지역 통계 조회", description = "가장 많은 법인 수를 보유한 지역의 통계 정보를 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "최상위 지역 통계 조회 성공")
     @GetMapping("/top")
     public ApiResponse<RegionStatDto> getTopRegionStat() {
         return ApiResponse.of(HttpStatus.OK, regionStatService.getTopRegionStat());
     }
 
-    @Operation(summary = "전체 지역 통계 목록 조회", description = "모든 지역의 통계 정보를 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "전체 지역 통계 목록 조회 성공")
     @GetMapping
     public ApiResponse<List<RegionStatDto>> getAllRegionStats() {
         return ApiResponse.of(HttpStatus.OK, regionStatService.getAllRegionStats());
     }
 
-    @Operation(summary = "지역별 통계 페이징 조회", description = "지역별 통계를 페이징하여 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "지역별 통계 페이징 조회 성공")
     @GetMapping("/paged")
     public ApiResponse<Page<RegionStatDto>> getRegionStatsWithPaging(
-            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "25") int size,
-            @Parameter(description = "시/도") @RequestParam(required = false) String city,
-            @Parameter(description = "구/군") @RequestParam(required = false) String district) {
-
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("completionRate").descending());
         Page<RegionStatDto> result = regionStatService.getRegionStatsWithPaging(pageable, city, district);
         return ApiResponse.of(HttpStatus.OK, result);
     }
 
-    @Operation(summary = "시/도 목록 조회", description = "등록된 시/도 목록을 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "시/도 목록 조회 성공")
     @GetMapping("/cities")
     public ApiResponse<List<String>> getCities() {
         return ApiResponse.of(HttpStatus.OK, regionStatService.getCities());
     }
 
-    @Operation(summary = "구/군 목록 조회", description = "특정 시/도의 구/군 목록을 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "구/군 목록 조회 성공")
     @GetMapping("/districts")
     public ApiResponse<List<String>> getDistricts(
-            @Parameter(description = "시/도") @RequestParam String city) {
+            @RequestParam String city) {
         return ApiResponse.of(HttpStatus.OK, regionStatService.getDistrictsByCity(city));
     }
 
-    @Operation(summary = "지역별 상세 법인 목록 조회", description = "특정 지역의 법인 목록을 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "상세 법인 목록 조회 성공")
     @GetMapping("/details")
-    public ApiResponse<List<CorpMast>> getRegionDetails(
-            @Parameter(description = "시/도") @RequestParam String city,
-            @Parameter(description = "구/군") @RequestParam String district) {
-
-        List<CorpMast> corpList;
-        if (city != null && !city.isEmpty() && district != null && !district.isEmpty()) {
-            corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
-        } else if (city != null && !city.isEmpty()) {
-            corpList = corpMastRepository.findBySiNm(city);
-        } else {
-            corpList = corpMastRepository.findAll();
+    public ApiResponse<Page<CorpMast>> getRegionDetails(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "18") int size) {
+        try {
+            String decodedCity = city;
+            String decodedDistrict = district;
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+            Page<CorpMast> corpPage;
+            if (decodedCity != null && !decodedCity.trim().isEmpty() && decodedDistrict != null
+                    && !decodedDistrict.trim().isEmpty()) {
+                String trimmedCity = decodedCity.trim();
+                String trimmedDistrict = decodedDistrict.trim();
+                corpPage = corpMastRepository.findBySiNmAndSggNm(trimmedCity, trimmedDistrict, pageable);
+                if (corpPage.isEmpty() && trimmedCity.equals(trimmedDistrict)) {
+                    corpPage = corpMastRepository.findBySiNm(trimmedCity, pageable);
+                }
+            } else if (decodedCity != null && !decodedCity.trim().isEmpty()) {
+                corpPage = corpMastRepository.findBySiNm(decodedCity.trim(), pageable);
+            } else {
+                corpPage = corpMastRepository.findAll(pageable);
+            }
+            return ApiResponse.of(HttpStatus.OK, corpPage);
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "데이터 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
-
-        return ApiResponse.of(HttpStatus.OK, corpList);
     }
 
-    @Operation(summary = "Excel 다운로드", description = "지역별 통계와 상세 법인 목록을 Excel 파일로 다운로드합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Excel 다운로드 성공")
+    @PostMapping("/admin/add-missing-columns")
+    public ApiResponse<Map<String, Object>> addMissingColumns() {
+        try {
+            corpMastRepository.addMissingColumns();
+            return ApiResponse.of(HttpStatus.OK, Map.of(
+                    "message", "Missing columns added successfully",
+                    "columns_added", List.of("rep_nm", "estb_dt", "road_nm_addr", "jibun_addr", "corp_status")));
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "message", "Failed to add missing columns"));
+        }
+    }
+
+    @PostMapping("/admin/add-sample-data")
+    public ApiResponse<Map<String, Object>> addSampleData() {
+        try {
+            corpMastRepository.addSampleData();
+            return ApiResponse.of(HttpStatus.OK, Map.of(
+                    "message", "Sample data added successfully",
+                    "regions_updated", List.of("울산광역시 중구", "세종특별자치시")));
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "message", "Failed to add sample data"));
+        }
+    }
+
+    @GetMapping("/debug/fields")
+    public ApiResponse<Map<String, Object>> debugFields(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district) {
+        try {
+            List<CorpMast> corpList;
+            if (city != null && district != null) {
+                corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
+            } else {
+                corpList = corpMastRepository.findAll();
+            }
+            if (corpList.isEmpty()) {
+                return ApiResponse.of(HttpStatus.OK, Map.of(
+                        "message", "No data found",
+                        "city", city,
+                        "district", district,
+                        "sample_data", "No corporations found"));
+            }
+            CorpMast sample = corpList.get(0);
+            Map<String, Object> debugInfo = Map.of(
+                    "total_count", corpList.size(),
+                    "city", city,
+                    "district", district,
+                    "sample_corp", Map.of(
+                            "id", sample.getId(),
+                            "bizNm", sample.getBizNm(),
+                            "repNm", sample.getRepNm(),
+                            "estbDt", sample.getEstbDt(),
+                            "roadNmAddr", sample.getRoadNmAddr(),
+                            "jibunAddr", sample.getJibunAddr(),
+                            "corpStatus", sample.getCorpStatus(),
+                            "siNm", sample.getSiNm(),
+                            "sggNm", sample.getSggNm()),
+                    "field_analysis", Map.of(
+                            "has_rep_nm", sample.getRepNm() != null && !sample.getRepNm().isEmpty(),
+                            "has_estb_dt", sample.getEstbDt() != null && !sample.getEstbDt().isEmpty(),
+                            "has_road_addr", sample.getRoadNmAddr() != null && !sample.getRoadNmAddr().isEmpty(),
+                            "has_jibun_addr", sample.getJibunAddr() != null && !sample.getJibunAddr().isEmpty(),
+                            "has_corp_status", sample.getCorpStatus() != null && !sample.getCorpStatus().isEmpty()));
+            return ApiResponse.of(HttpStatus.OK, debugInfo);
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "city", city,
+                    "district", district));
+        }
+    }
+
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportToExcel(
-            @Parameter(description = "시/도") @RequestParam(required = false) String city,
-            @Parameter(description = "구/군") @RequestParam(required = false) String district) {
-
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district) {
         try {
             byte[] excelData = regionStatService.exportToExcel(city, district);
-
             String fileName = "지역별통계_";
             if (city != null && !city.isEmpty()) {
                 fileName += city;
@@ -113,9 +185,7 @@ public class RegionStatApiController {
                 fileName += "전체";
             }
             fileName += "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
-
             String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-
             return ResponseEntity.ok()
                     .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName)
@@ -125,5 +195,4 @@ public class RegionStatApiController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
 }

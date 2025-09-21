@@ -100,6 +100,11 @@ CREATE TABLE IF NOT EXISTS corp_mast (
     sgg_nm VARCHAR(50) NOT NULL,                                   -- 시군구명
     username VARCHAR(100) NOT NULL,                                -- 등록자 사용자명
     description VARCHAR(2000),                                     -- 상세 설명
+    rep_nm VARCHAR(100),                                           -- 대표자명
+    estb_dt VARCHAR(20),                                           -- 설립일자
+    road_nm_addr VARCHAR(200),                                     -- 도로명주소
+    jibun_addr VARCHAR(200),                                       -- 지번주소
+    corp_status VARCHAR(50),                                       -- 법인상태
     create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,      -- 생성일시
     modify_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,      -- 수정일시
     
@@ -387,7 +392,8 @@ WITH regions AS (
             ('전라남도', '목포시'), ('전라남도', '여수시'), ('전라남도', '순천시'), ('전라남도', '나주시'),
             ('경상북도', '포항시'), ('경상북도', '경주시'), ('경상북도', '김천시'), ('경상북도', '안동시'),
             ('경상남도', '창원시'), ('경상남도', '진주시'), ('경상남도', '통영시'), ('경상남도', '사천시'),
-            ('제주특별자치도', '제주시'), ('제주특별자치도', '서귀포시')
+            ('제주특별자치도', '제주시'), ('제주특별자치도', '서귀포시'),
+            ('세종특별자치시', '세종특별자치시')
     ) AS t(si_nm, sgg_nm)
 ),
 company_types AS (
@@ -670,6 +676,25 @@ SELECT
     COUNT(CASE WHEN status = 'SUCCESS' THEN 1 END) as success_count,
     COUNT(DISTINCT city) as distinct_cities
 FROM csv_batch_history;
+
+-- =====================================================================================
+-- 기존 테이블에 새로운 컬럼 추가 (기존 데이터베이스 업데이트용)
+-- =====================================================================================
+
+-- corp_mast 테이블에 새로운 컬럼들 추가
+ALTER TABLE corp_mast 
+ADD COLUMN IF NOT EXISTS rep_nm VARCHAR(100),           -- 대표자명
+ADD COLUMN IF NOT EXISTS estb_dt VARCHAR(20),           -- 설립일자
+ADD COLUMN IF NOT EXISTS road_nm_addr VARCHAR(200),     -- 도로명주소
+ADD COLUMN IF NOT EXISTS jibun_addr VARCHAR(200),       -- 지번주소
+ADD COLUMN IF NOT EXISTS corp_status VARCHAR(50);       -- 법인상태
+
+-- 새로운 컬럼들에 대한 코멘트 추가
+COMMENT ON COLUMN corp_mast.rep_nm IS '대표자명';
+COMMENT ON COLUMN corp_mast.estb_dt IS '설립일자 (YYYYMMDD 형식)';
+COMMENT ON COLUMN corp_mast.road_nm_addr IS '도로명주소';
+COMMENT ON COLUMN corp_mast.jibun_addr IS '지번주소';
+COMMENT ON COLUMN corp_mast.corp_status IS '법인상태 (예: 계속(수익), 휴업, 폐업 등)';
 
 -- =====================================================================================
 -- 스크립트 실행 완료 메시지

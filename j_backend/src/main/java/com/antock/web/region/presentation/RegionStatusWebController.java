@@ -80,4 +80,5 @@ public class RegionStatusWebController {
             return "region/status";
         }
     }
+
 }
