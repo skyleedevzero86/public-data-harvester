@@ -20,6 +20,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -45,7 +47,6 @@ public class RegionStatApiController {
             @RequestParam(defaultValue = "25") int size,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String district) {
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("completionRate").descending());
         Page<RegionStatDto> result = regionStatService.getRegionStatsWithPaging(pageable, city, district);
         return ApiResponse.of(HttpStatus.OK, result);
@@ -63,90 +64,108 @@ public class RegionStatApiController {
     }
 
     @GetMapping("/details")
-    public ApiResponse<List<CorpMast>> getRegionDetails(
-            jakarta.servlet.http.HttpServletRequest request) {
-
-        String city = null;
-        String district = null;
-
+    public ApiResponse<Page<CorpMast>> getRegionDetails(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "18") int size) {
         try {
-            log.info("Request URL: {}", request.getRequestURL());
-            log.info("Query String: {}", request.getQueryString());
-
-            city = request.getParameter("city");
-            district = request.getParameter("district");
-
-            log.info("Getting region details - original city: '{}', original district: '{}'", city, district);
-
             String decodedCity = city;
             String decodedDistrict = district;
-
-            if (city != null && !city.trim().isEmpty()) {
-                try {
-                    decodedCity = java.net.URLDecoder.decode(city, "UTF-8");
-                } catch (Exception e) {
-                    log.warn("Failed to decode city parameter: '{}', using original", city);
-                    decodedCity = city;
-                }
-            }
-
-            if (district != null && !district.trim().isEmpty()) {
-                try {
-                    decodedDistrict = java.net.URLDecoder.decode(district, "UTF-8");
-                } catch (Exception e) {
-                    log.warn("Failed to decode district parameter: '{}', using original", district);
-                    decodedDistrict = district;
-                }
-            }
-
-            log.info("Getting region details - decoded city: '{}', decoded district: '{}'", decodedCity,
-                    decodedDistrict);
-
-            List<CorpMast> corpList;
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+            Page<CorpMast> corpPage;
             if (decodedCity != null && !decodedCity.trim().isEmpty() && decodedDistrict != null
                     && !decodedDistrict.trim().isEmpty()) {
                 String trimmedCity = decodedCity.trim();
                 String trimmedDistrict = decodedDistrict.trim();
-                log.info("Searching for corps with city: '{}' and district: '{}'", trimmedCity, trimmedDistrict);
-
-                corpList = corpMastRepository.findBySiNmAndSggNm(trimmedCity, trimmedDistrict);
-                log.info("Found {} corps for city: '{}' and district: '{}'", corpList.size(), trimmedCity,
-                        trimmedDistrict);
-
-                if (corpList.isEmpty()) {
-                    log.warn("No corps found with exact match. Let's check what's in the database...");
-
-                    if (trimmedCity.equals(trimmedDistrict)) {
-                        log.info("City and district are the same, trying to find by city only: '{}'", trimmedCity);
-                        corpList = corpMastRepository.findBySiNm(trimmedCity);
-                        log.info("Found {} corps for city only: '{}'", corpList.size(), trimmedCity);
-                    }
-
-                    if (corpList.isEmpty()) {
-                        List<CorpMast> allCorps = corpMastRepository.findAll();
-                        log.info("Total corps in database: {}", allCorps.size());
-
-                        List<CorpMast> cityCorps = corpMastRepository.findBySiNm(trimmedCity);
-                        log.info("Corps in city '{}': {}", trimmedCity, cityCorps.size());
-
-                        if (!cityCorps.isEmpty()) {
-                            log.info("Sample city corps: {}",
-                                    cityCorps.get(0).getSiNm() + " " + cityCorps.get(0).getSggNm());
-                        }
-                    }
+                corpPage = corpMastRepository.findBySiNmAndSggNm(trimmedCity, trimmedDistrict, pageable);
+                if (corpPage.isEmpty() && trimmedCity.equals(trimmedDistrict)) {
+                    corpPage = corpMastRepository.findBySiNm(trimmedCity, pageable);
                 }
             } else if (decodedCity != null && !decodedCity.trim().isEmpty()) {
-                corpList = corpMastRepository.findBySiNm(decodedCity.trim());
-                log.info("Found {} corps for city: '{}'", corpList.size(), decodedCity);
+                corpPage = corpMastRepository.findBySiNm(decodedCity.trim(), pageable);
             } else {
-                log.warn("No city or district provided, returning empty list");
-                corpList = List.of();
+                corpPage = corpMastRepository.findAll(pageable);
             }
-
-            return ApiResponse.of(HttpStatus.OK, corpList);
+            return ApiResponse.of(HttpStatus.OK, corpPage);
         } catch (Exception e) {
-            log.error("Error getting region details for city: '{}', district: '{}'", city, district, e);
             return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, "데이터 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/admin/add-missing-columns")
+    public ApiResponse<Map<String, Object>> addMissingColumns() {
+        try {
+            corpMastRepository.addMissingColumns();
+            return ApiResponse.of(HttpStatus.OK, Map.of(
+                    "message", "Missing columns added successfully",
+                    "columns_added", List.of("rep_nm", "estb_dt", "road_nm_addr", "jibun_addr", "corp_status")));
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "message", "Failed to add missing columns"));
+        }
+    }
+
+    @PostMapping("/admin/add-sample-data")
+    public ApiResponse<Map<String, Object>> addSampleData() {
+        try {
+            corpMastRepository.addSampleData();
+            return ApiResponse.of(HttpStatus.OK, Map.of(
+                    "message", "Sample data added successfully",
+                    "regions_updated", List.of("울산광역시 중구", "세종특별자치시")));
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "message", "Failed to add sample data"));
+        }
+    }
+
+    @GetMapping("/debug/fields")
+    public ApiResponse<Map<String, Object>> debugFields(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district) {
+        try {
+            List<CorpMast> corpList;
+            if (city != null && district != null) {
+                corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
+            } else {
+                corpList = corpMastRepository.findAll();
+            }
+            if (corpList.isEmpty()) {
+                return ApiResponse.of(HttpStatus.OK, Map.of(
+                        "message", "No data found",
+                        "city", city,
+                        "district", district,
+                        "sample_data", "No corporations found"));
+            }
+            CorpMast sample = corpList.get(0);
+            Map<String, Object> debugInfo = Map.of(
+                    "total_count", corpList.size(),
+                    "city", city,
+                    "district", district,
+                    "sample_corp", Map.of(
+                            "id", sample.getId(),
+                            "bizNm", sample.getBizNm(),
+                            "repNm", sample.getRepNm(),
+                            "estbDt", sample.getEstbDt(),
+                            "roadNmAddr", sample.getRoadNmAddr(),
+                            "jibunAddr", sample.getJibunAddr(),
+                            "corpStatus", sample.getCorpStatus(),
+                            "siNm", sample.getSiNm(),
+                            "sggNm", sample.getSggNm()),
+                    "field_analysis", Map.of(
+                            "has_rep_nm", sample.getRepNm() != null && !sample.getRepNm().isEmpty(),
+                            "has_estb_dt", sample.getEstbDt() != null && !sample.getEstbDt().isEmpty(),
+                            "has_road_addr", sample.getRoadNmAddr() != null && !sample.getRoadNmAddr().isEmpty(),
+                            "has_jibun_addr", sample.getJibunAddr() != null && !sample.getJibunAddr().isEmpty(),
+                            "has_corp_status", sample.getCorpStatus() != null && !sample.getCorpStatus().isEmpty()));
+            return ApiResponse.of(HttpStatus.OK, debugInfo);
+        } catch (Exception e) {
+            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
+                    "error", e.getMessage(),
+                    "city", city,
+                    "district", district));
         }
     }
 
@@ -154,10 +173,8 @@ public class RegionStatApiController {
     public ResponseEntity<byte[]> exportToExcel(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String district) {
-
         try {
             byte[] excelData = regionStatService.exportToExcel(city, district);
-
             String fileName = "지역별통계_";
             if (city != null && !city.isEmpty()) {
                 fileName += city;
@@ -168,9 +185,7 @@ public class RegionStatApiController {
                 fileName += "전체";
             }
             fileName += "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
-
             String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-
             return ResponseEntity.ok()
                     .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName)
