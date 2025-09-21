@@ -58,6 +58,7 @@ class CoSellerServicePerformanceTest {
         long startTime = System.currentTimeMillis();
 
         for (int i = 0; i < concurrentRequests; i++) {
+            final int userId = i;
             RegionRequestDto request = RegionRequestDto.builder()
                     .city(City.서울특별시)
                     .district(District.강남구)
@@ -65,7 +66,7 @@ class CoSellerServicePerformanceTest {
 
             CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
                 try {
-                    return coSellerService.saveCoSeller(request, "testUser" + i);
+                    return coSellerService.saveCoSeller(request, "testUser" + userId);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

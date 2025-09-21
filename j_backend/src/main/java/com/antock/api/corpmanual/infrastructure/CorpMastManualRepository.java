@@ -88,4 +88,16 @@ public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long>,
                         "GROUP BY c.siNm, c.sggNm " +
                         "ORDER BY COUNT(c) DESC")
         List<Object[]> findRegionStats();
+
+        @Query("SELECT COUNT(c) FROM CorpMast c WHERE c.siNm = :city AND c.sggNm = :district")
+        long countByLocation(@Param("city") String city, @Param("district") String district);
+
+        @Query("SELECT COUNT(c) FROM CorpMast c WHERE c.siNm = :city")
+        long countByLocation(@Param("city") String city);
+
+        @Query("SELECT c FROM CorpMast c WHERE LOWER(c.sellerId) LIKE LOWER(CONCAT('%', :sellerId, '%'))")
+        Page<CorpMast> findBySellerIdContainingIgnoreCase(@Param("sellerId") String sellerId, Pageable pageable);
+
+        @Query("SELECT c FROM CorpMast c WHERE LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))")
+        Page<CorpMast> findByBizNmContainingIgnoreCase(@Param("bizNm") String bizNm, Pageable pageable);
 }

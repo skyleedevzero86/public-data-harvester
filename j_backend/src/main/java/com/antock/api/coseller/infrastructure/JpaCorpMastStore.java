@@ -42,4 +42,15 @@ public class JpaCorpMastStore implements CorpMastStore {
     public List<String> findExistingBizNos(List<String> bizNos) {
         return corpMastRepository.findBizNosByBizNoIn(bizNos);
     }
+
+    @Override
+    public List<CorpMast> findAll() {
+        return corpMastRepository.findAll();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void delete(CorpMast corpMast) {
+        corpMastRepository.delete(corpMast);
+    }
 }

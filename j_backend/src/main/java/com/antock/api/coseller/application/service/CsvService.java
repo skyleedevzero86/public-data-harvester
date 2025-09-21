@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,10 @@ public class CsvService {
     @Value("${app.csv.max-lines:10000}")
     private int maxLines;
 
+    public CsvFileReadStrategy getFileReadStrategy() {
+        return csvFileReadStrategy;
+    }
+
     public List<BizCsvInfoDto> readCsvFile(String fileName) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("CSV 파일 읽기");
@@ -47,8 +52,8 @@ public class CsvService {
         int totalLines = 0;
 
         try (InputStream inputStream = csvFileReadStrategy.readFile(fileName);
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(inputStream, StandardCharsets.UTF_8), bufferSize)) {
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(inputStream, detectEncoding(inputStream)), bufferSize)) {
 
             String line;
             boolean isFirstLine = true;
@@ -80,26 +85,68 @@ public class CsvService {
                     }
                 } catch (Exception e) {
                     errorCount++;
-                    log.error("CSV 라인 파싱 오류 (라인 {}): {}", totalLines, line, e);
                 }
             }
 
         } catch (IOException e) {
-            log.error("CSV 파일 읽기 중 오류 발생: {}", fileName, e);
             throw new CsvParsingException("CSV 파일을 읽을 수 없습니다: " + fileName, e);
         }
 
         stopWatch.stop();
         long processingTime = stopWatch.getTotalTimeMillis();
 
-        log.info("CSV 파일 읽기 완료 - 총 라인: {}, 유효: {}, 무효: {}, 오류: {}, 소요시간: {}ms",
-                totalLines, validData.size(), invalidLines.size(), errorCount, processingTime);
+        return validData;
+    }
 
-        for (String invalidLine : invalidLines) {
-            log.debug("유효하지 않은 데이터 라인 {}: {}", totalLines, invalidLine);
+    private Charset detectEncoding(InputStream inputStream) {
+        try {
+            inputStream.mark(3);
+            byte[] bom = new byte[3];
+            int bytesRead = inputStream.read(bom);
+            inputStream.reset();
+
+            if (bytesRead >= 3 &&
+                    bom[0] == (byte) 0xEF &&
+                    bom[1] == (byte) 0xBB &&
+                    bom[2] == (byte) 0xBF) {
+                return StandardCharsets.UTF_8;
+            }
+
+            inputStream.mark(1024);
+            byte[] buffer = new byte[1024];
+            int bytesRead2 = inputStream.read(buffer);
+            inputStream.reset();
+
+            if (bytesRead2 > 0) {
+                String testString = new String(buffer, 0, bytesRead2, StandardCharsets.UTF_8);
+                if (isValidKoreanText(testString)) {
+                    return StandardCharsets.UTF_8;
+                }
+
+                testString = new String(buffer, 0, bytesRead2, Charset.forName("EUC-KR"));
+                if (isValidKoreanText(testString)) {
+                    return Charset.forName("EUC-KR");
+                }
+
+                testString = new String(buffer, 0, bytesRead2, Charset.forName("CP949"));
+                if (isValidKoreanText(testString)) {
+                    return Charset.forName("CP949");
+                }
+            }
+
+            return StandardCharsets.UTF_8;
+
+        } catch (Exception e) {
+            return StandardCharsets.UTF_8;
+        }
+    }
+
+    private boolean isValidKoreanText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
         }
 
-        return validData;
+        return text.matches(".*[가-힣a-zA-Z0-9\\s\\-_.,()]+.*");
     }
 
     private String[] parseCsvLine(String line) {
@@ -137,7 +184,6 @@ public class CsvService {
 
     private BizCsvInfoDto parseCsvData(String[] tokens) {
         try {
-
             return BizCsvInfoDto.builder()
                     .sellerId(tokens[0].trim())
                     .city(tokens[1].trim())
@@ -153,9 +199,7 @@ public class CsvService {
                     .bizNesAddress(tokens.length > 10 ? tokens[10].trim() : "")
                     .build();
         } catch (Exception e) {
-            log.warn("CSV 데이터 파싱 실패: {}", String.join(",", tokens), e);
             return null;
         }
     }
-
 }

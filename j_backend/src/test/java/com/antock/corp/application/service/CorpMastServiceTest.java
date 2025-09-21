@@ -83,7 +83,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastManualResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request, PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(2);
@@ -107,7 +107,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastManualResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request, PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -130,7 +130,7 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastManualResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request, PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -153,12 +153,12 @@ class CorpMastServiceTest {
                 .willReturn(mockPage);
 
         // when
-        Page<CorpMastManualResponse> result = corpMastService.search(request);
+        Page<CorpMastManualResponse> result = corpMastService.search(request, PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getContent()).allMatch(corp ->
-                corp.getSiNm().equals("서울특별시") && corp.getSggNm().equals("강남구"));
+        assertThat(result.getContent())
+                .allMatch(corp -> corp.getSiNm().equals("서울특별시") && corp.getSggNm().equals("강남구"));
     }
 
     @Test
