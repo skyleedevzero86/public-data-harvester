@@ -81,7 +81,7 @@ public class CoSellerService {
         for (int i = 0; i < csvList.size(); i += batchSize) {
             int end = Math.min(i + batchSize, csvList.size());
             List<BizCsvInfoDto> batch = csvList.subList(i, end);
-            List<CorpMastCreateDTO> corpCreateDtoList = getCorpApiInfo(batch, username);
+            List<CorpMastCreateDTO> corpCreateDtoList = getCorpApiInfo(batch, username, city, district);
             if (!corpCreateDtoList.isEmpty()) {
                 int savedCnt = saveCorpMastList(corpCreateDtoList, username);
                 totalSaved += savedCnt;
@@ -184,6 +184,19 @@ public class CoSellerService {
         return corpCreateDtoList;
     }
 
+    private List<CorpMastCreateDTO> getCorpApiInfo(List<BizCsvInfoDto> csvList, String username, String city,
+            String district) {
+        List<CorpMastCreateDTO> corpCreateDtoList = new ArrayList<>();
+        for (BizCsvInfoDto csvInfo : csvList) {
+            try {
+                CorpMastCreateDTO dto = generateMockCorpData(csvInfo, username, city, district);
+                corpCreateDtoList.add(dto);
+            } catch (Exception e) {
+            }
+        }
+        return corpCreateDtoList;
+    }
+
     private CorpMastCreateDTO generateMockCorpData(BizCsvInfoDto csvInfo, String username) {
         String corpRegNo = generateMockCorpRegNo();
         String regionCd = generateMockRegionCd();
@@ -199,6 +212,28 @@ public class CoSellerService {
                 .regionCd(regionCd)
                 .siNm(siNm)
                 .sggNm(sggNm)
+                .username(username)
+                .repNm(generateMockRepName())
+                .estbDt(generateMockEstbDate())
+                .roadNmAddr(csvInfo.getBizAddress())
+                .jibunAddr(csvInfo.getBizNesAddress())
+                .corpStatus("정상영업")
+                .build();
+    }
+
+    private CorpMastCreateDTO generateMockCorpData(BizCsvInfoDto csvInfo, String username, String city,
+            String district) {
+        String corpRegNo = generateMockCorpRegNo();
+        String regionCd = generateMockRegionCd();
+
+        return CorpMastCreateDTO.builder()
+                .sellerId(csvInfo.getSellerId())
+                .bizNm(csvInfo.getBizNm())
+                .bizNo(csvInfo.getBizNo())
+                .corpRegNo(corpRegNo)
+                .regionCd(regionCd)
+                .siNm(city)
+                .sggNm(district) 
                 .username(username)
                 .repNm(generateMockRepName())
                 .estbDt(generateMockEstbDate())

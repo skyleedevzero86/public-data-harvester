@@ -94,8 +94,8 @@ public class CoSellerRestController {
     public ApiResponse<Map<String, Object>> testFileRead(
             @RequestParam String city,
             @RequestParam String district) {
+        String fileName = city + "_" + district + ".csv";
         try {
-            String fileName = city + "_" + district + ".csv";
             var csvService = cosellerService.getCsvService();
             var csvList = csvService.readCsvFile(fileName);
 
