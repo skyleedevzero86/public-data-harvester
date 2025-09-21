@@ -61,7 +61,7 @@ public class SecurityConfig {
                                                                 "/api/v1/files/**",
                                                                 "/api/v1/coseller/**",
                                                                 "/corp/**",
-                                                                "/coseller/manual",
+                                                                "/coseller/**",
                                                                 "/file/**",
                                                                 "/dashboard/**",
                                                                 "/region/**",

@@ -6,7 +6,6 @@ import com.antock.global.common.constants.CsvConstants;
 import com.antock.global.common.exception.CsvParsingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -52,8 +51,8 @@ public class CsvService {
         int totalLines = 0;
 
         try (InputStream inputStream = csvFileReadStrategy.readFile(fileName);
-             BufferedReader reader = new BufferedReader(
-                     new InputStreamReader(inputStream, detectEncoding(inputStream)), bufferSize)) {
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(inputStream, detectEncoding(inputStream)), bufferSize)) {
 
             String line;
             boolean isFirstLine = true;
@@ -118,26 +117,31 @@ public class CsvService {
             inputStream.reset();
 
             if (bytesRead2 > 0) {
-                String testString = new String(buffer, 0, bytesRead2, StandardCharsets.UTF_8);
+                String testString = new String(buffer, 0, bytesRead2, Charset.forName("EUC-KR"));
                 if (isValidKoreanText(testString)) {
-                    return StandardCharsets.UTF_8;
-                }
-
-                testString = new String(buffer, 0, bytesRead2, Charset.forName("EUC-KR"));
-                if (isValidKoreanText(testString)) {
+                    log.debug("EUC-KR 인코딩으로 감지됨");
                     return Charset.forName("EUC-KR");
                 }
 
                 testString = new String(buffer, 0, bytesRead2, Charset.forName("CP949"));
                 if (isValidKoreanText(testString)) {
+                    log.debug("CP949 인코딩으로 감지됨");
                     return Charset.forName("CP949");
+                }
+
+                testString = new String(buffer, 0, bytesRead2, StandardCharsets.UTF_8);
+                if (isValidKoreanText(testString)) {
+                    log.debug("UTF-8 인코딩으로 감지됨");
+                    return StandardCharsets.UTF_8;
                 }
             }
 
-            return StandardCharsets.UTF_8;
+            log.debug("인코딩 감지 실패, 기본값 EUC-KR 사용");
+            return Charset.forName("EUC-KR");
 
         } catch (Exception e) {
-            return StandardCharsets.UTF_8;
+            log.warn("인코딩 감지 중 오류 발생, 기본값 EUC-KR 사용: {}", e.getMessage());
+            return Charset.forName("EUC-KR");
         }
     }
 
@@ -146,7 +150,17 @@ public class CsvService {
             return false;
         }
 
-        return text.matches(".*[가-힣a-zA-Z0-9\\s\\-_.,()]+.*");
+        boolean hasKorean = text.matches(".*[가-힣]+.*");
+        boolean hasValidChars = text.matches(".*[가-힣a-zA-Z0-9\\s\\-_.,()]+.*");
+        boolean hasBrokenChars = text.contains("") || text.contains("");
+
+        if (hasKorean && hasValidChars) {
+            long brokenCharCount = text.chars().filter(ch -> ch == 0xFFFD).count();
+            double brokenCharRatio = (double) brokenCharCount / text.length();
+            return brokenCharRatio < 0.3;
+        }
+
+        return false;
     }
 
     private String[] parseCsvLine(String line) {

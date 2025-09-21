@@ -233,7 +233,7 @@ public class CoSellerService {
                 .corpRegNo(corpRegNo)
                 .regionCd(regionCd)
                 .siNm(city)
-                .sggNm(district) 
+                .sggNm(district)
                 .username(username)
                 .repNm(generateMockRepName())
                 .estbDt(generateMockEstbDate())
