@@ -58,7 +58,7 @@ public class CsvServiceTest {
 
         // When
         long startTime = System.currentTimeMillis();
-        List<BizCsvInfoDto> list = csvService.readBizCsv(city.name(), district.name());
+        List<BizCsvInfoDto> list = csvService.readCsvFile("test.csv");
         long endTime = System.currentTimeMillis();
         System.out.println("소요시간 = " + (endTime - startTime) + " ms");
 
@@ -73,7 +73,7 @@ public class CsvServiceTest {
 
     @Test
     @DisplayName("csv 없는 경우 DEFAULT CSV로 동일 시나리오 진행")
-    void readBizCsv_no_File() throws Exception {
+    void readCsvFile_no_File() throws Exception {
         // Given
         String defaultCsvData = "id,,bizNm,bizNo,bizType,,address,nesAddress\n" +
                 "1,,주식회사 뮤직터빈,1234567890123,법인,,대구광역시 강남구,강남구 테헤란로";
@@ -81,7 +81,7 @@ public class CsvServiceTest {
                 .thenReturn(new BufferedReader(new StringReader(defaultCsvData)));
 
         // When
-        List<BizCsvInfoDto> list = csvService.readBizCsv("대구광역시", "강남구");
+        List<BizCsvInfoDto> list = csvService.readCsvFile("default.csv");
 
         // Then
         assertNotNull(list, "결과 리스트는 null이 아니어야 합니다");

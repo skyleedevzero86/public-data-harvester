@@ -15,4 +15,8 @@ public interface CorpMastStore {
     Optional<CorpMast> findByBizNo(String bizNo);
 
     List<String> findExistingBizNos(List<String> bizNos);
+
+    List<CorpMast> findAll();
+
+    void delete(CorpMast corpMast);
 }

@@ -44,12 +44,27 @@ public class CorpMastManualService {
                 request.getCorpRegNo(),
                 request.getCity(),
                 request.getDistrict(),
-                PageRequest.of(0, Integer.MAX_VALUE)
-        );
+                PageRequest.of(0, Integer.MAX_VALUE));
 
         return results.getContent().stream()
                 .map(this::convertToSearchResponse)
                 .toList();
+    }
+
+    @Cacheable(value = "corpMastSearchPage", key = "#request.toString()")
+    public Page<CorpMastManualResponse> search(CorpMastManualRequest request, Pageable pageable) {
+        log.info("법인 정보 페이징 검색 요청: {}", request);
+
+        Page<CorpMast> results = corpMastManualRepository.findBySearchConditions(
+                request.getBizNm(),
+                request.getBizNo(),
+                request.getSellerId(),
+                request.getCorpRegNo(),
+                request.getCity(),
+                request.getDistrict(),
+                pageable);
+
+        return results.map(this::convertToManualResponse);
     }
 
     @Cacheable(value = "corpMastSearchPagination", key = "#request.toString() + '_' + #page + '_' + #size + '_' + #sortBy + '_' + #sortDir")
@@ -72,8 +87,7 @@ public class CorpMastManualService {
                 request.getCorpRegNo(),
                 request.getCity(),
                 request.getDistrict(),
-                pageable
-        );
+                pageable);
 
         return corpMastPage.map(this::convertToSearchResponse);
     }
@@ -136,14 +150,12 @@ public class CorpMastManualService {
                 request.getSellerId(),
                 request.getCorpRegNo(),
                 request.getCity(),
-                request.getDistrict()
-        );
+                request.getDistrict());
 
         Map<String, Object> statistics = Map.of(
                 "totalCount", totalCount,
                 "searchConditions", request,
-                "timestamp", LocalDateTime.now().toString()
-        );
+                "timestamp", LocalDateTime.now().toString());
 
         return statistics;
     }

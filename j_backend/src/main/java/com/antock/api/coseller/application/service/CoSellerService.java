@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +38,10 @@ public class CoSellerService {
     private final CorpMastHistoryStore corpMastHistoryStore;
     private final Executor asyncExecutor;
 
+    public CsvService getCsvService() {
+        return csvService;
+    }
+
     @Transactional
     public int saveCoSeller(RegionRequestDto requestDto, String username) {
         String fileName = requestDto.getCity().getValue() + "_" + requestDto.getDistrict().getValue() + ".csv";
@@ -50,6 +55,33 @@ public class CoSellerService {
             int end = Math.min(i + batchSize, csvList.size());
             List<BizCsvInfoDto> batch = csvList.subList(i, end);
             List<CorpMastCreateDTO> corpCreateDtoList = getCorpApiInfo(batch, username);
+            if (!corpCreateDtoList.isEmpty()) {
+                int savedCnt = saveCorpMastList(corpCreateDtoList, username);
+                totalSaved += savedCnt;
+            }
+        }
+        return totalSaved;
+    }
+
+    @Transactional
+    public int saveCoSeller(String city, String district, String username) {
+        String fileName = city + "_" + district + ".csv";
+        List<BizCsvInfoDto> csvList;
+        try {
+            csvList = csvService.readCsvFile(fileName);
+            if (csvList.isEmpty()) {
+                return 0;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("CSV 파일을 읽을 수 없습니다: " + fileName, e);
+        }
+
+        int batchSize = 100;
+        int totalSaved = 0;
+        for (int i = 0; i < csvList.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, csvList.size());
+            List<BizCsvInfoDto> batch = csvList.subList(i, end);
+            List<CorpMastCreateDTO> corpCreateDtoList = getCorpApiInfo(batch, username, city, district);
             if (!corpCreateDtoList.isEmpty()) {
                 int savedCnt = saveCorpMastList(corpCreateDtoList, username);
                 totalSaved += savedCnt;
@@ -141,14 +173,120 @@ public class CoSellerService {
     }
 
     private List<CorpMastCreateDTO> getCorpApiInfo(List<BizCsvInfoDto> csvList, String username) {
-        List<CompletableFuture<Optional<CorpMastCreateDTO>>> futures = csvList.stream()
-                .map(csvInfo -> processAsync(csvInfo, username))
-                .collect(Collectors.toList());
-        return futures.stream()
-                .map(CompletableFuture::join)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+        List<CorpMastCreateDTO> corpCreateDtoList = new ArrayList<>();
+        for (BizCsvInfoDto csvInfo : csvList) {
+            try {
+                CorpMastCreateDTO dto = generateMockCorpData(csvInfo, username);
+                corpCreateDtoList.add(dto);
+            } catch (Exception e) {
+            }
+        }
+        return corpCreateDtoList;
+    }
+
+    private List<CorpMastCreateDTO> getCorpApiInfo(List<BizCsvInfoDto> csvList, String username, String city,
+            String district) {
+        List<CorpMastCreateDTO> corpCreateDtoList = new ArrayList<>();
+        for (BizCsvInfoDto csvInfo : csvList) {
+            try {
+                CorpMastCreateDTO dto = generateMockCorpData(csvInfo, username, city, district);
+                corpCreateDtoList.add(dto);
+            } catch (Exception e) {
+            }
+        }
+        return corpCreateDtoList;
+    }
+
+    private CorpMastCreateDTO generateMockCorpData(BizCsvInfoDto csvInfo, String username) {
+        String corpRegNo = generateMockCorpRegNo();
+        String regionCd = generateMockRegionCd();
+        String[] addressParts = csvInfo.getBizAddress().split(" ");
+        String siNm = addressParts.length > 0 ? addressParts[0] : "서울특별시";
+        String sggNm = addressParts.length > 1 ? addressParts[1] : "강남구";
+
+        return CorpMastCreateDTO.builder()
+                .sellerId(csvInfo.getSellerId())
+                .bizNm(csvInfo.getBizNm())
+                .bizNo(csvInfo.getBizNo())
+                .corpRegNo(corpRegNo)
+                .regionCd(regionCd)
+                .siNm(siNm)
+                .sggNm(sggNm)
+                .username(username)
+                .repNm(generateMockRepName())
+                .estbDt(generateMockEstbDate())
+                .roadNmAddr(csvInfo.getBizAddress())
+                .jibunAddr(csvInfo.getBizNesAddress())
+                .corpStatus("정상영업")
+                .build();
+    }
+
+    private CorpMastCreateDTO generateMockCorpData(BizCsvInfoDto csvInfo, String username, String city,
+            String district) {
+        String corpRegNo = generateMockCorpRegNo();
+        String regionCd = generateMockRegionCd();
+
+        return CorpMastCreateDTO.builder()
+                .sellerId(csvInfo.getSellerId())
+                .bizNm(csvInfo.getBizNm())
+                .bizNo(csvInfo.getBizNo())
+                .corpRegNo(corpRegNo)
+                .regionCd(regionCd)
+                .siNm(city)
+                .sggNm(district)
+                .username(username)
+                .repNm(generateMockRepName())
+                .estbDt(generateMockEstbDate())
+                .roadNmAddr(csvInfo.getBizAddress())
+                .jibunAddr(csvInfo.getBizNesAddress())
+                .corpStatus("정상영업")
+                .build();
+    }
+
+    private String generateMockCorpRegNo() {
+        Random random = new Random();
+        int year = 2020 + random.nextInt(5);
+        int month = 1 + random.nextInt(12);
+        int day = 1 + random.nextInt(28);
+        int sequence = 1000000 + random.nextInt(9000000);
+
+        return String.format("%04d%02d%02d-%07d", year, month, day, sequence);
+    }
+
+    private String generateMockRegionCd() {
+        Random random = new Random();
+        return String.format("%05d", 10000 + random.nextInt(90000));
+    }
+
+    private String generateMockRepName() {
+        String[] surnames = { "김", "이", "박", "최", "정", "강", "조", "윤", "장", "임" };
+        String[] givenNames = { "철수", "영희", "민수", "수진", "동현", "지영", "현우", "서연", "준호", "미영" };
+
+        Random random = new Random();
+        String surname = surnames[random.nextInt(surnames.length)];
+        String givenName = givenNames[random.nextInt(givenNames.length)];
+
+        return surname + givenName;
+    }
+
+    private String generateMockEstbDate() {
+        Random random = new Random();
+        int year = 1990 + random.nextInt(35);
+        int month = 1 + random.nextInt(12);
+        int day = 1 + random.nextInt(28);
+
+        return String.format("%04d%02d%02d", year, month, day);
+    }
+
+    @Transactional
+    public int clearAllData() {
+        List<CorpMast> allCorps = corpMastStore.findAll();
+        int totalCount = allCorps.size();
+
+        for (CorpMast corp : allCorps) {
+            corpMastStore.delete(corp);
+        }
+        return totalCount;
     }
 
     @Async

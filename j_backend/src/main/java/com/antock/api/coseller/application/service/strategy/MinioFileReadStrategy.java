@@ -8,6 +8,7 @@ import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "csv.file-path", havingValue = "minio")
 public class MinioFileReadStrategy implements CsvFileReadStrategy {
 
     private final MinioClient minioClient;
@@ -34,7 +36,9 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
     @Override
     public BufferedReader getBufferedReader(String fileName) throws IOException {
         try {
-            log.info("MinIO에서 파일 읽기 시작: {} (버킷: {})", fileName, bucketName);
+            if (!isMinioAvailable()) {
+                throw new IOException("MinIO 서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.");
+            }
 
             String actualFileName = findActualFileName(fileName);
             if (actualFileName == null) {
@@ -49,10 +53,8 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
 
             return new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         } catch (ErrorResponseException e) {
-            log.error("MinIO 파일 읽기 실패 (ErrorResponse): {} - {}", fileName, e.getMessage());
             throw new IOException("MinIO에서 파일을 읽을 수 없습니다: " + fileName, e);
         } catch (Exception e) {
-            log.error("MinIO 파일 읽기 실패: {} - {}", fileName, e.getMessage(), e);
             throw new IOException("MinIO 파일 로드 실패: " + fileName, e);
         }
     }
@@ -60,7 +62,9 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
     @Override
     public InputStream readFile(String fileName) {
         try {
-            log.info("MinIO에서 파일 스트림 읽기 시작: {} (버킷: {})", fileName, bucketName);
+            if (!isMinioAvailable()) {
+                throw new RuntimeException("MinIO 서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.");
+            }
 
             String actualFileName = findActualFileName(fileName);
             if (actualFileName == null) {
@@ -73,40 +77,37 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
                             .object(actualFileName)
                             .build());
         } catch (ErrorResponseException e) {
-            log.error("MinIO 파일 스트림 읽기 실패 (ErrorResponse): {} - {}", fileName, e.getMessage());
             throw new RuntimeException("MinIO에서 파일을 읽을 수 없습니다: " + fileName, e);
         } catch (Exception e) {
-            log.error("MinIO 파일 스트림 읽기 실패: {} - {}", fileName, e.getMessage(), e);
             throw new RuntimeException("MinIO 파일 로드 실패: " + fileName, e);
         }
     }
 
     private String findActualFileName(String targetFileName) {
         try {
-            log.debug("MinIO에서 파일명 매칭 시도: {} (버킷: {})", targetFileName, bucketName);
-
             Iterable<io.minio.Result<Item>> objects = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(bucketName)
                             .build());
 
+            int fileCount = 0;
             for (io.minio.Result<Item> result : objects) {
                 Item item = result.get();
                 String objectName = item.objectName();
+                fileCount++;
 
                 String fileNameWithoutUuid = removeUuidPrefix(objectName);
 
-                if (targetFileName.equals(fileNameWithoutUuid)) {
-                    log.info("파일명 매칭 성공: {} -> {}", targetFileName, objectName);
+                if (targetFileName.equals(fileNameWithoutUuid) ||
+                        fileNameWithoutUuid.endsWith(targetFileName) ||
+                        objectName.endsWith(targetFileName)) {
                     return objectName;
                 }
             }
 
-            log.warn("MinIO에서 매칭되는 파일을 찾을 수 없음: {} (버킷: {})", targetFileName, bucketName);
             return null;
 
         } catch (Exception e) {
-            log.error("MinIO 파일명 매칭 중 오류: {} - {}", targetFileName, e.getMessage());
             return null;
         }
     }
@@ -118,7 +119,6 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
 
         if (UUID_PATTERN.matcher(fileName).find()) {
             String fileNameWithoutUuid = fileName.replaceFirst(UUID_PATTERN.pattern(), "");
-            log.debug("UUID prefix 제거: {} -> {}", fileName, fileNameWithoutUuid);
             return fileNameWithoutUuid;
         }
 
@@ -127,7 +127,6 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
 
     private boolean fileExists(String fileName) {
         try {
-
             String actualFileName = findActualFileName(fileName);
             if (actualFileName == null) {
                 return false;
@@ -138,17 +137,13 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
                             .bucket(bucketName)
                             .object(actualFileName)
                             .build());
-            log.info("MinIO 파일 존재 확인: {} -> {} (버킷: {})", fileName, actualFileName, bucketName);
             return true;
         } catch (ErrorResponseException e) {
             if (e.errorResponse().code().equals("NoSuchKey")) {
-                log.warn("MinIO 파일이 존재하지 않음: {} (버킷: {})", fileName, bucketName);
                 return false;
             }
-            log.error("MinIO 파일 존재 확인 실패: {} - {}", fileName, e.getMessage());
             return false;
         } catch (Exception e) {
-            log.error("MinIO 파일 존재 확인 중 오류: {} - {}", fileName, e.getMessage());
             return false;
         }
     }
@@ -161,15 +156,20 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
                             .build());
 
             if (!bucketExists) {
-                log.warn("MinIO 버킷이 존재하지 않음: {}", bucketName);
                 return false;
             }
 
-            log.info("MinIO 연결 및 버킷 상태 정상: {}", bucketName);
             return true;
         } catch (Exception e) {
-            log.error("MinIO 연결 상태 확인 실패: {}", e.getMessage());
             return false;
         }
+    }
+
+    public MinioClient getMinioClient() {
+        return minioClient;
+    }
+
+    public String getBucketName() {
+        return bucketName;
     }
 }

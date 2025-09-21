@@ -17,8 +17,7 @@ import java.nio.file.Paths;
 
 @Slf4j
 @Component
-@Primary
-@ConditionalOnProperty(name = "csv.file-path", havingValue = "local", matchIfMissing = true)
+@ConditionalOnProperty(name = "csv.file-path", havingValue = "local")
 public class LocalFileReadStrategy implements CsvFileReadStrategy {
 
     @Value("${file.upload.path:classpath:CSVFile/}")
