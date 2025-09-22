@@ -23,4 +23,38 @@ public class MemberUpdateRequest {
     @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "올바른 이메일 형식이 아닙니다.")
     private String email;
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public static MemberUpdateRequestBuilder builder() {
+        return new MemberUpdateRequestBuilder();
+    }
+
+    public static class MemberUpdateRequestBuilder {
+        private String nickname;
+        private String email;
+
+        public MemberUpdateRequestBuilder nickname(String nickname) {
+            this.nickname = nickname;
+            return this;
+        }
+
+        public MemberUpdateRequestBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public MemberUpdateRequest build() {
+            MemberUpdateRequest request = new MemberUpdateRequest();
+            request.nickname = this.nickname;
+            request.email = this.email;
+            return request;
+        }
+    }
 }

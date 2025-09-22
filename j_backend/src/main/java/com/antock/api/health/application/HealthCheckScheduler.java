@@ -157,7 +157,7 @@ public class HealthCheckScheduler {
 
             if (response.isExpired()) {
                 log.warn("헬스 체크 데이터가 만료되었습니다. 새로 체크를 실행합니다.");
-                healthCheckService.performSystemHealthCheck(components, "monitor");
+                healthCheckService.performSystemHealthCheckInNewTransaction(components, "monitor");
             }
 
         } catch (Exception e) {

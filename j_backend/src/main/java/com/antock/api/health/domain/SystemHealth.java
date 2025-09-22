@@ -89,4 +89,111 @@ public class SystemHealth extends BaseTimeEntity {
     public Integer getUnhealthyComponents() {
         return totalComponents - healthyComponents - (unknownComponents != null ? unknownComponents : 0);
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public HealthStatus getOverallStatus() {
+        return overallStatus;
+    }
+
+    public Integer getTotalComponents() {
+        return totalComponents;
+    }
+
+    public Integer getHealthyComponents() {
+        return healthyComponents;
+    }
+
+    public Integer getUnknownComponents() {
+        return unknownComponents;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public LocalDateTime getCheckedAt() {
+        return checkedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public static SystemHealthBuilder builder() {
+        return new SystemHealthBuilder();
+    }
+
+    public static class SystemHealthBuilder {
+        private Long id;
+        private HealthStatus overallStatus;
+        private Integer totalComponents;
+        private Integer healthyComponents;
+        private Integer unhealthyComponents;
+        private Integer unknownComponents;
+        private String details;
+        private LocalDateTime checkedAt;
+        private LocalDateTime expiresAt;
+
+        public SystemHealthBuilder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public SystemHealthBuilder overallStatus(HealthStatus overallStatus) {
+            this.overallStatus = overallStatus;
+            return this;
+        }
+
+        public SystemHealthBuilder totalComponents(Integer totalComponents) {
+            this.totalComponents = totalComponents;
+            return this;
+        }
+
+        public SystemHealthBuilder healthyComponents(Integer healthyComponents) {
+            this.healthyComponents = healthyComponents;
+            return this;
+        }
+
+        public SystemHealthBuilder unhealthyComponents(Integer unhealthyComponents) {
+            this.unhealthyComponents = unhealthyComponents;
+            return this;
+        }
+
+        public SystemHealthBuilder unknownComponents(Integer unknownComponents) {
+            this.unknownComponents = unknownComponents;
+            return this;
+        }
+
+        public SystemHealthBuilder details(String details) {
+            this.details = details;
+            return this;
+        }
+
+        public SystemHealthBuilder checkedAt(LocalDateTime checkedAt) {
+            this.checkedAt = checkedAt;
+            return this;
+        }
+
+        public SystemHealthBuilder expiresAt(LocalDateTime expiresAt) {
+            this.expiresAt = expiresAt;
+            return this;
+        }
+
+        public SystemHealth build() {
+            SystemHealth systemHealth = new SystemHealth();
+            systemHealth.id = this.id;
+            systemHealth.overallStatus = this.overallStatus;
+            systemHealth.totalComponents = this.totalComponents;
+            systemHealth.healthyComponents = this.healthyComponents;
+            systemHealth.unhealthyComponents = this.unhealthyComponents;
+            systemHealth.unknownComponents = this.unknownComponents;
+            systemHealth.details = this.details;
+            systemHealth.checkedAt = this.checkedAt;
+            systemHealth.expiresAt = this.expiresAt;
+            return systemHealth;
+        }
+    }
 }

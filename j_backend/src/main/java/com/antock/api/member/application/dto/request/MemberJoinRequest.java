@@ -47,4 +47,60 @@ public class MemberJoinRequest {
     @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "올바른 이메일 형식이 아닙니다.")
     private String email;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public static MemberJoinRequestBuilder builder() {
+        return new MemberJoinRequestBuilder();
+    }
+
+    public static class MemberJoinRequestBuilder {
+        private String username;
+        private String password;
+        private String nickname;
+        private String email;
+
+        public MemberJoinRequestBuilder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public MemberJoinRequestBuilder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public MemberJoinRequestBuilder nickname(String nickname) {
+            this.nickname = nickname;
+            return this;
+        }
+
+        public MemberJoinRequestBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public MemberJoinRequest build() {
+            MemberJoinRequest request = new MemberJoinRequest();
+            request.username = this.username;
+            request.password = this.password;
+            request.nickname = this.nickname;
+            request.email = this.email;
+            return request;
+        }
+    }
 }

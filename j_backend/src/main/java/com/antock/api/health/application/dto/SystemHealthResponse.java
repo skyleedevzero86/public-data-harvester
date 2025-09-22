@@ -82,4 +82,147 @@ public class SystemHealthResponse {
     public Date getExpiresAtAsDate() {
         return expiresAt != null ? Date.from(expiresAt.atZone(ZoneId.systemDefault()).toInstant()) : null;
     }
+
+    public HealthStatus getOverallStatus() {
+        return overallStatus;
+    }
+
+    public String getOverallStatusDescription() {
+        return overallStatusDescription;
+    }
+
+    public Integer getTotalComponents() {
+        return totalComponents;
+    }
+
+    public Integer getHealthyComponents() {
+        return healthyComponents;
+    }
+
+    public Integer getUnhealthyComponents() {
+        return unhealthyComponents;
+    }
+
+    public Integer getUnknownComponents() {
+        return unknownComponents;
+    }
+
+    public Map<String, Object> getDetails() {
+        return details;
+    }
+
+    public List<HealthCheckResponse> getComponents() {
+        return components;
+    }
+
+    public LocalDateTime getCheckedAt() {
+        return checkedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public static SystemHealthResponseBuilder builder() {
+        return new SystemHealthResponseBuilder();
+    }
+
+    public static class SystemHealthResponseBuilder {
+        private HealthStatus overallStatus;
+        private String overallStatusDescription;
+        private Integer totalComponents;
+        private Integer healthyComponents;
+        private Integer unhealthyComponents;
+        private Integer unknownComponents;
+        private Double healthPercentage;
+        private Map<String, Object> details;
+        private List<HealthCheckResponse> components;
+        private LocalDateTime checkedAt;
+        private LocalDateTime expiresAt;
+        private boolean expired;
+        private boolean healthy;
+
+        public SystemHealthResponseBuilder overallStatus(HealthStatus overallStatus) {
+            this.overallStatus = overallStatus;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder overallStatusDescription(String overallStatusDescription) {
+            this.overallStatusDescription = overallStatusDescription;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder totalComponents(Integer totalComponents) {
+            this.totalComponents = totalComponents;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder healthyComponents(Integer healthyComponents) {
+            this.healthyComponents = healthyComponents;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder unhealthyComponents(Integer unhealthyComponents) {
+            this.unhealthyComponents = unhealthyComponents;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder unknownComponents(Integer unknownComponents) {
+            this.unknownComponents = unknownComponents;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder healthPercentage(Double healthPercentage) {
+            this.healthPercentage = healthPercentage;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder details(Map<String, Object> details) {
+            this.details = details;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder components(List<HealthCheckResponse> components) {
+            this.components = components;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder checkedAt(LocalDateTime checkedAt) {
+            this.checkedAt = checkedAt;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder expiresAt(LocalDateTime expiresAt) {
+            this.expiresAt = expiresAt;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder expired(boolean expired) {
+            this.expired = expired;
+            return this;
+        }
+
+        public SystemHealthResponseBuilder healthy(boolean healthy) {
+            this.healthy = healthy;
+            return this;
+        }
+
+        public SystemHealthResponse build() {
+            SystemHealthResponse response = new SystemHealthResponse();
+            response.overallStatus = this.overallStatus;
+            response.overallStatusDescription = this.overallStatusDescription;
+            response.totalComponents = this.totalComponents;
+            response.healthyComponents = this.healthyComponents;
+            response.unhealthyComponents = this.unhealthyComponents;
+            response.unknownComponents = this.unknownComponents;
+            response.healthPercentage = this.healthPercentage;
+            response.details = this.details;
+            response.components = this.components;
+            response.checkedAt = this.checkedAt;
+            response.expiresAt = this.expiresAt;
+            response.expired = this.expired;
+            response.healthy = this.healthy;
+            return response;
+        }
+    }
 }

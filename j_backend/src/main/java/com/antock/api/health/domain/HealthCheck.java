@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(name = "health_checks", indexes = {
         @Index(name = "idx_health_checks_component", columnList = "component"),
         @Index(name = "idx_health_checks_status", columnList = "status"),
-        @Index(name = "idx_health_checks_created_at", columnList = "created_at")
+        @Index(name = "idx_health_checks_create_date", columnList = "create_date")
 })
 @Getter
 @Setter
@@ -85,5 +85,112 @@ public class HealthCheck extends BaseTimeEntity {
 
     public boolean isHealthy() {
         return isUp();
+    }
+
+    public String getComponent() {
+        return component;
+    }
+
+    public HealthStatus getStatus() {
+        return status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Long getResponseTime() {
+        return responseTime;
+    }
+
+    public String getCheckType() {
+        return checkType;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public LocalDateTime getCheckedAt() {
+        return checkedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public static HealthCheckBuilder builder() {
+        return new HealthCheckBuilder();
+    }
+
+    public static class HealthCheckBuilder {
+        private Long id;
+        private String component;
+        private HealthStatus status;
+        private String message;
+        private Long responseTime;
+        private String checkType;
+        private String details;
+        private LocalDateTime checkedAt;
+        private LocalDateTime expiresAt;
+
+        public HealthCheckBuilder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public HealthCheckBuilder component(String component) {
+            this.component = component;
+            return this;
+        }
+
+        public HealthCheckBuilder status(HealthStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public HealthCheckBuilder message(String message) {
+            this.message = message;
+            return this;
+        }
+
+        public HealthCheckBuilder responseTime(Long responseTime) {
+            this.responseTime = responseTime;
+            return this;
+        }
+
+        public HealthCheckBuilder checkType(String checkType) {
+            this.checkType = checkType;
+            return this;
+        }
+
+        public HealthCheckBuilder details(String details) {
+            this.details = details;
+            return this;
+        }
+
+        public HealthCheckBuilder checkedAt(LocalDateTime checkedAt) {
+            this.checkedAt = checkedAt;
+            return this;
+        }
+
+        public HealthCheckBuilder expiresAt(LocalDateTime expiresAt) {
+            this.expiresAt = expiresAt;
+            return this;
+        }
+
+        public HealthCheck build() {
+            HealthCheck healthCheck = new HealthCheck();
+            healthCheck.id = this.id;
+            healthCheck.component = this.component;
+            healthCheck.status = this.status;
+            healthCheck.message = this.message;
+            healthCheck.responseTime = this.responseTime;
+            healthCheck.checkType = this.checkType;
+            healthCheck.details = this.details;
+            healthCheck.checkedAt = this.checkedAt;
+            healthCheck.expiresAt = this.expiresAt;
+            return healthCheck;
+        }
     }
 }

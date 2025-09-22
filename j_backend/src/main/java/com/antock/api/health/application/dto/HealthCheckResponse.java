@@ -68,4 +68,129 @@ public class HealthCheckResponse {
     public Date getExpiresAtAsDate() {
         return expiresAt != null ? Date.from(expiresAt.atZone(ZoneId.systemDefault()).toInstant()) : null;
     }
+
+    public String getComponent() {
+        return component;
+    }
+
+    public HealthStatus getStatus() {
+        return status;
+    }
+
+    public String getStatusDescription() {
+        return statusDescription;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Long getResponseTime() {
+        return responseTime;
+    }
+
+    public String getCheckType() {
+        return checkType;
+    }
+
+    public Map<String, Object> getDetails() {
+        return details;
+    }
+
+    public LocalDateTime getCheckedAt() {
+        return checkedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public static HealthCheckResponseBuilder builder() {
+        return new HealthCheckResponseBuilder();
+    }
+
+    public static class HealthCheckResponseBuilder {
+        private String component;
+        private HealthStatus status;
+        private String statusDescription;
+        private String message;
+        private Long responseTime;
+        private String checkType;
+        private Map<String, Object> details;
+        private LocalDateTime checkedAt;
+        private LocalDateTime expiresAt;
+        private boolean expired;
+        private boolean healthy;
+
+        public HealthCheckResponseBuilder component(String component) {
+            this.component = component;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder status(HealthStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder statusDescription(String statusDescription) {
+            this.statusDescription = statusDescription;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder message(String message) {
+            this.message = message;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder responseTime(Long responseTime) {
+            this.responseTime = responseTime;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder checkType(String checkType) {
+            this.checkType = checkType;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder details(Map<String, Object> details) {
+            this.details = details;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder checkedAt(LocalDateTime checkedAt) {
+            this.checkedAt = checkedAt;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder expiresAt(LocalDateTime expiresAt) {
+            this.expiresAt = expiresAt;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder expired(boolean expired) {
+            this.expired = expired;
+            return this;
+        }
+
+        public HealthCheckResponseBuilder healthy(boolean healthy) {
+            this.healthy = healthy;
+            return this;
+        }
+
+        public HealthCheckResponse build() {
+            HealthCheckResponse response = new HealthCheckResponse();
+            response.component = this.component;
+            response.status = this.status;
+            response.statusDescription = this.statusDescription;
+            response.message = this.message;
+            response.responseTime = this.responseTime;
+            response.checkType = this.checkType;
+            response.details = this.details;
+            response.checkedAt = this.checkedAt;
+            response.expiresAt = this.expiresAt;
+            response.expired = this.expired;
+            response.healthy = this.healthy;
+            return response;
+        }
+    }
 }

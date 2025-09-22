@@ -4,6 +4,7 @@ import com.antock.api.health.application.dto.HealthCheckRequest;
 import com.antock.api.health.application.dto.HealthCheckResponse;
 import com.antock.api.health.application.dto.SystemHealthResponse;
 import com.antock.api.health.domain.HealthCheck;
+import com.antock.api.health.domain.HealthCheckResult;
 import com.antock.api.health.domain.HealthStatus;
 import com.antock.api.health.domain.SystemHealth;
 import com.antock.api.health.infrastructure.HealthCheckRepository;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -61,23 +63,20 @@ public class HealthCheckService {
         List<String> components = request.getComponents() != null ? request.getComponents() : DEFAULT_COMPONENTS;
 
         if (request.isIgnoreCache()) {
-            return performSystemHealthCheck(components, request.getCheckType());
+            return performSystemHealthCheckInNewTransaction(components, request.getCheckType());
         }
 
-        // 캐시된 결과 확인
         Optional<SystemHealth> cachedSystemHealth = systemHealthRepository
                 .findLatestValidSystemHealth(LocalDateTime.now());
         if (cachedSystemHealth.isPresent() && !cachedSystemHealth.get().isExpired()) {
             return convertToSystemHealthResponseFromComponents(cachedSystemHealth.get(), components);
         }
 
-        return performSystemHealthCheck(components, request.getCheckType());
+        return performSystemHealthCheckInNewTransaction(components, request.getCheckType());
     }
 
     @Transactional
     public SystemHealthResponse performSystemHealthCheck(List<String> components, String checkType) {
-        log.info("시스템 헬스 체크 시작 - 컴포넌트: {}, 타입: {}", components, checkType);
-
         List<CompletableFuture<HealthCheck>> futures = components.stream()
                 .map(component -> CompletableFuture.supplyAsync(() -> performComponentHealthCheck(component, checkType),
                         asyncExecutor))
@@ -87,19 +86,17 @@ public class HealthCheckService {
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
 
-        // 시스템 전체 상태 계산
         SystemHealth systemHealth = calculateSystemHealth(healthChecks, checkType);
         systemHealthRepository.save(systemHealth);
 
-        // 개별 컴포넌트 상태도 저장
         healthCheckRepository.saveAll(healthChecks);
 
-        log.info("시스템 헬스 체크 완료 - 전체 상태: {}, 정상: {}/{}",
-                systemHealth.getOverallStatus(),
-                systemHealth.getHealthyComponents(),
-                systemHealth.getTotalComponents());
-
         return convertToSystemHealthResponse(systemHealth, healthChecks);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public SystemHealthResponse performSystemHealthCheckInNewTransaction(List<String> components, String checkType) {
+        return performSystemHealthCheck(components, checkType);
     }
 
     @Transactional
@@ -146,7 +143,6 @@ public class HealthCheckService {
                     status = HealthStatus.UNKNOWN;
             }
         } catch (Exception e) {
-            log.error("컴포넌트 헬스 체크 실패: {}", component, e);
             status = HealthStatus.DOWN;
             message = "헬스 체크 중 오류 발생: " + e.getMessage();
             details.put("error", e.getClass().getSimpleName());
@@ -179,15 +175,15 @@ public class HealthCheckService {
             details.put("queryResult", result);
 
             if (result != null && result == 1) {
-                return new HealthCheckResult(HealthStatus.UP, "데이터베이스 연결 정상", details);
+                return new HealthCheckResult(HealthStatus.UP, "데이터베이스 연결 정상", details, responseTime);
             } else {
-                return new HealthCheckResult(HealthStatus.DOWN, "데이터베이스 쿼리 실패", details);
+                return new HealthCheckResult(HealthStatus.DOWN, "데이터베이스 쿼리 실패", details, responseTime);
             }
         } catch (Exception e) {
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getClass().getSimpleName());
             details.put("errorMessage", e.getMessage());
-            return new HealthCheckResult(HealthStatus.DOWN, "데이터베이스 연결 실패: " + e.getMessage(), details);
+            return new HealthCheckResult(HealthStatus.DOWN, "데이터베이스 연결 실패: " + e.getMessage(), details, 0L);
         }
     }
 
@@ -203,76 +199,73 @@ public class HealthCheckService {
             details.put("info", jedis.info("server"));
 
             if ("PONG".equals(pong)) {
-                return new HealthCheckResult(HealthStatus.UP, "Redis 연결 정상", details);
+                return new HealthCheckResult(HealthStatus.UP, "Redis 연결 정상", details, responseTime);
             } else {
-                return new HealthCheckResult(HealthStatus.DOWN, "Redis ping 실패", details);
+                return new HealthCheckResult(HealthStatus.DOWN, "Redis ping 실패", details, responseTime);
             }
         } catch (Exception e) {
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getClass().getSimpleName());
             details.put("errorMessage", e.getMessage());
-            return new HealthCheckResult(HealthStatus.DOWN, "Redis 연결 실패: " + e.getMessage(), details);
+            return new HealthCheckResult(HealthStatus.DOWN, "Redis 연결 실패: " + e.getMessage(), details, 0L);
         }
     }
 
     private HealthCheckResult checkCache() {
         try {
-            // 캐시 서비스 상태 확인
             var cacheStats = memberApplicationService.getCacheStatistics();
             Map<String, Object> details = new HashMap<>();
             details.put("cacheStats", cacheStats);
 
             if (cacheStats != null) {
-                return new HealthCheckResult(HealthStatus.UP, "캐시 서비스 정상", details);
+                return new HealthCheckResult(HealthStatus.UP, "캐시 서비스 정상", details, 0L);
             } else {
-                return new HealthCheckResult(HealthStatus.DOWN, "캐시 서비스 응답 없음", details);
+                return new HealthCheckResult(HealthStatus.DOWN, "캐시 서비스 응답 없음", details, 0L);
             }
         } catch (Exception e) {
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getClass().getSimpleName());
             details.put("errorMessage", e.getMessage());
-            return new HealthCheckResult(HealthStatus.DOWN, "캐시 서비스 오류: " + e.getMessage(), details);
+            return new HealthCheckResult(HealthStatus.DOWN, "캐시 서비스 오류: " + e.getMessage(), details, 0L);
         }
     }
 
     private HealthCheckResult checkMemberService() {
         try {
-            // 회원 서비스 상태 확인
             Map<String, Object> memberStats = new HashMap<>();
             memberStats.put("cacheStats", memberApplicationService.getCacheStatistics());
             Map<String, Object> details = new HashMap<>();
             details.put("memberStats", memberStats);
 
             if (memberStats != null) {
-                return new HealthCheckResult(HealthStatus.UP, "회원 서비스 정상", details);
+                return new HealthCheckResult(HealthStatus.UP, "회원 서비스 정상", details, 0L);
             } else {
-                return new HealthCheckResult(HealthStatus.DOWN, "회원 서비스 응답 없음", details);
+                return new HealthCheckResult(HealthStatus.DOWN, "회원 서비스 응답 없음", details, 0L);
             }
         } catch (Exception e) {
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getClass().getSimpleName());
             details.put("errorMessage", e.getMessage());
-            return new HealthCheckResult(HealthStatus.DOWN, "회원 서비스 오류: " + e.getMessage(), details);
+            return new HealthCheckResult(HealthStatus.DOWN, "회원 서비스 오류: " + e.getMessage(), details, 0L);
         }
     }
 
     private HealthCheckResult checkRateLimit() {
         try {
-            // Rate Limit 서비스 상태 확인
             boolean rateLimitStatus = rateLimitService.isRedisAvailable();
             Map<String, Object> details = new HashMap<>();
             details.put("rateLimitStatus", rateLimitStatus);
 
             if (rateLimitStatus) {
-                return new HealthCheckResult(HealthStatus.UP, "Rate Limit 서비스 정상", details);
+                return new HealthCheckResult(HealthStatus.UP, "Rate Limit 서비스 정상", details, 0L);
             } else {
-                return new HealthCheckResult(HealthStatus.DOWN, "Rate Limit 서비스 응답 없음", details);
+                return new HealthCheckResult(HealthStatus.DOWN, "Rate Limit 서비스 응답 없음", details, 0L);
             }
         } catch (Exception e) {
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getClass().getSimpleName());
             details.put("errorMessage", e.getMessage());
-            return new HealthCheckResult(HealthStatus.DOWN, "Rate Limit 서비스 오류: " + e.getMessage(), details);
+            return new HealthCheckResult(HealthStatus.DOWN, "Rate Limit 서비스 오류: " + e.getMessage(), details, 0L);
         }
     }
 
@@ -294,12 +287,15 @@ public class HealthCheckService {
         }
 
         Map<String, Object> details = new HashMap<>();
-        details.put("components", healthChecks.stream().collect(Collectors.toMap(
-                HealthCheck::getComponent,
-                h -> Map.of(
-                        "status", h.getStatus(),
-                        "message", h.getMessage(),
-                        "responseTime", h.getResponseTime()))));
+        Map<String, Map<String, Object>> componentDetails = new HashMap<>();
+        for (HealthCheck h : healthChecks) {
+            Map<String, Object> componentInfo = new HashMap<>();
+            componentInfo.put("status", h.getStatus());
+            componentInfo.put("message", h.getMessage());
+            componentInfo.put("responseTime", h.getResponseTime());
+            componentDetails.put(h.getComponent(), componentInfo);
+        }
+        details.put("components", componentDetails);
 
         return SystemHealth.builder()
                 .overallStatus(overallStatus)
@@ -343,10 +339,9 @@ public class HealthCheckService {
 
     @Transactional
     public void cleanupExpiredChecks() {
-        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // 7일 이전 데이터 삭제
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7);
         int deletedCount = healthCheckRepository.deleteOldChecks(cutoffDate);
         int deletedSystemHealthCount = systemHealthRepository.deleteOldSystemHealth(cutoffDate);
-        log.info("만료된 헬스 체크 데이터 정리 완료 - 개별 체크: {}, 시스템 헬스: {}", deletedCount, deletedSystemHealthCount);
     }
 
     private HealthCheckResponse convertToHealthCheckResponse(HealthCheck healthCheck) {
@@ -366,7 +361,7 @@ public class HealthCheckService {
     }
 
     private SystemHealthResponse convertToSystemHealthResponseFromComponents(SystemHealth systemHealth,
-            List<String> components) {
+                                                                             List<String> components) {
         List<HealthCheck> recentChecks = healthCheckRepository.findByComponentInOrderByCheckedAtDesc(components);
 
         return SystemHealthResponse.builder()
@@ -387,7 +382,7 @@ public class HealthCheckService {
     }
 
     private SystemHealthResponse convertToSystemHealthResponse(SystemHealth systemHealth,
-            List<HealthCheck> healthChecks) {
+                                                               List<HealthCheck> healthChecks) {
         return SystemHealthResponse.builder()
                 .overallStatus(systemHealth.getOverallStatus())
                 .overallStatusDescription(systemHealth.getOverallStatus().getDescription())
@@ -409,7 +404,6 @@ public class HealthCheckService {
         try {
             return objectMapper.writeValueAsString(details);
         } catch (JsonProcessingException e) {
-            log.warn("Details JSON 변환 실패", e);
             return "{}";
         }
     }
@@ -422,7 +416,6 @@ public class HealthCheckService {
             }
             return objectMapper.readValue(detailsJson, Map.class);
         } catch (JsonProcessingException e) {
-            log.warn("Details JSON 파싱 실패", e);
             return new HashMap<>();
         }
     }
