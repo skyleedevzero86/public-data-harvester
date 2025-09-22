@@ -66,6 +66,7 @@ public class SecurityConfig {
                                                                 "/dashboard/**",
                                                                 "/region/**",
                                                                 "/main/**",
+                                                                "/health/**",
                                                                 "/static/**",
                                                                 "/webjars/**",
                                                                 "/WEB-INF/views/**",

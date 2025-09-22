@@ -12,6 +12,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 @Slf4j
 @Configuration
@@ -69,5 +71,21 @@ public class RedisConfig {
         template.afterPropertiesSet();
         log.info("Antock String Redis 템플릿이 구성되었습니다.");
         return template;
+    }
+
+    @Bean
+    public JedisPool jedisPool() {
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(10);
+        poolConfig.setMaxIdle(5);
+        poolConfig.setMinIdle(1);
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestOnReturn(true);
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setJmxEnabled(false);
+
+        JedisPool jedisPool = new JedisPool(poolConfig, redisHost, redisPort, 2000, redisPassword, redisDatabase);
+        log.info("JedisPool이 생성되었습니다: {}:{}", redisHost, redisPort);
+        return jedisPool;
     }
 }
