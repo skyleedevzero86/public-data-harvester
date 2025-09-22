@@ -311,4 +311,185 @@ public class Member extends BaseTimeEntity {
         this.loginFailCount = 0;
         log.info("회원 상태를 승인 대기로 재설정: memberId={}, username={}", this.getId(), this.username);
     }
+
+    public Long getId() {
+        return super.getId();
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public MemberStatus getStatus() {
+        return status;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public Integer getLoginFailCount() {
+        return loginFailCount;
+    }
+
+    public LocalDateTime getAccountLockedAt() {
+        return accountLockedAt;
+    }
+
+    public Long getApprovedBy() {
+        return approvedBy;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public LocalDateTime getPasswordChangedAt() {
+        return passwordChangedAt;
+    }
+
+    public Integer getPasswordChangeCount() {
+        return passwordChangeCount;
+    }
+
+    public LocalDate getLastPasswordChangeDate() {
+        return lastPasswordChangeDate;
+    }
+
+    public static MemberBuilder builder() {
+        return new MemberBuilder();
+    }
+
+    public static class MemberBuilder {
+        private String username;
+        private String password;
+        private String nickname;
+        private String email;
+        private String apiKey;
+        private MemberStatus status = MemberStatus.PENDING;
+        private Role role = Role.USER;
+        private LocalDateTime lastLoginAt;
+        private Integer loginFailCount = 0;
+        private LocalDateTime accountLockedAt;
+        private Long approvedBy;
+        private LocalDateTime approvedAt;
+        private LocalDateTime passwordChangedAt;
+        private Integer passwordChangeCount = 0;
+        private LocalDate lastPasswordChangeDate;
+
+        public MemberBuilder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public MemberBuilder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public MemberBuilder nickname(String nickname) {
+            this.nickname = nickname;
+            return this;
+        }
+
+        public MemberBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public MemberBuilder apiKey(String apiKey) {
+            this.apiKey = apiKey;
+            return this;
+        }
+
+        public MemberBuilder status(MemberStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public MemberBuilder role(Role role) {
+            this.role = role;
+            return this;
+        }
+
+        public MemberBuilder lastLoginAt(LocalDateTime lastLoginAt) {
+            this.lastLoginAt = lastLoginAt;
+            return this;
+        }
+
+        public MemberBuilder loginFailCount(Integer loginFailCount) {
+            this.loginFailCount = loginFailCount;
+            return this;
+        }
+
+        public MemberBuilder accountLockedAt(LocalDateTime accountLockedAt) {
+            this.accountLockedAt = accountLockedAt;
+            return this;
+        }
+
+        public MemberBuilder approvedBy(Long approvedBy) {
+            this.approvedBy = approvedBy;
+            return this;
+        }
+
+        public MemberBuilder approvedAt(LocalDateTime approvedAt) {
+            this.approvedAt = approvedAt;
+            return this;
+        }
+
+        public MemberBuilder passwordChangedAt(LocalDateTime passwordChangedAt) {
+            this.passwordChangedAt = passwordChangedAt;
+            return this;
+        }
+
+        public MemberBuilder passwordChangeCount(Integer passwordChangeCount) {
+            this.passwordChangeCount = passwordChangeCount;
+            return this;
+        }
+
+        public MemberBuilder lastPasswordChangeDate(LocalDate lastPasswordChangeDate) {
+            this.lastPasswordChangeDate = lastPasswordChangeDate;
+            return this;
+        }
+
+        public Member build() {
+            Member member = new Member();
+            member.username = this.username;
+            member.password = this.password;
+            member.nickname = this.nickname;
+            member.email = this.email;
+            member.apiKey = this.apiKey;
+            member.status = this.status;
+            member.role = this.role;
+            member.lastLoginAt = this.lastLoginAt;
+            member.loginFailCount = this.loginFailCount;
+            member.accountLockedAt = this.accountLockedAt;
+            member.approvedBy = this.approvedBy;
+            member.approvedAt = this.approvedAt;
+            member.passwordChangedAt = this.passwordChangedAt;
+            member.passwordChangeCount = this.passwordChangeCount;
+            member.lastPasswordChangeDate = this.lastPasswordChangeDate;
+            return member;
+        }
+    }
 }
