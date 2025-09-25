@@ -1,5 +1,3 @@
-/* 헬스 관련 페이지 스타일 */
-
 .error-card {
     min-height: 300px;
     display: flex;
@@ -25,7 +23,6 @@
     }
 }
 
-/* 헬스 대시보드 관련 스타일 */
 .health-card {
     border: none;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -110,7 +107,6 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 메트릭 차트 스타일 */
 .chart-container {
     position: relative;
     height: 300px;
@@ -121,7 +117,6 @@
     max-height: 300px;
 }
 
-/* 테이블 스타일 */
 .table-hover tbody tr:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
@@ -134,7 +129,6 @@
     background-color: rgba(220, 53, 69, 0.15);
 }
 
-/* 배지 스타일 */
 .badge {
     font-size: 0.875rem;
 }
@@ -143,7 +137,6 @@
     margin-right: 4px;
 }
 
-/* 진행률 바 */
 .progress {
     height: 8px;
     background-color: #e9ecef;
@@ -155,7 +148,6 @@
     transition: width 0.6s ease;
 }
 
-/* 애니메이션 효과 */
 .card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
@@ -173,7 +165,6 @@
     transform: translateY(-1px);
 }
 
-/* 로딩 상태 */
 .loading {
     opacity: 0.6;
     pointer-events: none;
@@ -198,23 +189,22 @@
     100% { transform: rotate(360deg); }
 }
 
-/* 반응형 스타일 */
 @media (max-width: 768px) {
     .stats-icon {
         font-size: 1.5rem;
     }
-    
+
     .refresh-btn {
         width: 50px;
         height: 50px;
         bottom: 15px;
         right: 15px;
     }
-    
+
     .chart-container {
         height: 250px;
     }
-    
+
     .component-status {
         flex-direction: column;
         align-items: flex-start;
@@ -226,44 +216,42 @@
     .error-card {
         min-height: 250px;
     }
-    
+
     .error-icon i {
         font-size: 3rem !important;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .btn-group {
         flex-direction: column;
     }
-    
+
     .btn-group .btn {
         width: 100%;
         margin-bottom: 0.5rem;
     }
 }
 
-/* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
     .health-card {
         background-color: #212529;
         color: #fff;
     }
-    
+
     .health-card .card-header {
         background-color: #343a40;
         border-bottom-color: #495057;
     }
-    
+
     .error-card {
         background-color: #212529;
         color: #fff;
     }
 }
 
-/* 특별한 상태 스타일 */
 .status-critical {
     animation: blink 1s infinite;
 }
