@@ -1,130 +1,15 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
+﻿<%@ page language="java" contentType="text/html; charset=UTF-8"
 pageEncoding="UTF-8"%> <%@ taglib prefix="c"
 uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib prefix="fmt"
 uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<c:set var="pageTitle" value="컴포넌트 상세 메트릭 - ${component}" />
+
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="_csrf" content="${_csrf.token}" />
-    <meta name="_csrf_header" content="${_csrf.headerName}" />
-    <title>
-      컴포넌트 상세 메트릭 - ${component} - 통신판매자사업관리시스템
-    </title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
+    <%@ include file="../common/head.jsp" %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-      .metric-card {
-        transition: transform 0.2s;
-      }
-      .metric-card:hover {
-        transform: translateY(-2px);
-      }
-      .status-indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
-      }
-      .status-up {
-        background-color: #28a745;
-      }
-      .status-down {
-        background-color: #dc3545;
-      }
-      .status-unknown {
-        background-color: #ffc107;
-      }
-      .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-      }
-      .metric-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-      }
-
-      .icon-align {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .stats-icon {
-        font-size: 2.5rem;
-        opacity: 0.8;
-      }
-
-      .footer {
-        background-color: #343a40;
-        color: white;
-        padding: 40px 0 20px 0;
-        margin-top: 60px;
-      }
-
-      .footer-logo {
-        margin-bottom: 30px;
-      }
-
-      .footer-logo .festival-number {
-        font-size: 0.9rem;
-        color: #adb5bd;
-        margin-bottom: 5px;
-        position: relative;
-      }
-
-      .footer-contact {
-        margin-bottom: 25px;
-      }
-
-      .footer-contact .contact-title {
-        font-size: 1.1rem;
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: #f8f9fa;
-      }
-
-      .footer-contact .contact-address {
-        font-size: 0.9rem;
-        color: #adb5bd;
-        margin-bottom: 5px;
-        line-height: 1.4;
-      }
-
-      .footer-contact .contact-phone {
-        font-size: 0.9rem;
-        color: #adb5bd;
-      }
-
-      .footer-contact .contact-email {
-        font-size: 0.9rem;
-        color: #adb5bd;
-        margin-top: 5px;
-      }
-
-      .footer-copyright {
-        border-top: 1px solid #495057;
-        padding-top: 20px;
-        text-align: left;
-        font-size: 0.8rem;
-        color: #adb5bd;
-      }
-
-      .footer-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-    </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -411,41 +296,8 @@ uri="http://java.sun.com/jsp/jstl/fmt" %>
       </c:if>
     </div>
 
-    <footer class="footer">
-      <div class="footer-container">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="footer-logo">
-              <div class="festival-number"></div>
-              <div class="main-title">public-data-harvester</div>
-              <div class="sub-title">
-                CHUNGJANG STREET FESTIVAL OF RECOLLECTION
-              </div>
-            </div>
-
-            <div class="footer-contact">
-              <div class="contact-title">통신판매사업자 정보 관리시스템</div>
-              <div class="contact-address">대한민국 광주광역시 서구</div>
-              <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <div class="footer-contact">
-              <div class="contact-title">궁금하면 500원</div>
-              <div class="contact-address">대한민국 광주광역시 서구</div>
-              <div class="contact-phone">TEL: 010-xxx-ㄱㄴㄷㄹ</div>
-              <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="footer-copyright">
-          ⓒ public-data-harvester. ALL RIGHT RESERVED.
-        </div>
-      </div>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <%@ include file="../common/footer.jsp" %> <%@ include
+    file="../common/scripts.jsp" %>
     <script>
       <c:if test="${not empty metrics}">
       const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
