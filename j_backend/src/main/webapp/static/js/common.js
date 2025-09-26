@@ -83,3 +83,17 @@ function exportCorpInfo() {
 function goBack() {
   history.back();
 }
+
+function initializeProgressBars() {
+  const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+  progressBars.forEach(bar => {
+    const width = bar.getAttribute('data-width');
+    if (width) {
+      bar.style.width = width + '%';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeProgressBars();
+});
