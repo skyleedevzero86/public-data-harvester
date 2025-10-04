@@ -4,6 +4,7 @@ uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib prefix="fmt"
 uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="${component} 헬스 상태" />
+<c:set var="pageJS" value="${['health.js']}" />
 
 <!DOCTYPE html>
 <html>
@@ -11,7 +12,7 @@ uri="http://java.sun.com/jsp/jstl/fmt" %>
     <%@ include file="../common/head.jsp" %>
   </head>
   <body>
-  <%@ include file="../common/navigation.jsp" %>
+    <%@ include file="../common/navigation.jsp" %>
 
     <div class="container-fluid mt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
