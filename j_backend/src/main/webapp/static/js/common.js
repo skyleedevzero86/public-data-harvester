@@ -49,19 +49,17 @@ function deleteCorp(corpId, bizNm) {
     const form = document.createElement("form");
     form.method = "POST";
     form.action = `/corp/delete/${corpId}`;
-
-const csrfToken = getCsrfToken();
-if (csrfToken) {
-  const csrfInput = document.createElement("input");
-  csrfInput.type = "hidden";
-  csrfInput.name = "_csrf";
-  csrfInput.value = csrfToken;
-  form.appendChild(csrfInput);
-}
-
-document.body.appendChild(form);
-form.submit();
-});
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      const csrfInput = document.createElement("input");
+      csrfInput.type = "hidden";
+      csrfInput.name = "_csrf";
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+    }
+    document.body.appendChild(form);
+    form.submit();
+  });
 }
 
 function viewDetail(corpId) {
@@ -94,6 +92,48 @@ function initializeProgressBars() {
   });
 }
 
+function initializeDropdowns() {
+  const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+  const dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+    return new bootstrap.Dropdown(dropdownToggleEl);
+  });
+  const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+  dropdownMenus.forEach(menu => {
+    menu.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+  });
+  const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+  dropdownToggles.forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dropdownMenu = this.nextElementSibling;
+      if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+        const isOpen = dropdownMenu.classList.contains('show');
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+          if (menu !== dropdownMenu) {
+            menu.classList.remove('show');
+          }
+        });
+        if (isOpen) {
+          dropdownMenu.classList.remove('show');
+        } else {
+          dropdownMenu.classList.add('show');
+        }
+      }
+    });
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+        menu.classList.remove('show');
+      });
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   initializeProgressBars();
+  initializeDropdowns();
 });

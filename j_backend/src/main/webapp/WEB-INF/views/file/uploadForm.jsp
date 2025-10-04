@@ -9,6 +9,7 @@ pageEncoding="UTF-8"%>
     <%@ include file="../common/head.jsp" %>
   </head>
   <body>
+  <%@ include file="../common/navigation.jsp" %>
     <div class="container">
       <h2>파일 업로드</h2>
 

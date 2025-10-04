@@ -8,40 +8,19 @@
 
 <%@ include file="../../common/header.jsp" %>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/members/profile">
-                <i class="bi bi-person-circle"></i> 내 프로필
-            </a>
-            <c:if test="${member.role == 'ADMIN' || member.role == 'MANAGER'}">
-                <a class="nav-link" href="/members/admin/pending">
-                    <i class="bi bi-clock"></i> 승인 대기
-                </a>
-            </c:if>
-            <a class="nav-link" href="/web/files">
-                <i class="bi bi-clock"></i> 파일 관리
-            </a>
-            <a class="nav-link" href="/members/logout">
-                <i class="bi bi-box-arrow-right"></i> 로그아웃
-            </a>
-        </div>
-    </div>
-</nav>
+<%@ include file="../../common/navigation.jsp" %>
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-people"></i> 회원 관리</h2>
         <div>
-            <a href="/members/admin/pending" class="btn btn-warning">
-                <i class="bi bi-clock"></i> 승인 대기 회원
-                <c:if test="${pendingCount > 0}">
-                    <span class="badge bg-light text-dark ms-1">${pendingCount}</span>
-                </c:if>
-            </a>
+
+                <a href="/members/admin/pending" class="btn btn-warning">
+                    <i class="bi bi-clock"></i> 승인 대기 회원
+                    <c:if test="${pendingCount > 0}">
+                        <span class="badge bg-light text-dark ms-1">${pendingCount}</span>
+                    </c:if>
+                </a>
         </div>
     </div>
 

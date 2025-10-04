@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -36,18 +37,34 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class HealthCheckService {
 
     private final HealthCheckRepository healthCheckRepository;
     private final SystemHealthRepository systemHealthRepository;
     private final DataSource dataSource;
-    private final JedisPool jedisPool;
+    @Autowired(required = false)
+    private JedisPool jedisPool;
     private final MemberApplicationService memberApplicationService;
     private final RateLimitServiceInterface rateLimitService;
     private final ObjectMapper objectMapper;
     private final Executor asyncExecutor;
+
+    public HealthCheckService(HealthCheckRepository healthCheckRepository,
+                             SystemHealthRepository systemHealthRepository,
+                             DataSource dataSource,
+                             MemberApplicationService memberApplicationService,
+                             RateLimitServiceInterface rateLimitService,
+                             ObjectMapper objectMapper,
+                             Executor asyncExecutor) {
+        this.healthCheckRepository = healthCheckRepository;
+        this.systemHealthRepository = systemHealthRepository;
+        this.dataSource = dataSource;
+        this.memberApplicationService = memberApplicationService;
+        this.rateLimitService = rateLimitService;
+        this.objectMapper = objectMapper;
+        this.asyncExecutor = asyncExecutor;
+    }
 
     @Value("${health.check.timeout:5000}")
     private long healthCheckTimeout;
@@ -188,6 +205,13 @@ public class HealthCheckService {
     }
 
     private HealthCheckResult checkRedis() {
+        if (jedisPool == null) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("reason", "Redis가 비활성화되어 있습니다");
+            details.put("enabled", false);
+            return new HealthCheckResult(HealthStatus.UNKNOWN, "Redis 비활성화됨", details, 0L);
+        }
+        
         try (Jedis jedis = jedisPool.getResource()) {
             long startTime = System.currentTimeMillis();
             String pong = jedis.ping();

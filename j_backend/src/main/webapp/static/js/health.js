@@ -11,10 +11,18 @@ function initHealthPage() {
 }
 
 function initAutoRefresh() {
-    const autoRefreshInterval = getUrlParameter('refresh') || '30';
-    const refreshInterval = parseInt(autoRefreshInterval) * 1000;
+    if (typeof getUrlParameter === 'function') {
+        const autoRefreshInterval = getUrlParameter('refresh') || '30';
+        const refreshInterval = parseInt(autoRefreshInterval) * 1000;
 
-    if (refreshInterval > 0) {
+        if (refreshInterval > 0) {
+            setInterval(() => {
+                refreshHealthData();
+            }, refreshInterval);
+            showAutoRefreshIndicator();
+        }
+    } else {
+        const refreshInterval = 30 * 1000;
         setInterval(() => {
             refreshHealthData();
         }, refreshInterval);

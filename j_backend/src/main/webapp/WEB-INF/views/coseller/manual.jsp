@@ -8,6 +8,7 @@ prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
     <%@ include file="../common/head.jsp" %>
   </head>
   <body>
+  <%@ include file="../common/navigation.jsp" %>
     <h2>CoSeller 수동 등록</h2>
     <form id="cosellerForm" onsubmit="return false;">
       <label for="city">시/도:</label>

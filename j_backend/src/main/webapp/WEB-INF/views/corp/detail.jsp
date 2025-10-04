@@ -11,6 +11,7 @@
 
 <div class="container mt-4">
 
+
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">홈</a></li>
@@ -18,6 +19,7 @@
             <li class="breadcrumb-item active" aria-current="page">법인 상세</li>
         </ol>
     </nav>
+
 
     <c:if test="${not empty errorMessage}">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">

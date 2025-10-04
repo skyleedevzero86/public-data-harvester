@@ -12,33 +12,7 @@ uri="http://java.sun.com/jsp/jstl/fmt" %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand" href="/">
-          <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-        </a>
-        <div class="navbar-nav ms-auto">
-          <a class="nav-link" href="/health">
-            <i class="bi bi-speedometer2"></i> 헬스 대시보드
-          </a>
-          <a class="nav-link" href="/health/status">
-            <i class="bi bi-heart-pulse"></i> 상태 조회
-          </a>
-          <a class="nav-link" href="/health/metrics">
-            <i class="bi bi-graph-up"></i> 메트릭
-          </a>
-          <a class="nav-link" href="/health/metrics/realtime">
-            <i class="bi bi-lightning"></i> 실시간
-          </a>
-          <a class="nav-link" href="/health/history">
-            <i class="bi bi-clock-history"></i> 이력 조회
-          </a>
-          <a class="nav-link" href="/members/logout">
-            <i class="bi bi-box-arrow-right"></i> 로그아웃
-          </a>
-        </div>
-      </div>
-    </nav>
+  <%@ include file="../common/navigation.jsp" %>
 
     <div class="container-fluid mt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">

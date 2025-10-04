@@ -15,21 +15,7 @@
   <meta name="_csrf_header" content="${_csrf.headerName}" />
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">
-      <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-    </a>
-    <div class="navbar-nav ms-auto">
-      <a class="nav-link" href="/members/login">
-        <i class="bi bi-box-arrow-in-right"></i> 로그인
-      </a>
-      <a class="nav-link" href="/members/join">
-        <i class="bi bi-person-plus"></i> 회원가입
-      </a>
-    </div>
-  </div>
-</nav>
+<%@ include file="../common/navigation.jsp" %>
 
 <div class="container mt-5">
   <div class="row justify-content-center">

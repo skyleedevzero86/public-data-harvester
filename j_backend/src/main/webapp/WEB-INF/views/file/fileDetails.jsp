@@ -10,6 +10,7 @@ prefix="c" %> <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
     <%@ include file="../common/head.jsp" %>
   </head>
   <body>
+  <%@ include file="../common/navigation.jsp" %>
     <div class="container">
       <h2>파일 상세 정보</h2>
 
