@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
+  if (typeof initializeDropdowns === 'function') {
+    initializeDropdowns();
+  }
+
   if (typeof setupEnterKeySubmit === 'function') {
     setupEnterKeySubmit();
   }

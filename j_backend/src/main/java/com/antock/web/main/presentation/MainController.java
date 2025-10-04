@@ -25,7 +25,7 @@ public class MainController {
     @GetMapping
     public String index(Model model) {
         DashboardService.DashboardStats stats = dashboardService.getStats();
-        List<RecentActivityDto> recentActivities = dashboardService.getRecentActivities(8);
+        List<RecentActivityDto> recentActivities = dashboardService.getRecentActivities(12);
         RegionStatDto topRegionStat = regionStatService.getTopRegionStat();
 
         if (topRegionStat == null) {

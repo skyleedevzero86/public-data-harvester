@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
+
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
@@ -13,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const submitBtn = this.querySelector('button[type="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = '<span class="spinner"></span> 로그인 중...';
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>로그인 중...';
                 submitBtn.disabled = true;
             }
         });
@@ -279,3 +291,4 @@ window.MemberUtils = {
     resetForm,
     updatePasswordStrength
 };
+

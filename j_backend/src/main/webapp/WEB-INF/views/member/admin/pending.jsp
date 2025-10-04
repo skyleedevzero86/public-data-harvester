@@ -8,27 +8,7 @@
 
 <%@ include file="../../common/header.jsp" %>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">
-      <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-    </a>
-    <div class="navbar-nav ms-auto">
-      <a class="nav-link" href="/members/profile">
-        <i class="bi bi-person-circle"></i> 내 프로필
-      </a>
-      <a class="nav-link" href="/members/admin/list">
-        <i class="bi bi-people"></i> 전체 회원
-      </a>
-      <a class="nav-link" href="/members/admin/pending">
-        <i class="bi bi-clock"></i> 승인 대기
-      </a>
-      <a class="nav-link" href="/members/logout">
-        <i class="bi bi-box-arrow-right"></i> 로그아웃
-      </a>
-    </div>
-  </div>
-</nav>
+<%@ include file="../../common/navigation.jsp" %>
 
 <div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">

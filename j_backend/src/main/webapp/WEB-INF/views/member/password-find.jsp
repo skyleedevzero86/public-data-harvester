@@ -8,21 +8,7 @@
 
 <%@ include file="../common/header.jsp" %>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand" href="/">
-          <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-        </a>
-        <div class="navbar-nav ms-auto">
-          <a class="nav-link" href="/members/login">
-            <i class="bi bi-box-arrow-in-right"></i> 로그인
-          </a>
-          <a class="nav-link" href="/members/join">
-            <i class="bi bi-person-plus"></i> 회원가입
-          </a>
-        </div>
-      </div>
-    </nav>
+  <%@ include file="../common/navigation.jsp" %>
 
     <div class="container-fluid mt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">

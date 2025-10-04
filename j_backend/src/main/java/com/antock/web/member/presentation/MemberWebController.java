@@ -12,6 +12,8 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
+import com.antock.global.security.annotation.CurrentUser;
+import com.antock.global.security.dto.AuthenticatedUser;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -305,9 +307,16 @@ public class MemberWebController {
     }
 
     @GetMapping("/members/admin/pending")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public String pendingMembers(@PageableDefault(size = 20) Pageable pageable, Model model) {
+    public String pendingMembers(@PageableDefault(size = 20) Pageable pageable, 
+                                Model model, 
+                                @CurrentUser AuthenticatedUser user) {
         try {
+            if (user == null || (!user.getRole().equals("ADMIN") && !user.getRole().equals("MANAGER"))) {
+                model.addAttribute("error", "접근 권한이 없습니다. 관리자 또는 매니저 권한이 필요합니다.");
+                model.addAttribute("errorCode", "ACCESS_DENIED");
+                return "member/error";
+            }
+
             Page<MemberResponse> pendingMembers = memberApplicationService.getPendingMembers(pageable);
 
             List<MemberView> pendingMemberViewList = pendingMembers.getContent().stream()

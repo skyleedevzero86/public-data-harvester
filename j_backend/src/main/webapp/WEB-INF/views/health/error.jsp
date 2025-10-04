@@ -10,24 +10,7 @@
     <%@ include file="../common/head.jsp" %>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="bi bi-shield-check"></i> 통신판매사업자관리 시스템
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/health">
-                <i class="bi bi-speedometer2"></i> 헬스 대시보드
-            </a>
-            <a class="nav-link" href="/health/status">
-                <i class="bi bi-heart-pulse"></i> 상태 조회
-            </a>
-            <a class="nav-link" href="/members/logout">
-                <i class="bi bi-box-arrow-right"></i> 로그아웃
-            </a>
-        </div>
-    </div>
-</nav>
+<%@ include file="../common/navigation.jsp" %>
 
 <div class="container mt-5">
     <div class="row justify-content-center">

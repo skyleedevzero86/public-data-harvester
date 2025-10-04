@@ -8,6 +8,7 @@
     <%@ include file="../common/head.jsp" %>
   </head>
   <body>
+  <%@ include file="../common/navigation.jsp" %>
     <div class="container mt-4">
       <h2>법인 상세</h2>
       <table class="table">

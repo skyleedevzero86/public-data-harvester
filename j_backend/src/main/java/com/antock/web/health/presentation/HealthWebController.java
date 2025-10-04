@@ -59,6 +59,32 @@ public class HealthWebController {
         }
     }
 
+    @GetMapping("/component")
+    public String componentList(Model model, @CurrentUser AuthenticatedUser user) {
+        try {
+            List<String> components = Arrays.asList("database", "redis", "cache", "member-service", "rate-limit");
+            model.addAttribute("components", components);
+
+            for (String component : components) {
+                try {
+                    Pageable pageable = PageRequest.of(0, 1, Sort.by("checkedAt").descending());
+                    Page<HealthCheckResponse> latestCheck = healthCheckService.getComponentHealth(component, pageable);
+                    if (!latestCheck.getContent().isEmpty()) {
+                        model.addAttribute(component + "Status", latestCheck.getContent().get(0));
+                    }
+                } catch (Exception e) {
+                    log.warn("컴포넌트 {} 상태 조회 실패: {}", component, e.getMessage());
+                }
+            }
+            
+            return "health/component";
+        } catch (Exception e) {
+            log.error("컴포넌트 목록 조회 실패", e);
+            model.addAttribute("error", "컴포넌트 목록을 조회할 수 없습니다: " + e.getMessage());
+            return "health/error";
+        }
+    }
+
     @GetMapping("/component/{component}")
     public String componentHealth(@PathVariable String component,
                                   @RequestParam(defaultValue = "0") int page,
@@ -107,6 +133,12 @@ public class HealthWebController {
             model.addAttribute("error", "헬스 체크 이력을 조회할 수 없습니다: " + e.getMessage());
             return "health/error";
         }
+    }
+
+    @GetMapping("/check")
+    public String performHealthCheckGet(@RequestParam(required = false) List<String> components,
+                                        Model model, @CurrentUser AuthenticatedUser user) {
+        return performHealthCheck(components, model, user);
     }
 
     @PostMapping("/check")

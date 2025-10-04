@@ -1,3 +1,14 @@
+function getUrlParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+function setUrlParameter(name, value) {
+  const url = new URL(window.location);
+  url.searchParams.set(name, value);
+  window.history.pushState({}, '', url);
+}
+
 function copyToClipboard(text, button) {
   navigator.clipboard.writeText(text).then(function() {
     const originalText = button.innerHTML;
