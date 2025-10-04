@@ -3,6 +3,7 @@
 
 <c:set var="pageTitle" value="오류 발생" />
 <c:set var="pageCSS" value="${['health.css']}" />
+<c:set var="pageJS" value="${['health.js']}" />
 
 <!DOCTYPE html>
 <html lang="ko">

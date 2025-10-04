@@ -8,6 +8,7 @@
 
 <%@ include file="../common/header.jsp" %>
 <%@ include file="../common/navigation.jsp" %>
+<%@ include file="../common/scripts.jsp" %>
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -169,11 +170,35 @@
                 <div class="card-body">
                     <div id="realtimeMetrics">
                         <div class="row">
-                            <div class="col-md-6">
-                                <canvas id="cpuChart" width="400" height="200"></canvas>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">CPU 사용률</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="cpuChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <canvas id="memoryChart" width="400" height="200"></canvas>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">메모리 사용률</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="memoryChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">응답시간</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="responseTimeChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

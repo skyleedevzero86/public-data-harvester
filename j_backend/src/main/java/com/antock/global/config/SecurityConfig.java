@@ -60,6 +60,7 @@ public class SecurityConfig {
                                                                 "/api/v1/region-stats/**",
                                                                 "/api/v1/files/**",
                                                                 "/api/v1/coseller/**",
+                                                                "/api/v1/health/**",
                                                                 "/corp/**",
                                                                 "/coseller/**",
                                                                 "/file/**",

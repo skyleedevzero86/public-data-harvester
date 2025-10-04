@@ -1,6 +1,7 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+pageEncoding="UTF-8"%> <%@ taglib prefix="c"
+uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib prefix="sec"
+uri="http://www.springframework.org/security/tags" %>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
@@ -9,10 +10,10 @@
     </a>
 
     <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
     >
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -33,19 +34,24 @@
             </li>
             <li class="nav-item dropdown">
               <a
-                      class="nav-link dropdown-toggle"
-                      href="javascript:void(0)"
-                      id="healthDropdown"
-                      role="button"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
+                class="nav-link dropdown-toggle"
+                href="javascript:void(0)"
+                id="healthDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
               >
-                <i class="bi bi-heart-pulse"></i> 시스템 상태
+                <i class="bi bi-heart-pulse"></i> 시스템 관리
               </a>
               <ul
-                      class="dropdown-menu dropdown-menu-end"
-                      aria-labelledby="healthDropdown"
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="healthDropdown"
               >
+                <li>
+                  <a class="dropdown-item" href="/health/status">
+                    <i class="bi bi-speedometer2"></i> 시스템 상태
+                  </a>
+                </li>
                 <li>
                   <a class="dropdown-item" href="/health">
                     <i class="bi bi-speedometer2"></i> 대시보드

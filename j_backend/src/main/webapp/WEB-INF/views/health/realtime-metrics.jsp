@@ -1,7 +1,7 @@
 ﻿<%@ page language="java" contentType="text/html; charset=UTF-8"
-         pageEncoding="UTF-8"%> <%@ taglib prefix="c"
-                                           uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib prefix="fmt"
-                                                                                                 uri="http://java.sun.com/jsp/jstl/fmt" %>
+         pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="실시간 메트릭" />
 <c:set var="pageCSS" value="${['health.css']}" />
@@ -11,7 +11,6 @@
 <html>
 <head>
   <%@ include file="../common/head.jsp" %>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <%@ include file="../common/navigation.jsp" %>
@@ -182,8 +181,8 @@
   </div>
 </div>
 
-<%@ include file="../common/footer.jsp" %> <%@ include
-        file="../common/scripts.jsp" %>
+<%@ include file="../common/footer.jsp" %>
+<%@ include file="../common/scripts.jsp" %>
 <script>
   let realtimeInterval;
   let responseTimeChart;
@@ -392,7 +391,16 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    initializeCharts();
+    if (typeof Chart !== "undefined") {
+      initializeCharts();
+    } else {
+      window.addEventListener("chartjs-loaded", initializeCharts);
+      window.addEventListener("chartjs-error", function () {
+        console.error(
+                "Chart.js 로드 실패로 인해 차트를 표시할 수 없습니다."
+        );
+      });
+    }
   });
 
   window.addEventListener("beforeunload", function () {

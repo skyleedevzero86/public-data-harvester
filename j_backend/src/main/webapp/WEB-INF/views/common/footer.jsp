@@ -95,7 +95,7 @@ uri="http://java.sun.com/jsp/jstl/core" %>
           <div class="contact-title">문의사항</div>
           <div class="contact-address">대한민국 광주광역시 서구</div>
           <div class="contact-phone">TEL: 010-xxx-xxxx</div>
-          <div class="contact-email">E-MAIL: 2025chungjang@gmail.com</div>
+          <div class="contact-email">E-MAIL: sleekydz86@naver.com</div>
         </div>
       </div>
     </div>
