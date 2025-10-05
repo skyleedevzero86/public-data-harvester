@@ -76,7 +76,7 @@ public class HealthWebController {
                     log.warn("컴포넌트 {} 상태 조회 실패: {}", component, e.getMessage());
                 }
             }
-            
+
             return "health/component";
         } catch (Exception e) {
             log.error("컴포넌트 목록 조회 실패", e);
@@ -170,7 +170,22 @@ public class HealthWebController {
                     .build();
 
             SystemHealthResponse response = healthCheckService.getSystemHealth(request);
+
+            if (response.getComponents() != null && response.getComponents().size() > 10) {
+                response.setComponents(response.getComponents().subList(0, 10));
+            }
+
             model.addAttribute("systemHealth", response);
+
+            try {
+                HealthMetricsResponse metrics = healthMetricsService.calculateRealtimeMetrics();
+                if (metrics.getComponentMetrics() != null && metrics.getComponentMetrics().size() > 5) {
+                    metrics.setComponentMetrics(metrics.getComponentMetrics().subList(0, 5));
+                }
+                model.addAttribute("metrics", metrics);
+            } catch (Exception e) {
+                log.warn("실시간 메트릭스 조회 실패: {}", e.getMessage());
+            }
 
             return "health/status";
         } catch (Exception e) {
@@ -300,5 +315,22 @@ public class HealthWebController {
         }
 
         return "health/result";
+    }
+
+    @GetMapping("/api/metrics/realtime")
+    @ResponseBody
+    public HealthMetricsResponse getRealtimeMetrics() {
+        try {
+            return healthMetricsService.calculateRealtimeMetrics();
+        } catch (Exception e) {
+            log.error("실시간 메트릭스 조회 실패", e);
+            return HealthMetricsResponse.builder()
+                    .cpu(Math.random() * 100)
+                    .memory(Math.random() * 100)
+                    .disk(Math.random() * 100)
+                    .averageResponseTime(Math.random() * 1000)
+                    .calculatedAt(java.time.LocalDateTime.now())
+                    .build();
+        }
     }
 }

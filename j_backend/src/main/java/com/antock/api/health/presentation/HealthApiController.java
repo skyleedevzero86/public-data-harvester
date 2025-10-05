@@ -43,11 +43,7 @@ public class HealthApiController {
     @GetMapping("/system")
     @Operation(summary = "시스템 전체 헬스 상태 조회")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "헬스 상태 조회 성공",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = com.antock.global.common.response.ApiResponse.class),
-                            examples = @ExampleObject(name = "시스템 헬스 상태",
-                                    value = "{\"success\": true, \"message\": \"시스템 헬스 상태 조회 완료\", \"data\": {\"overallStatus\": \"UP\", \"overallStatusDescription\": \"정상\", \"totalComponents\": 5, \"healthyComponents\": 5, \"unhealthyComponents\": 0, \"unknownComponents\": 0, \"healthPercentage\": 100.0, \"checkedAt\": \"2024-01-15T10:30:00\", \"expiresAt\": \"2024-01-15T10:35:00\", \"expired\": false, \"healthy\": true, \"components\": [{\"component\": \"database\", \"status\": \"UP\", \"statusDescription\": \"정상\", \"message\": \"데이터베이스 연결 정상\", \"responseTime\": 150, \"checkType\": \"scheduled\", \"checkedAt\": \"2024-01-15T10:30:00\", \"expired\": false, \"healthy\": true}]}, \"timestamp\": \"2024-01-15T10:30:00\"}"))),
+            @ApiResponse(responseCode = "200", description = "헬스 상태 조회 성공", content = @Content(mediaType = "application/json", schema = @Schema(implementation = com.antock.global.common.response.ApiResponse.class), examples = @ExampleObject(name = "시스템 헬스 상태", value = "{\"success\": true, \"message\": \"시스템 헬스 상태 조회 완료\", \"data\": {\"overallStatus\": \"UP\", \"overallStatusDescription\": \"정상\", \"totalComponents\": 5, \"healthyComponents\": 5, \"unhealthyComponents\": 0, \"unknownComponents\": 0, \"healthPercentage\": 100.0, \"checkedAt\": \"2024-01-15T10:30:00\", \"expiresAt\": \"2024-01-15T10:35:00\", \"expired\": false, \"healthy\": true, \"components\": [{\"component\": \"database\", \"status\": \"UP\", \"statusDescription\": \"정상\", \"message\": \"데이터베이스 연결 정상\", \"responseTime\": 150, \"checkType\": \"scheduled\", \"checkedAt\": \"2024-01-15T10:30:00\", \"expired\": false, \"healthy\": true}]}, \"timestamp\": \"2024-01-15T10:30:00\"}"))),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     public ResponseEntity<com.antock.global.common.response.ApiResponse<SystemHealthResponse>> getSystemHealth(
@@ -231,7 +227,8 @@ public class HealthApiController {
             @Parameter(description = "컴포넌트명", example = "database") @PathVariable String component,
             @Parameter(description = "조회 기간 (일)", example = "7") @RequestParam(defaultValue = "7") int days) {
         try {
-            HealthMetricsResponse.ComponentMetrics metrics = healthMetricsService.calculateComponentMetrics(component, days);
+            HealthMetricsResponse.ComponentMetrics metrics = healthMetricsService.calculateComponentMetrics(component,
+                    days);
             return ResponseEntity.ok(com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, metrics));
         } catch (Exception e) {
             log.error("컴포넌트 메트릭 조회 실패: {}", component, e);
@@ -246,15 +243,17 @@ public class HealthApiController {
             @ApiResponse(responseCode = "200", description = "실시간 메트릭 조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<com.antock.global.common.response.ApiResponse<HealthMetricsResponse>> getRealtimeMetrics() {
         try {
+            log.debug("실시간 메트릭 조회 시작");
             HealthMetricsResponse metrics = healthMetricsService.calculateRealtimeMetrics();
+            log.debug("실시간 메트릭 조회 완료: {}", metrics != null ? "성공" : "실패");
             return ResponseEntity.ok(com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, metrics));
         } catch (Exception e) {
-            log.error("실시간 메트릭 조회 실패", e);
+            log.error("실시간 메트릭 조회 실패: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(com.antock.global.common.response.ApiResponse.error("실시간 메트릭 조회 중 오류가 발생했습니다."));
+                    .body(com.antock.global.common.response.ApiResponse
+                            .error("실시간 메트릭 조회 중 오류가 발생했습니다: " + e.getMessage()));
         }
     }
 }

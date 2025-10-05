@@ -58,11 +58,6 @@ uri="http://www.springframework.org/security/tags" %>
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="/health/status">
-                    <i class="bi bi-heart-pulse"></i> 시스템 상태
-                  </a>
-                </li>
-                <li>
                   <a class="dropdown-item" href="/health/component">
                     <i class="bi bi-gear"></i> 컴포넌트 목록
                   </a>
