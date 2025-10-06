@@ -4,6 +4,7 @@ import com.antock.api.health.application.dto.HealthCheckRequest;
 import com.antock.api.health.application.dto.HealthCheckResponse;
 import com.antock.api.health.application.dto.SystemHealthResponse;
 import com.antock.api.health.application.dto.HealthMetricsResponse;
+import com.antock.api.health.application.dto.PagedSystemHealthResponse;
 import com.antock.api.health.application.service.HealthCheckService;
 import com.antock.api.health.application.service.HealthMetricsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -120,7 +121,6 @@ public class HealthApiController {
             @ApiResponse(responseCode = "400", description = "잘못된 날짜 형식"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<com.antock.global.common.response.ApiResponse<Page<HealthCheckResponse>>> getHealthHistory(
             @Parameter(description = "시작 날짜", example = "2024-01-01T00:00:00") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @Parameter(description = "종료 날짜", example = "2024-01-31T23:59:59") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
@@ -254,6 +254,66 @@ public class HealthApiController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(com.antock.global.common.response.ApiResponse
                             .error("실시간 메트릭 조회 중 오류가 발생했습니다: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/system/paged")
+    @Operation(summary = "페이징된 시스템 헬스 상태 조회", description = """
+            시스템 헬스 상태를 페이징 처리하여 조회합니다.
+
+            ### 기능
+            - 컴포넌트가 많을 때 페이징으로 관리
+            - 컴포넌트 그룹핑 지원 (컴포넌트별, 상태별)
+            - 페이징 정보 포함
+
+            ### 파라미터
+            - **page**: 페이지 번호 (0부터 시작, 기본값: 0)
+            - **size**: 페이지 크기 (기본값: 10, 최대: 100)
+            - **groupBy**: 그룹핑 방식 (component, status, 기본값: component)
+            """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "페이징된 헬스 상태 조회 성공", content = @Content(mediaType = "application/json", schema = @Schema(implementation = com.antock.global.common.response.ApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 파라미터"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<com.antock.global.common.response.ApiResponse<PagedSystemHealthResponse>> getSystemHealthPaged(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (최대 100)", example = "10") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "그룹핑 방식 (component, status)", example = "component") @RequestParam(defaultValue = "component") String groupBy) {
+
+        try {
+            if (page < 0) {
+                return ResponseEntity.badRequest()
+                        .body(com.antock.global.common.response.ApiResponse
+                                .error("페이지 번호는 0 이상이어야 합니다"));
+            }
+
+            if (size <= 0 || size > 100) {
+                return ResponseEntity.badRequest()
+                        .body(com.antock.global.common.response.ApiResponse
+                                .error("페이지 크기는 1 이상 100 이하여야 합니다"));
+            }
+
+            if (!groupBy.equals("component") && !groupBy.equals("status")) {
+                return ResponseEntity.badRequest()
+                        .body(com.antock.global.common.response.ApiResponse
+                                .error("그룹핑 방식은 'component' 또는 'status'여야 합니다"));
+            }
+
+            log.info("페이징된 시스템 헬스 조회 요청 - page: {}, size: {}, groupBy: {}", page, size, groupBy);
+
+            PagedSystemHealthResponse response = healthCheckService.getSystemHealthPaged(page, size, groupBy);
+
+            log.debug("페이징된 시스템 헬스 조회 완료 - 총 컴포넌트: {}, 현재 페이지: {}/{}",
+                    response.getTotalComponents(), page + 1, response.getPagination().getTotalPages());
+
+            return ResponseEntity.ok(com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, response));
+
+        } catch (Exception e) {
+            log.error("페이징된 시스템 헬스 조회 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(com.antock.global.common.response.ApiResponse
+                            .error("페이징된 시스템 헬스 조회 중 오류가 발생했습니다: " + e.getMessage()));
         }
     }
 }

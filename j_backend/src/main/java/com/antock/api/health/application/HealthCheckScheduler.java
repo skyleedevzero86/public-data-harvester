@@ -3,6 +3,8 @@ package com.antock.api.health.application;
 import com.antock.api.health.application.dto.HealthCheckRequest;
 import com.antock.api.health.application.dto.SystemHealthResponse;
 import com.antock.api.health.application.service.HealthCheckService;
+import com.antock.api.health.domain.SystemHealth;
+import com.antock.api.health.infrastructure.SystemHealthRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -19,6 +22,7 @@ import java.util.List;
 public class HealthCheckScheduler {
 
     private final HealthCheckService healthCheckService;
+    private final SystemHealthRepository systemHealthRepository;
 
     @Value("${health.scheduler.enabled:true}")
     private boolean schedulerEnabled;
@@ -153,10 +157,11 @@ public class HealthCheckScheduler {
                     .includeDetails(false)
                     .build();
 
-            SystemHealthResponse response = healthCheckService.getSystemHealth(request);
+            Optional<SystemHealth> cachedSystemHealth = systemHealthRepository
+                    .findLatestValidSystemHealth(LocalDateTime.now());
 
-            if (response.isExpired()) {
-                log.warn("헬스 체크 데이터가 만료되었습니다. 새로 체크를 실행합니다.");
+            if (cachedSystemHealth.isEmpty() || cachedSystemHealth.get().isExpired()) {
+                log.warn("헬스 체크 데이터가 없거나 만료되었습니다. 새로 체크를 실행합니다.");
                 healthCheckService.performSystemHealthCheckInNewTransaction(components, "monitor");
             }
 
