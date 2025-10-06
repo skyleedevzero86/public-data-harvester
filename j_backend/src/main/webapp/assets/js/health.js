@@ -3,15 +3,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeHealthPage() {
-    console.log('헬스 페이지 초기화 시작');
     initializeAutoRefresh();
     initializeCharts();
     initializeTooltips();
     initializeFilters();
+    initializeRealtimeMetrics();
 
     setTimeout(() => {
         if (typeof Chart === 'undefined') {
-            console.warn('Chart.js가 로드되지 않았습니다. 차트 기능이 제한됩니다.');
             showChartFallback();
         }
     }, 3000);
@@ -42,21 +41,16 @@ function initializeAutoRefresh() {
 
 function initializeCharts() {
     if (window.chartsInitialized) {
-        console.log('차트가 이미 초기화되었습니다.');
         return;
     }
 
     if (typeof Chart !== 'undefined') {
-        console.log('Chart.js가 이미 로드됨, 차트 초기화 시작');
         destroyExistingCharts();
         initializeMetricsCharts();
         initializeRealtimeCharts();
         window.chartsInitialized = true;
     } else {
-        console.log('Chart.js 로드 대기 중...');
-
         window.addEventListener('chartjs-loaded', function() {
-            console.log('Chart.js 로드 이벤트 감지됨, 차트 초기화 시작');
             destroyExistingCharts();
             initializeMetricsCharts();
             initializeRealtimeCharts();
@@ -64,7 +58,6 @@ function initializeCharts() {
         });
 
         window.addEventListener('chartjs-error', function() {
-            console.error('Chart.js 로드 실패 이벤트 감지됨');
             showChartFallback();
         });
 
@@ -73,17 +66,14 @@ function initializeCharts() {
 
         const checkChartJs = () => {
             if (typeof Chart !== 'undefined') {
-                console.log('Chart.js 로드 확인됨, 차트 초기화 시작');
                 destroyExistingCharts();
                 initializeMetricsCharts();
                 initializeRealtimeCharts();
                 window.chartsInitialized = true;
             } else if (retryCount < maxRetries) {
                 retryCount++;
-                console.warn(`Chart.js가 로드되지 않았습니다. ${retryCount}/${maxRetries} 시도 중...`);
                 setTimeout(checkChartJs, 1000 * retryCount);
             } else {
-                console.error('Chart.js를 로드할 수 없습니다. 차트 없이 계속 진행합니다.');
                 showAlert('차트를 로드할 수 없습니다. 다른 기능은 정상 작동합니다.', 'warning');
             }
         };
@@ -93,15 +83,27 @@ function initializeCharts() {
 }
 
 function destroyExistingCharts() {
-    const chartIds = ['cpuChart', 'memoryChart', 'responseTimeChart', 'realtimeChart'];
+    const chartIds = ['cpuChart', 'memoryChart', 'responseTimeChart', 'realtimeChart', 'availabilityChart', 'successRateChart'];
     chartIds.forEach(chartId => {
         const chartInstance = window[chartId + 'Instance'];
         if (chartInstance) {
-            console.log(`${chartId} 차트 파괴 중...`);
             chartInstance.destroy();
             delete window[chartId + 'Instance'];
         }
     });
+
+    if (window.responseTimeChartInstance) {
+        window.responseTimeChartInstance.destroy();
+        delete window.responseTimeChartInstance;
+    }
+    if (window.availabilityChartInstance) {
+        window.availabilityChartInstance.destroy();
+        delete window.availabilityChartInstance;
+    }
+    if (window.successRateChartInstance) {
+        window.successRateChartInstance.destroy();
+        delete window.successRateChartInstance;
+    }
 
     if (window.realtimeInterval) {
         clearInterval(window.realtimeInterval);
@@ -127,7 +129,6 @@ function destroyExistingCharts() {
 function initializeMetricsCharts() {
     const responseTimeCanvas = document.getElementById('responseTimeChart');
     if (!responseTimeCanvas) {
-        console.log('응답시간 차트 컨테이너를 찾을 수 없습니다.');
         return;
     }
 
@@ -173,41 +174,73 @@ function initializeMetricsCharts() {
         });
 
         window.responseTimeChartInterval = setInterval(() => {
-            if (window.responseTimeChartInstance) {
-                const now = new Date();
-                const timeLabel = now.toLocaleTimeString();
+            if (window.responseTimeChartInstance && window.responseTimeChartInstance.data && window.responseTimeChartInstance.data.datasets && window.responseTimeChartInstance.data.datasets[0]) {
+                try {
+                    const now = new Date();
+                    const timeLabel = now.toLocaleTimeString();
 
-                window.responseTimeChartInstance.data.labels.push(timeLabel);
-                if (window.responseTimeChartInstance.data.labels.length > 20) {
-                    window.responseTimeChartInstance.data.labels.shift();
+                    window.responseTimeChartInstance.data.labels.push(timeLabel);
+                    if (window.responseTimeChartInstance.data.labels.length > 20) {
+                        window.responseTimeChartInstance.data.labels.shift();
+                    }
+
+                    window.responseTimeChartInstance.data.datasets[0].data.push(Math.random() * 500 + 50);
+                    if (window.responseTimeChartInstance.data.datasets[0].data.length > 20) {
+                        window.responseTimeChartInstance.data.datasets[0].data.shift();
+                    }
+
+                    window.responseTimeChartInstance.update('none');
+                } catch (error) {
                 }
-
-                window.responseTimeChartInstance.data.datasets[0].data.push(Math.random() * 500 + 50);
-                if (window.responseTimeChartInstance.data.datasets[0].data.length > 20) {
-                    window.responseTimeChartInstance.data.datasets[0].data.shift();
-                }
-
-                window.responseTimeChartInstance.update('none');
             }
         }, 5000);
-
-        console.log('응답시간 차트가 성공적으로 초기화되었습니다.');
     } catch (error) {
-        console.error('응답시간 차트 초기화 실패:', error);
         showAlert('응답시간 차트를 초기화할 수 없습니다.', 'warning');
     }
 }
 
 function initializeRealtimeCharts() {
-    const realtimeCanvas = document.getElementById('realtimeChart');
-    if (!realtimeCanvas) {
-        console.log('실시간 차트 컨테이너를 찾을 수 없습니다.');
-        return;
+    if (window.responseTimeChartInstance) {
+        window.responseTimeChartInstance.destroy();
+        delete window.responseTimeChartInstance;
+    }
+    if (window.availabilityChartInstance) {
+        window.availabilityChartInstance.destroy();
+        delete window.availabilityChartInstance;
+    }
+    if (window.successRateChartInstance) {
+        window.successRateChartInstance.destroy();
+        delete window.successRateChartInstance;
     }
 
+    if (window.realtimeInterval) {
+        clearInterval(window.realtimeInterval);
+        delete window.realtimeInterval;
+    }
+
+    const responseTimeCanvas = document.getElementById('responseTimeChart');
+    if (responseTimeCanvas) {
+        initializeResponseTimeChart(responseTimeCanvas);
+    }
+
+    const availabilityCanvas = document.getElementById('availabilityChart');
+    if (availabilityCanvas) {
+        initializeAvailabilityChart(availabilityCanvas);
+    }
+
+    const successRateCanvas = document.getElementById('successRateChart');
+    if (successRateCanvas) {
+        initializeSuccessRateChart(successRateChart);
+    }
+
+    updateRealtimeData();
+    window.realtimeInterval = setInterval(updateRealtimeData, 5000);
+}
+
+function initializeResponseTimeChart(canvas) {
     try {
-        const ctx = realtimeCanvas.getContext('2d');
-        window.realtimeChartInstance = new Chart(ctx, {
+        const ctx = canvas.getContext('2d');
+        window.responseTimeChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
@@ -230,12 +263,6 @@ function initializeRealtimeCharts() {
                             display: true,
                             text: '응답 시간 (ms)'
                         }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: '시간'
-                        }
                     }
                 },
                 plugins: {
@@ -246,14 +273,91 @@ function initializeRealtimeCharts() {
                 }
             }
         });
-
-        updateRealtimeData();
-        window.realtimeInterval = setInterval(updateRealtimeData, 5000);
-
-        console.log('실시간 차트가 성공적으로 초기화되었습니다.');
     } catch (error) {
-        console.error('실시간 차트 초기화 실패:', error);
-        showAlert('실시간 차트를 초기화할 수 없습니다.', 'warning');
+    }
+}
+
+function initializeAvailabilityChart(canvas) {
+    try {
+        const ctx = canvas.getContext('2d');
+        window.availabilityChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['가용', '불가용'],
+                datasets: [{
+                    data: [100, 0],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+    }
+}
+
+function initializeSuccessRateChart(canvas) {
+    try {
+        const ctx = canvas.getContext('2d');
+        window.successRateChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['성공', '실패'],
+                datasets: [{
+                    data: [100, 0],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
     }
 }
 
@@ -262,7 +366,6 @@ function updateRealtimeData() {
         .then(response => {
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.warn('인증이 필요합니다. 로그인 후 다시 시도해주세요.');
                     return null;
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -271,15 +374,74 @@ function updateRealtimeData() {
         })
         .then(data => {
             if (data && data.success && data.data) {
-                updateRealtimeChart(data.data);
+                updateRealtimeCharts(data.data);
                 updateRealtimeMetrics(data.data);
-            } else if (data) {
-                console.error('실시간 데이터 형식 오류:', data);
             }
         })
         .catch(error => {
-            console.error('실시간 데이터 업데이트 오류:', error);
         });
+}
+
+function updateRealtimeCharts(data) {
+    if (window.responseTimeChartInstance) {
+        updateResponseTimeChart(data);
+    }
+
+    if (window.availabilityChartInstance) {
+        updateAvailabilityChart(data);
+    }
+
+    if (window.successRateChartInstance) {
+        updateSuccessRateChart(data);
+    }
+}
+
+function updateResponseTimeChart(data) {
+    if (window.responseTimeChartInstance && window.responseTimeChartInstance.data && window.responseTimeChartInstance.data.datasets && window.responseTimeChartInstance.data.datasets[0]) {
+        try {
+            const chart = window.responseTimeChartInstance;
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString();
+
+            if (chart.data.labels.length >= 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.data.labels.push(timeLabel);
+            chart.data.datasets[0].data.push(data.averageResponseTime || 0);
+            chart.update('none');
+        } catch (error) {
+        }
+    }
+}
+
+function updateAvailabilityChart(data) {
+    if (window.availabilityChartInstance && window.availabilityChartInstance.data && window.availabilityChartInstance.data.datasets && window.availabilityChartInstance.data.datasets[0]) {
+        try {
+            const chart = window.availabilityChartInstance;
+            const availability = data.overallAvailability || 100;
+            const unavailability = 100 - availability;
+
+            chart.data.datasets[0].data = [availability, unavailability];
+            chart.update('none');
+        } catch (error) {
+        }
+    }
+}
+
+function updateSuccessRateChart(data) {
+    if (window.successRateChartInstance && window.successRateChartInstance.data && window.successRateChartInstance.data.datasets && window.successRateChartInstance.data.datasets[0]) {
+        try {
+            const chart = window.successRateChartInstance;
+            const successRate = data.successRate || 100;
+            const failureRate = 100 - successRate;
+
+            chart.data.datasets[0].data = [successRate, failureRate];
+            chart.update('none');
+        } catch (error) {
+        }
+    }
 }
 
 function updateRealtimeChart(data) {
@@ -382,7 +544,6 @@ function performHealthCheck(component = null) {
             }
         })
         .catch(error => {
-            console.error('헬스 체크 오류:', error);
             showAlert('헬스 체크 중 오류가 발생했습니다.', 'danger');
         })
         .finally(() => {
@@ -600,3 +761,87 @@ document.addEventListener('visibilitychange', function() {
         }
     }
 });
+
+function initializeRealtimeMetrics() {
+    updateRealtimeMetrics();
+
+    setInterval(updateRealtimeMetrics, 120000);
+}
+
+function updateRealtimeMetrics() {
+    fetch('/api/v1/health/metrics/realtime')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error! status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.success && data.data) {
+                updateMetricsDisplay(data.data);
+            } else {
+                showAlert('실시간 메트릭스 데이터를 가져올 수 없습니다.', 'warning');
+            }
+        })
+        .catch(error => {
+            showAlert('실시간 메트릭스를 업데이트할 수 없습니다: ' + error.message, 'error');
+        });
+}
+
+function updateMetricsDisplay(metrics) {
+    if (metrics.cpu !== undefined) {
+        const cpuElement = document.getElementById('cpuUsage');
+        if (cpuElement) {
+            cpuElement.textContent = metrics.cpu.toFixed(1) + '%';
+            updateMetricStatus(cpuElement, metrics.cpu, 70, 90);
+        }
+    }
+
+    if (metrics.memory !== undefined) {
+        const memoryElement = document.getElementById('memoryUsage');
+        if (memoryElement) {
+            memoryElement.textContent = metrics.memory.toFixed(1) + '%';
+            updateMetricStatus(memoryElement, metrics.memory, 80, 95);
+        }
+    }
+
+    if (metrics.disk !== undefined) {
+        const diskElement = document.getElementById('diskUsage');
+        if (diskElement) {
+            diskElement.textContent = metrics.disk.toFixed(1) + '%';
+            updateMetricStatus(diskElement, metrics.disk, 80, 95);
+        }
+    }
+
+    if (metrics.averageResponseTime !== undefined) {
+        const responseTimeElement = document.getElementById('responseTime');
+        if (responseTimeElement) {
+            responseTimeElement.textContent = metrics.averageResponseTime.toFixed(1) + 'ms';
+            updateResponseTimeStatus(responseTimeElement, metrics.averageResponseTime);
+        }
+    }
+}
+
+function updateMetricStatus(element, value, warningThreshold, criticalThreshold) {
+    element.className = 'metrics-value';
+
+    if (value >= criticalThreshold) {
+        element.classList.add('text-danger');
+    } else if (value >= warningThreshold) {
+        element.classList.add('text-warning');
+    } else {
+        element.classList.add('text-success');
+    }
+}
+
+function updateResponseTimeStatus(element, value) {
+    element.className = 'metrics-value';
+
+    if (value >= 1000) {
+        element.classList.add('text-danger');
+    } else if (value >= 500) {
+        element.classList.add('text-warning');
+    } else {
+        element.classList.add('text-success');
+    }
+}

@@ -20,13 +20,15 @@ public interface SystemHealthRepository extends JpaRepository<SystemHealth, Long
         List<SystemHealth> findByOverallStatusOrderByCheckedAtDesc(@Param("status") HealthStatus status);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.overallStatus = :status ORDER BY s.checkedAt DESC")
-        Page<SystemHealth> findByOverallStatusOrderByCheckedAtDesc(@Param("status") HealthStatus status, Pageable pageable);
+        Page<SystemHealth> findByOverallStatusOrderByCheckedAtDesc(@Param("status") HealthStatus status,
+                        Pageable pageable);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.checkedAt >= :fromDate ORDER BY s.checkedAt DESC")
         List<SystemHealth> findByCheckedAtAfterOrderByCheckedAtDesc(@Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.checkedAt BETWEEN :startDate AND :endDate ORDER BY s.checkedAt DESC")
-        List<SystemHealth> findByCheckedAtBetweenOrderByCheckedAtDesc(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+        List<SystemHealth> findByCheckedAtBetweenOrderByCheckedAtDesc(@Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.expiresAt < :now ORDER BY s.checkedAt DESC")
         List<SystemHealth> findExpiredSystemHealth(@Param("now") LocalDateTime now);
@@ -56,11 +58,15 @@ public interface SystemHealthRepository extends JpaRepository<SystemHealth, Long
         int deleteOldSystemHealth(@Param("cutoffDate") LocalDateTime cutoffDate);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.checkedAt >= :fromDate AND s.overallStatus = :status ORDER BY s.checkedAt DESC")
-        List<SystemHealth> findByStatusAndDateRange(@Param("status") HealthStatus status, @Param("fromDate") LocalDateTime fromDate);
+        List<SystemHealth> findByStatusAndDateRange(@Param("status") HealthStatus status,
+                        @Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.healthyComponents = s.totalComponents AND s.checkedAt >= :fromDate ORDER BY s.checkedAt DESC")
         List<SystemHealth> findFullyHealthySystems(@Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT s FROM SystemHealth s WHERE s.unhealthyComponents > 0 AND s.checkedAt >= :fromDate ORDER BY s.checkedAt DESC")
         List<SystemHealth> findUnhealthySystems(@Param("fromDate") LocalDateTime fromDate);
+
+        @Query("SELECT s FROM SystemHealth s ORDER BY s.checkedAt DESC LIMIT 1")
+        Optional<SystemHealth> findTopByOrderByCheckedAtDesc();
 }

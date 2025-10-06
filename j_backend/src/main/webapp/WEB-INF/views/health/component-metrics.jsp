@@ -8,11 +8,19 @@
 
 <!DOCTYPE html>
 <html>
+<<<<<<< Updated upstream
 <head>
   <%@ include file="../common/head.jsp" %>
 </head>
 <body>
 <%@ include file="../common/navigation.jsp" %>
+=======
+<head>
+  <%@ include file="../common/head.jsp" %>
+</head>
+<body>
+<%@ include file="../common/navigation.jsp" %>
+>>>>>>> Stashed changes
 
 <div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -270,6 +278,7 @@
   </c:if>
 </div>
 
+<<<<<<< Updated upstream
 <%@ include file="../common/footer.jsp" %>
 <%@ include file="../common/scripts.jsp" %>
 <script>
@@ -333,3 +342,68 @@
 </script>
 </body>
 </html>
+=======
+<%@ include file="../common/footer.jsp" %> <%@ include
+        file="../common/scripts.jsp" %>
+<script>
+  <c:if test="${not empty metrics}">
+  function initComponentMetricsChart() {
+    const responseTimeCtx = document.getElementById('responseTimeChart');
+    if (!responseTimeCtx) return;
+
+    const ctx = responseTimeCtx.getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+        datasets: [{
+          label: '응답 시간 (ms)',
+          data: [
+            ${metrics.averageResponseTime * 0.8},
+            ${metrics.averageResponseTime * 1.2},
+            ${metrics.averageResponseTime * 0.9},
+            ${metrics.averageResponseTime * 1.1},
+            ${metrics.averageResponseTime * 0.95},
+            ${metrics.averageResponseTime * 1.05},
+            ${metrics.averageResponseTime * 0.85}
+          ],
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: '응답 시간 (ms)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: '시간'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  if (typeof Chart !== 'undefined') {
+    initComponentMetricsChart();
+  } else {
+    window.addEventListener('chartjs-loaded', initComponentMetricsChart);
+    window.addEventListener('chartjs-error', function() {
+      console.error('Chart.js 로드 실패로 인해 차트를 표시할 수 없습니다.');
+    });
+  }
+  </c:if>
+</script>
+</body>
+</html>
+>>>>>>> Stashed changes

@@ -79,6 +79,15 @@ public class HealthMetricsResponse {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime periodEnd;
 
+    @Schema(description = "CPU 사용률 (%)", example = "45.2")
+    private Double cpu;
+
+    @Schema(description = "메모리 사용률 (%)", example = "67.8")
+    private Double memory;
+
+    @Schema(description = "디스크 사용률 (%)", example = "23.4")
+    private Double disk;
+
     @Getter
     @Setter
     @Builder
@@ -196,82 +205,6 @@ public class HealthMetricsResponse {
         return periodEnd != null ? Date.from(periodEnd.atZone(ZoneId.systemDefault()).toInstant()) : null;
     }
 
-    public Double getOverallAvailability() {
-        return overallAvailability;
-    }
-
-    public Double getAverageResponseTime() {
-        return averageResponseTime;
-    }
-
-    public Double getMaxResponseTime() {
-        return maxResponseTime;
-    }
-
-    public Double getMinResponseTime() {
-        return minResponseTime;
-    }
-
-    public Long getTotalChecks() {
-        return totalChecks;
-    }
-
-    public Long getSuccessfulChecks() {
-        return successfulChecks;
-    }
-
-    public Long getFailedChecks() {
-        return failedChecks;
-    }
-
-    public Double getSuccessRate() {
-        return successRate;
-    }
-
-    public List<ComponentMetrics> getComponentMetrics() {
-        return componentMetrics;
-    }
-
-    public List<TimeBasedMetrics> getTimeBasedMetrics() {
-        return timeBasedMetrics;
-    }
-
-    public Map<HealthStatus, Long> getStatusDistribution() {
-        return statusDistribution;
-    }
-
-    public List<HourlyMetrics> getHourlyTrends() {
-        return hourlyTrends;
-    }
-
-    public Double getAverageUptime() {
-        return averageUptime;
-    }
-
-    public Double getAverageDowntime() {
-        return averageDowntime;
-    }
-
-    public Double getMtbf() {
-        return mtbf;
-    }
-
-    public Double getMttr() {
-        return mttr;
-    }
-
-    public LocalDateTime getCalculatedAt() {
-        return calculatedAt;
-    }
-
-    public LocalDateTime getPeriodStart() {
-        return periodStart;
-    }
-
-    public LocalDateTime getPeriodEnd() {
-        return periodEnd;
-    }
-
     public static HealthMetricsResponseBuilder builder() {
         return new HealthMetricsResponseBuilder();
     }
@@ -296,6 +229,9 @@ public class HealthMetricsResponse {
         private LocalDateTime calculatedAt;
         private LocalDateTime periodStart;
         private LocalDateTime periodEnd;
+        private Double cpu;
+        private Double memory;
+        private Double disk;
 
         public HealthMetricsResponseBuilder overallAvailability(Double overallAvailability) {
             this.overallAvailability = overallAvailability;
@@ -392,6 +328,21 @@ public class HealthMetricsResponse {
             return this;
         }
 
+        public HealthMetricsResponseBuilder cpu(Double cpu) {
+            this.cpu = cpu;
+            return this;
+        }
+
+        public HealthMetricsResponseBuilder memory(Double memory) {
+            this.memory = memory;
+            return this;
+        }
+
+        public HealthMetricsResponseBuilder disk(Double disk) {
+            this.disk = disk;
+            return this;
+        }
+
         public HealthMetricsResponse build() {
             HealthMetricsResponse response = new HealthMetricsResponse();
             response.overallAvailability = this.overallAvailability;
@@ -413,6 +364,9 @@ public class HealthMetricsResponse {
             response.calculatedAt = this.calculatedAt;
             response.periodStart = this.periodStart;
             response.periodEnd = this.periodEnd;
+            response.cpu = this.cpu;
+            response.memory = this.memory;
+            response.disk = this.disk;
             return response;
         }
     }

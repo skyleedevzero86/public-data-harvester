@@ -32,28 +32,45 @@
 }
 
 .metrics-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
+    background: #ffffff;
+    color: #333333;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+    width: 100%;
 }
 
-.metrics-card h5 {
-    margin-bottom: 15px;
+.metrics-card h6 {
+    color: #6c757d;
+    font-size: 0.875rem;
     font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .metrics-value {
     font-size: 2rem;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 0.5rem;
+    color: #333333;
+    text-align: center;
+    width: 100%;
 }
 
 .metrics-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .realtime-metrics {

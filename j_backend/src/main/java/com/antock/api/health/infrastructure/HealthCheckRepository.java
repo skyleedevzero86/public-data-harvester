@@ -29,19 +29,22 @@ public interface HealthCheckRepository extends JpaRepository<HealthCheck, Long> 
         Page<HealthCheck> findByStatusOrderByCheckedAtDesc(@Param("status") HealthStatus status, Pageable pageable);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.status = :status ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findByComponentAndStatusOrderByCheckedAtDesc(@Param("component") String component, @Param("status") HealthStatus status);
+        List<HealthCheck> findByComponentAndStatusOrderByCheckedAtDesc(@Param("component") String component,
+                        @Param("status") HealthStatus status);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.checkedAt >= :fromDate ORDER BY h.checkedAt DESC")
         List<HealthCheck> findByCheckedAtAfterOrderByCheckedAtDesc(@Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findByCheckedAtBetweenOrderByCheckedAtDesc(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+        List<HealthCheck> findByCheckedAtBetweenOrderByCheckedAtDesc(@Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.expiresAt < :now ORDER BY h.checkedAt DESC")
         List<HealthCheck> findExpiredChecks(@Param("now") LocalDateTime now);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.expiresAt > :now ORDER BY h.checkedAt DESC")
-        Optional<HealthCheck> findLatestValidCheck(@Param("component") String component, @Param("now") LocalDateTime now);
+        Optional<HealthCheck> findLatestValidCheck(@Param("component") String component,
+                        @Param("now") LocalDateTime now);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.expiresAt > :now ORDER BY h.checkedAt DESC")
         List<HealthCheck> findAllValidChecks(@Param("now") LocalDateTime now);
@@ -65,7 +68,8 @@ public interface HealthCheckRepository extends JpaRepository<HealthCheck, Long> 
         List<HealthCheck> findSlowChecks(@Param("threshold") Long threshold);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.responseTime > :threshold ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findSlowChecksByComponent(@Param("component") String component, @Param("threshold") Long threshold);
+        List<HealthCheck> findSlowChecksByComponent(@Param("component") String component,
+                        @Param("threshold") Long threshold);
 
         @Query("SELECT AVG(h.responseTime) FROM HealthCheck h WHERE h.component = :component AND h.checkedAt >= :fromDate")
         Double getAverageResponseTime(@Param("component") String component, @Param("fromDate") LocalDateTime fromDate);
@@ -80,7 +84,8 @@ public interface HealthCheckRepository extends JpaRepository<HealthCheck, Long> 
         List<HealthCheck> findByComponentInOrderByCheckedAtDesc(@Param("components") List<String> components);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findByComponentAndCheckedAtBetweenOrderByCheckedAtDesc(@Param("component") String component, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+        List<HealthCheck> findByComponentAndCheckedAtBetweenOrderByCheckedAtDesc(@Param("component") String component,
+                        @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
         @Query("SELECT h.component, AVG(h.responseTime) FROM HealthCheck h WHERE h.checkedAt >= :fromDate AND h.responseTime IS NOT NULL GROUP BY h.component")
         List<Object[]> getComponentAverageResponseTimes(@Param("fromDate") LocalDateTime fromDate);
@@ -89,10 +94,12 @@ public interface HealthCheckRepository extends JpaRepository<HealthCheck, Long> 
         List<Object[]> getComponentStatusCounts(@Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.checkedAt >= :fromDate ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findRecentChecksByComponent(@Param("component") String component, @Param("fromDate") LocalDateTime fromDate);
+        List<HealthCheck> findRecentChecksByComponent(@Param("component") String component,
+                        @Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.status = :status AND h.checkedAt >= :fromDate ORDER BY h.checkedAt DESC")
-        List<HealthCheck> findByStatusAndCheckedAtAfterOrderByCheckedAtDesc(@Param("status") HealthStatus status, @Param("fromDate") LocalDateTime fromDate);
+        List<HealthCheck> findByStatusAndCheckedAtAfterOrderByCheckedAtDesc(@Param("status") HealthStatus status,
+                        @Param("fromDate") LocalDateTime fromDate);
 
         @Query("SELECT h FROM HealthCheck h WHERE h.responseTime > :threshold AND h.checkedAt >= :fromDate ORDER BY h.checkedAt DESC")
         List<HealthCheck> findSlowChecks(@Param("threshold") Long threshold, @Param("fromDate") LocalDateTime fromDate);
@@ -102,4 +109,30 @@ public interface HealthCheckRepository extends JpaRepository<HealthCheck, Long> 
 
         @Query("SELECT h.component, MIN(h.responseTime) FROM HealthCheck h WHERE h.checkedAt >= :fromDate AND h.responseTime IS NOT NULL GROUP BY h.component")
         List<Object[]> getComponentMinResponseTimes(@Param("fromDate") LocalDateTime fromDate);
+
+        @Query("SELECT h FROM HealthCheck h ORDER BY h.checkedAt DESC")
+        List<HealthCheck> findAllOrderByCheckedAtDesc();
+
+        @Query("SELECT DISTINCT h.component FROM HealthCheck h ORDER BY h.component")
+        List<String> findDistinctComponents();
+
+        @Query("SELECT h FROM HealthCheck h WHERE h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
+        Page<HealthCheck> findByDateRange(@Param("startDate") LocalDateTime startDate, 
+                                        @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
+        @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
+        Page<HealthCheck> findByComponentAndDateRange(@Param("component") String component,
+                                                    @Param("startDate") LocalDateTime startDate, 
+                                                    @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
+        @Query("SELECT h FROM HealthCheck h WHERE h.status = :status AND h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
+        Page<HealthCheck> findByStatusAndDateRange(@Param("status") HealthStatus status,
+                                                  @Param("startDate") LocalDateTime startDate, 
+                                                  @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
+        @Query("SELECT h FROM HealthCheck h WHERE h.component = :component AND h.status = :status AND h.checkedAt BETWEEN :startDate AND :endDate ORDER BY h.checkedAt DESC")
+        Page<HealthCheck> findByComponentAndStatusAndDateRange(@Param("component") String component,
+                                                             @Param("status") HealthStatus status,
+                                                             @Param("startDate") LocalDateTime startDate, 
+                                                             @Param("endDate") LocalDateTime endDate, Pageable pageable);
 }

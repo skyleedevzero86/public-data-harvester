@@ -17,9 +17,6 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-clock-history"></i> 헬스 체크 이력</h2>
-        <a href="/health/check" class="btn btn-primary">
-            <i class="bi bi-arrow-clockwise"></i> 수동 체크
-        </a>
     </div>
 
     <div class="card mb-4">
@@ -49,19 +46,25 @@
                     </div>
                     <div class="col-md-3">
                         <label for="fromDate" class="form-label">시작 시간</label>
-                        <input type="datetime-local" class="form-control" id="fromDate" name="fromDate"
-                               value="${param.fromDate}">
+                        <input type="datetime-local" class="form-control" id="fromDate" name="fromDate" value="${param.fromDate}">
                     </div>
                     <div class="col-md-3">
                         <label for="toDate" class="form-label">종료 시간</label>
-                        <input type="datetime-local" class="form-control" id="toDate" name="toDate"
-                               value="${param.toDate}">
+                        <input type="datetime-local" class="form-control" id="toDate" name="toDate" value="${param.toDate}">
                     </div>
                     <div class="col-md-1">
                         <label class="form-label">&nbsp;</label>
                         <div>
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="button" class="btn btn-secondary w-100" onclick="resetFilters()">
+                                <i class="bi bi-arrow-clockwise"></i>
                             </button>
                         </div>
                     </div>
@@ -123,7 +126,7 @@
                         <div>
                             <div class="text-white-50 small">성공률</div>
                             <div class="fs-4 fw-bold">
-                                <fmt:formatNumber value="${successRate}" pattern="#.##" />%
+                                <fmt:formatNumber value="${successRate}" pattern="#.##"/>%
                             </div>
                         </div>
                         <div class="icon-align">
@@ -165,16 +168,16 @@
                                 <i class="bi bi-gear"></i> ${check.component}
                             </td>
                             <td>
-                                    <span class="badge bg-${check.healthy ? 'success' : 'danger'}">
-                                        <i class="bi bi-${check.healthy ? 'check-circle' : 'x-circle'}"></i>
-                                        ${check.status.code}
-                                    </span>
+                                <span class="badge bg-${check.healthy ? 'success' : 'danger'}">
+                                    <i class="bi bi-${check.healthy ? 'check-circle' : 'x-circle'}"></i>
+                                    ${check.status.code}
+                                </span>
                             </td>
                             <td>${check.message}</td>
                             <td>
-                                    <span class="badge bg-${check.responseTime < 1000 ? 'success' : check.responseTime < 3000 ? 'warning' : 'danger'}">
-                                        ${check.responseTime}ms
-                                    </span>
+                                <span class="badge bg-${check.responseTime < 1000 ? 'success' : check.responseTime < 3000 ? 'warning' : 'danger'}">
+                                    ${check.responseTime}ms
+                                </span>
                             </td>
                             <td>
                                 <span class="badge bg-info">${check.checkType}</span>
@@ -194,24 +197,78 @@
                 </table>
             </div>
 
-            <c:if test="${totalPages > 1}">
-                <nav aria-label="페이지 네비게이션" class="mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="pagination-info">
+                    <span class="text-muted">
+                        <c:choose>
+                            <c:when test="${param.size == '0'}">
+                                총 <strong>${totalElements}</strong>개 항목 전체 표시
+                            </c:when>
+                            <c:otherwise>
+                                총 <strong>${totalElements}</strong>개 항목 중
+                                <strong>${(currentPage * (param.size != null ? param.size : 20)) + 1}</strong>-<strong>${(currentPage * (param.size != null ? param.size : 20)) + healthChecks.numberOfElements}</strong>개 표시
+                                (페이지 ${currentPage + 1}/${totalPages})
+                            </c:otherwise>
+                        </c:choose>
+                    </span>
+                </div>
+                <div class="page-size-selector">
+                    <label for="pageSize" class="form-label me-2">페이지 크기:</label>
+                    <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="changePageSize(this.value)">
+                        <option value="10" ${param.size == '10' ? 'selected' : ''}>10개</option>
+                        <option value="20" ${param.size == '20' || empty param.size ? 'selected' : ''}>20개</option>
+                        <option value="50" ${param.size == '50' ? 'selected' : ''}>50개</option>
+                        <option value="100" ${param.size == '100' ? 'selected' : ''}>100개</option>
+                        <option value="0" ${param.size == '0' ? 'selected' : ''}>전체</option>
+                    </select>
+                </div>
+            </div>
+
+            <c:if test="${totalPages > 1 && param.size != '0'}">
+                <nav aria-label="페이지 네비게이션">
                     <ul class="pagination justify-content-center">
                         <li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
-                            <a class="page-link" href="?page=${currentPage - 1}&size=20${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}">
-                                이전
+                            <a class="page-link" href="?page=0&size=${param.size != null ? param.size : '20'}${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}" title="첫 페이지">
+                                <i class="bi bi-chevron-double-left"></i>
                             </a>
                         </li>
-                        <c:forEach begin="0" end="${totalPages - 1}" var="pageNum">
+
+                        <li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
+                            <a class="page-link" href="?page=${currentPage - 1}&size=${param.size != null ? param.size : '20'}${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}" title="이전 페이지">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        <c:set var="startPage" value="${Math.max(0, currentPage - 2)}" />
+                        <c:set var="endPage" value="${Math.min(totalPages - 1, currentPage + 2)}" />
+
+                        <c:if test="${startPage > 0}">
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        </c:if>
+
+                        <c:forEach begin="${startPage}" end="${endPage}" var="pageNum">
                             <li class="page-item ${currentPage == pageNum ? 'active' : ''}">
-                                <a class="page-link" href="?page=${pageNum}&size=20${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}">
-                                        ${pageNum + 1}
-                                </a>
+                                <a class="page-link" href="?page=${pageNum}&size=${param.size != null ? param.size : '20'}${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}">${pageNum + 1}</a>
                             </li>
                         </c:forEach>
+
+                        <c:if test="${endPage < totalPages - 1}">
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        </c:if>
+
                         <li class="page-item ${currentPage == totalPages - 1 ? 'disabled' : ''}">
-                            <a class="page-link" href="?page=${currentPage + 1}&size=20${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}">
-                                다음
+                            <a class="page-link" href="?page=${currentPage + 1}&size=${param.size != null ? param.size : '20'}${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}" title="다음 페이지">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+
+                        <li class="page-item ${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="?page=${totalPages - 1}&size=${param.size != null ? param.size : '20'}${not empty param.component ? '&component='.concat(param.component) : ''}${not empty param.status ? '&status='.concat(param.status) : ''}${not empty param.fromDate ? '&fromDate='.concat(param.fromDate) : ''}${not empty param.toDate ? '&toDate='.concat(param.toDate) : ''}" title="마지막 페이지">
+                                <i class="bi bi-chevron-double-right"></i>
                             </a>
                         </li>
                     </ul>
@@ -222,7 +279,6 @@
 </div>
 
 <%@ include file="../common/footer.jsp" %>
-
 <%@ include file="../common/scripts.jsp" %>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -245,6 +301,37 @@
             const fromDate = new Date(this.value);
             fromDate.setHours(23, 59, 59);
             document.getElementById('toDate').value = fromDate.toISOString().slice(0, 16);
+        }
+    });
+
+    function resetFilters() {
+        document.getElementById('component').value = '';
+        document.getElementById('status').value = '';
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        document.querySelector('form').submit();
+    }
+
+    function changePageSize(newSize) {
+        const url = new URL(window.location);
+        if (newSize === '0') {
+            url.searchParams.delete('size');
+        } else {
+            url.searchParams.set('size', newSize);
+        }
+        url.searchParams.set('page', '0');
+        window.location.href = url.toString();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentSize = '${param.size != null ? param.size : "20"}';
+        const pageSizeSelect = document.getElementById('pageSize');
+        if (pageSizeSelect) {
+            if (currentSize === '' || currentSize === 'null' || currentSize === '0') {
+                pageSizeSelect.value = '20';
+            } else {
+                pageSizeSelect.value = currentSize;
+            }
         }
     });
 </script>

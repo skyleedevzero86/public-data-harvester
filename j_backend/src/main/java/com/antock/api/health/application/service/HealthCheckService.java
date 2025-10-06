@@ -3,6 +3,7 @@ package com.antock.api.health.application.service;
 import com.antock.api.health.application.dto.HealthCheckRequest;
 import com.antock.api.health.application.dto.HealthCheckResponse;
 import com.antock.api.health.application.dto.SystemHealthResponse;
+import com.antock.api.health.application.dto.PagedSystemHealthResponse;
 import com.antock.api.health.domain.HealthCheck;
 import com.antock.api.health.domain.HealthCheckResult;
 import com.antock.api.health.domain.HealthStatus;
@@ -51,12 +52,12 @@ public class HealthCheckService {
     private final Executor asyncExecutor;
 
     public HealthCheckService(HealthCheckRepository healthCheckRepository,
-                             SystemHealthRepository systemHealthRepository,
-                             DataSource dataSource,
-                             MemberApplicationService memberApplicationService,
-                             RateLimitServiceInterface rateLimitService,
-                             ObjectMapper objectMapper,
-                             Executor asyncExecutor) {
+                              SystemHealthRepository systemHealthRepository,
+                              DataSource dataSource,
+                              MemberApplicationService memberApplicationService,
+                              RateLimitServiceInterface rateLimitService,
+                              ObjectMapper objectMapper,
+                              Executor asyncExecutor) {
         this.healthCheckRepository = healthCheckRepository;
         this.systemHealthRepository = systemHealthRepository;
         this.dataSource = dataSource;
@@ -211,7 +212,7 @@ public class HealthCheckService {
             details.put("enabled", false);
             return new HealthCheckResult(HealthStatus.UNKNOWN, "Redis 비활성화됨", details, 0L);
         }
-        
+
         try (Jedis jedis = jedisPool.getResource()) {
             long startTime = System.currentTimeMillis();
             String pong = jedis.ping();
@@ -441,6 +442,215 @@ public class HealthCheckService {
             return objectMapper.readValue(detailsJson, Map.class);
         } catch (JsonProcessingException e) {
             return new HashMap<>();
+        }
+    }
+
+    private SystemHealth getLatestSystemHealth() {
+        return systemHealthRepository.findTopByOrderByCheckedAtDesc()
+                .orElse(null);
+    }
+
+    @Cacheable(value = "systemHealthPaged", key = "#page + '_' + #size + '_' + #groupBy")
+    public PagedSystemHealthResponse getSystemHealthPaged(int page, int size, String groupBy) {
+        log.info("페이징된 시스템 헬스 체크 시작 - page: {}, size: {}, groupBy: {}", page, size, groupBy);
+
+        try {
+            SystemHealth systemHealth = getLatestSystemHealth();
+            if (systemHealth == null) {
+                log.warn("최신 시스템 헬스 정보가 없습니다. 빈 응답을 반환합니다.");
+                return createEmptyPagedResponse();
+            }
+
+            log.debug("최신 시스템 헬스 정보 조회 완료: {}", systemHealth.getId());
+            List<HealthCheck> allHealthChecks = healthCheckRepository.findAllOrderByCheckedAtDesc();
+            log.debug("전체 헬스 체크 데이터 조회 완료: {}개", allHealthChecks.size());
+
+            if (allHealthChecks.size() > 10000) {
+                log.warn("헬스 체크 데이터가 너무 많습니다 ({}개). 최근 1000개만 처리합니다.", allHealthChecks.size());
+                allHealthChecks = allHealthChecks.subList(0, 1000);
+            }
+
+            Map<String, List<HealthCheck>> groupedComponents = groupComponents(allHealthChecks, groupBy);
+            log.debug("컴포넌트 그룹핑 완료: {}개 그룹", groupedComponents.size());
+
+            List<HealthCheck> pagedComponents = applyPaging(allHealthChecks, page, size);
+            log.debug("페이징 처리 완료: {}개 컴포넌트", pagedComponents.size());
+
+            PagedSystemHealthResponse.PaginationInfo pagination = createPaginationInfo(page, size,
+                    allHealthChecks.size());
+
+            Map<String, PagedSystemHealthResponse.ComponentGroupInfo> componentGroups = createComponentGroups(
+                    groupedComponents);
+
+            log.debug("페이징된 시스템 헬스 응답 생성 완료");
+            return PagedSystemHealthResponse.builder()
+                    .overallStatus(systemHealth.getOverallStatus())
+                    .overallStatusDescription(systemHealth.getOverallStatus().getDescription())
+                    .totalComponents(systemHealth.getTotalComponents())
+                    .healthyComponents(systemHealth.getHealthyComponents())
+                    .unhealthyComponents(systemHealth.getUnhealthyComponents())
+                    .unknownComponents(systemHealth.getUnknownComponents())
+                    .healthPercentage(systemHealth.getHealthPercentage())
+                    .details(parseDetailsFromJson(systemHealth.getDetails()))
+                    .components(
+                            pagedComponents.stream().map(this::convertToHealthCheckResponse)
+                                    .collect(Collectors.toList()))
+                    .pagination(pagination)
+                    .componentGroups(componentGroups)
+                    .checkedAt(systemHealth.getCheckedAt())
+                    .expiresAt(systemHealth.getExpiresAt())
+                    .expired(systemHealth.isExpired())
+                    .healthy(systemHealth.isHealthy())
+                    .build();
+        } catch (Exception e) {
+            log.error("페이징된 시스템 헬스 체크 중 오류 발생", e);
+            return createEmptyPagedResponse();
+        }
+    }
+
+    private Map<String, List<HealthCheck>> groupComponents(List<HealthCheck> healthChecks, String groupBy) {
+        if ("component".equals(groupBy)) {
+            return healthChecks.stream()
+                    .collect(Collectors.groupingBy(HealthCheck::getComponent));
+        } else if ("status".equals(groupBy)) {
+            return healthChecks.stream()
+                    .collect(Collectors.groupingBy(hc -> hc.getStatus().getCode()));
+        } else {
+            return healthChecks.stream()
+                    .collect(Collectors.groupingBy(HealthCheck::getComponent));
+        }
+    }
+
+    private List<HealthCheck> applyPaging(List<HealthCheck> healthChecks, int page, int size) {
+        int startIndex = page * size;
+        int endIndex = Math.min(startIndex + size, healthChecks.size());
+
+        if (startIndex >= healthChecks.size()) {
+            return new ArrayList<>();
+        }
+
+        return healthChecks.subList(startIndex, endIndex);
+    }
+
+    private PagedSystemHealthResponse.PaginationInfo createPaginationInfo(int page, int size, long totalElements) {
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+
+        return PagedSystemHealthResponse.PaginationInfo.builder()
+                .pageNumber(page)
+                .pageSize(size)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .hasNext(page < totalPages - 1)
+                .hasPrevious(page > 0)
+                .nextPage(page < totalPages - 1 ? page + 1 : null)
+                .previousPage(page > 0 ? page - 1 : null)
+                .numberOfElements(Math.min(size, (int) (totalElements - page * size)))
+                .build();
+    }
+
+    private Map<String, PagedSystemHealthResponse.ComponentGroupInfo> createComponentGroups(
+            Map<String, List<HealthCheck>> groupedComponents) {
+
+        return groupedComponents.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> {
+                            List<HealthCheck> groupChecks = entry.getValue();
+                            int totalCount = groupChecks.size();
+                            int healthyCount = (int) groupChecks.stream()
+                                    .filter(hc -> HealthStatus.UP.equals(hc.getStatus()))
+                                    .count();
+                            int unhealthyCount = totalCount - healthyCount;
+
+                            HealthStatus groupStatus = unhealthyCount > 0 ? HealthStatus.DOWN : HealthStatus.UP;
+                            String groupStatusDescription = unhealthyCount > 0
+                                    ? "일부 장애 (" + unhealthyCount + "/" + totalCount + ")"
+                                    : "정상 (" + healthyCount + "/" + totalCount + ")";
+
+                            return PagedSystemHealthResponse.ComponentGroupInfo.builder()
+                                    .groupName(entry.getKey())
+                                    .totalCount(totalCount)
+                                    .healthyCount(healthyCount)
+                                    .unhealthyCount(unhealthyCount)
+                                    .groupStatus(groupStatus)
+                                    .groupStatusDescription(groupStatusDescription)
+                                    .build();
+                        }));
+    }
+
+    private PagedSystemHealthResponse createEmptyPagedResponse() {
+        return PagedSystemHealthResponse.builder()
+                .overallStatus(HealthStatus.UNKNOWN)
+                .overallStatusDescription("시스템 헬스 정보를 찾을 수 없습니다")
+                .totalComponents(0)
+                .healthyComponents(0)
+                .unhealthyComponents(0)
+                .unknownComponents(0)
+                .healthPercentage(0.0)
+                .details(new HashMap<>())
+                .components(new ArrayList<>())
+                .pagination(PagedSystemHealthResponse.PaginationInfo.builder()
+                        .pageNumber(0)
+                        .pageSize(10)
+                        .totalElements(0)
+                        .totalPages(0)
+                        .hasNext(false)
+                        .hasPrevious(false)
+                        .nextPage(null)
+                        .previousPage(null)
+                        .numberOfElements(0)
+                        .build())
+                .componentGroups(new HashMap<>())
+                .checkedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .expired(false)
+                .healthy(false)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getAvailableComponents() {
+        try {
+            List<String> components = healthCheckRepository.findDistinctComponents();
+            log.debug("사용 가능한 컴포넌트 조회 완료: {}개", components.size());
+            return components.isEmpty() ? DEFAULT_COMPONENTS : components;
+        } catch (Exception e) {
+            log.warn("컴포넌트 목록 조회 실패, 기본 컴포넌트 사용: {}", e.getMessage());
+            return DEFAULT_COMPONENTS;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<HealthCheckResponse> getHealthHistoryWithFilters(
+            LocalDateTime fromDate, LocalDateTime toDate, String component, String status, Pageable pageable) {
+        try {
+            log.info("필터링된 헬스 체크 이력 조회 - fromDate: {}, toDate: {}, component: {}, status: {}",
+                    fromDate, toDate, component, status);
+
+            Page<HealthCheck> healthChecks;
+
+            if (component != null && !component.isEmpty() && status != null && !status.isEmpty()) {
+                HealthStatus healthStatus = HealthStatus.valueOf(status);
+                healthChecks = healthCheckRepository.findByComponentAndStatusAndDateRange(
+                        component, healthStatus, fromDate, toDate, pageable);
+            } else if (component != null && !component.isEmpty()) {
+                healthChecks = healthCheckRepository.findByComponentAndDateRange(
+                        component, fromDate, toDate, pageable);
+            } else if (status != null && !status.isEmpty()) {
+                HealthStatus healthStatus = HealthStatus.valueOf(status);
+                healthChecks = healthCheckRepository.findByStatusAndDateRange(
+                        healthStatus, fromDate, toDate, pageable);
+            } else {
+                healthChecks = healthCheckRepository.findByDateRange(fromDate, toDate, pageable);
+            }
+
+            log.debug("필터링된 헬스 체크 이력 조회 완료: {}개", healthChecks.getTotalElements());
+
+            return healthChecks.map(this::convertToHealthCheckResponse);
+
+        } catch (Exception e) {
+            log.error("필터링된 헬스 체크 이력 조회 실패", e);
+            return Page.empty(pageable);
         }
     }
 }
