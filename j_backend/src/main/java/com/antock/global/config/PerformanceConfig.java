@@ -35,7 +35,7 @@ public class PerformanceConfig {
             double slowQueryPercentage = slowQueryInterceptor.getSlowQueryPercentage();
 
             log.info("Performance Metrics - Total Queries: {}, Slow Queries: {}, Slow Query %: {:.2f}%",
-                    totalQueryCount, slowQueryCount, slowQueryPercentage);
+                    totalQueryCount, slowQueryCount, String.format("%.2f", slowQueryPercentage));
 
             checkDatabaseConnection();
 

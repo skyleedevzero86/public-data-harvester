@@ -30,11 +30,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class CorpMast extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
-
     @Column(nullable = false, length = 100)
     private String sellerId;
 

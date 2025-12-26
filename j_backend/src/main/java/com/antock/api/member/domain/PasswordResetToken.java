@@ -20,11 +20,6 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class PasswordResetToken extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
-
     @Column(nullable = false, unique = true, length = 255)
     private String token;
 
