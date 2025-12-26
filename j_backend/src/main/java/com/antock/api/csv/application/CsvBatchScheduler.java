@@ -21,7 +21,6 @@ public class CsvBatchScheduler {
     private final CsvBatchHistoryRepository historyRepository;
 
     @Scheduled(cron = "0 0 6 ? * MON")
-    //@Scheduled(cron = "0 * * * * ?")
     public void runCsvBatch() {
         log.info("CSV 배치 스케줄러 실행 시작");
 

@@ -177,7 +177,7 @@ public class MemberWebController {
                 return "redirect:/members/login";
             }
 
-            MemberResponse member = memberApplicationService.getCurrentMemberInfo(memberId);
+            MemberResponse member = memberApplicationService.getMemberInfo(memberId);
             if (member == null) {
                 return "redirect:/members/login";
             }

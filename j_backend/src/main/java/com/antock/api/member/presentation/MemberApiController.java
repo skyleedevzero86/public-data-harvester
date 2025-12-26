@@ -71,7 +71,7 @@ public class MemberApiController {
         log.info("현재 사용자 정보 조회 요청: {}", user.getUsername());
 
         try {
-            MemberResponse response = memberApplicationService.getCurrentMemberInfo(user.getId());
+            MemberResponse response = memberApplicationService.getMemberInfo(user.getId());
             return ApiResponse.success(response);
         } catch (Exception e) {
             log.error("현재 사용자 정보 조회 실패: {}", user.getUsername(), e);

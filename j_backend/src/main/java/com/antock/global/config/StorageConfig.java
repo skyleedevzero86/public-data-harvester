@@ -45,7 +45,6 @@ public class StorageConfig {
 
     private FileStorageStrategy createFallbackLocalStrategy() {
         return new LocalStorageStrategy() {
-            // 필요시 기본 구현 제공
         };
     }
 }

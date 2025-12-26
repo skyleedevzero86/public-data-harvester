@@ -70,7 +70,6 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(NoResourceFoundException.class)
         protected ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
-                // 정적 리소스 요청은 디버그 레벨로만 로깅
                 String resourcePath = e.getMessage();
                 if (resourcePath.contains("favicon.ico") ||
                                 resourcePath.contains(".well-known") ||

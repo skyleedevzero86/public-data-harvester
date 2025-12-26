@@ -255,7 +255,6 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
         }
     }
 
-    // ... existing code ...
     private static class RateLimitInfo {
         private final AtomicInteger count;
         private final AtomicReference<LocalDateTime> createdAt;

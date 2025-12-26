@@ -18,16 +18,14 @@ public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Enum<?
         enumValues = Arrays.stream(enumClass.getEnumConstants())
                 .map(Enum::name)
                 .collect(Collectors.toSet());
-        message = targetEnum.message(); // message 저장
+        message = targetEnum.message();
     }
 
     @Override
     public boolean isValid(Enum<?> value, ConstraintValidatorContext context) {
-
-        // 유효한 Enum 값인지 확인
         if (value == null || !enumValues.contains(value.name())) {
             context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(this.message) // << 여기에 주목
+            context.buildConstraintViolationWithTemplate(this.message)
                     .addConstraintViolation();
             return false;
         }

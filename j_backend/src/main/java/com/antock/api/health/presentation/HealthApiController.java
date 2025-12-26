@@ -6,6 +6,8 @@ import com.antock.api.health.application.dto.SystemHealthResponse;
 import com.antock.api.health.application.dto.HealthMetricsResponse;
 import com.antock.api.health.application.dto.PagedSystemHealthResponse;
 import com.antock.api.health.application.service.HealthCheckService;
+import com.antock.api.health.application.service.HealthCheckQueryService;
+import com.antock.api.health.application.service.HealthCheckPaginationService;
 import com.antock.api.health.application.service.HealthMetricsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,6 +41,8 @@ public class HealthApiController {
     private static final Logger log = LoggerFactory.getLogger(HealthApiController.class);
 
     private final HealthCheckService healthCheckService;
+    private final HealthCheckQueryService healthCheckQueryService;
+    private final HealthCheckPaginationService healthCheckPaginationService;
     private final HealthMetricsService healthMetricsService;
 
     @GetMapping("/system")
@@ -105,7 +109,7 @@ public class HealthApiController {
             @Parameter(description = "컴포넌트명", example = "database", required = true) @PathVariable String component,
             Pageable pageable) {
         try {
-            Page<HealthCheckResponse> response = healthCheckService.getComponentHealth(component, pageable);
+            Page<HealthCheckResponse> response = healthCheckQueryService.getComponentHealth(component, pageable);
             return ResponseEntity.ok(com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, response));
         } catch (Exception e) {
             log.error("컴포넌트 헬스 상태 조회 실패: {}", component, e);
@@ -127,7 +131,7 @@ public class HealthApiController {
             Pageable pageable) {
         try {
             LocalDateTime startDate = fromDate != null ? fromDate : LocalDateTime.now().minusDays(7);
-            Page<HealthCheckResponse> response = healthCheckService.getHealthHistory(startDate, pageable);
+            Page<HealthCheckResponse> response = healthCheckQueryService.getHealthHistory(startDate, pageable);
             return ResponseEntity.ok(com.antock.global.common.response.ApiResponse.of(HttpStatus.OK, response));
         } catch (Exception e) {
             log.error("헬스 체크 이력 조회 실패", e);
@@ -302,7 +306,7 @@ public class HealthApiController {
 
             log.info("페이징된 시스템 헬스 조회 요청 - page: {}, size: {}, groupBy: {}", page, size, groupBy);
 
-            PagedSystemHealthResponse response = healthCheckService.getSystemHealthPaged(page, size, groupBy);
+            PagedSystemHealthResponse response = healthCheckPaginationService.getSystemHealthPaged(page, size, groupBy);
 
             log.debug("페이징된 시스템 헬스 조회 완료 - 총 컴포넌트: {}, 현재 페이지: {}/{}",
                     response.getTotalComponents(), page + 1, response.getPagination().getTotalPages());

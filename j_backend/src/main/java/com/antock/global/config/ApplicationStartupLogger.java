@@ -32,7 +32,6 @@ public class ApplicationStartupLogger {
         log.info("헬스 체크: http://localhost:{}/actuator/health",
                 environment.getProperty("server.port", "8080"));
 
-        // deprecated 메서드 대신 Profiles.of() 사용
         if (environment.acceptsProfiles(Profiles.of("dev"))) {
             log.info("H2 콘솔: http://localhost:{}/h2-console", environment.getProperty("server.port", "8080"));
         }

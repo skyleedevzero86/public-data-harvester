@@ -42,7 +42,6 @@ public class PasswordExpirationScheduler {
 
             for (Member member : expiredMembers) {
                 if (member.getStatus() == MemberStatus.APPROVED) {
-                    // 긴급 알림 발송 로직
                     sendPasswordExpirationAlert(member);
                 }
             }
