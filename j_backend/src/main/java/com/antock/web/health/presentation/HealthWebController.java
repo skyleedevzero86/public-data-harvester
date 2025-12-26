@@ -6,6 +6,8 @@ import com.antock.api.health.application.dto.SystemHealthResponse;
 import com.antock.api.health.application.dto.HealthMetricsResponse;
 import com.antock.api.health.application.dto.PagedSystemHealthResponse;
 import com.antock.api.health.application.service.HealthCheckService;
+import com.antock.api.health.application.service.HealthCheckQueryService;
+import com.antock.api.health.application.service.HealthCheckPaginationService;
 import com.antock.api.health.application.service.HealthMetricsService;
 import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
@@ -32,6 +34,8 @@ import java.util.List;
 public class HealthWebController {
 
     private final HealthCheckService healthCheckService;
+    private final HealthCheckQueryService healthCheckQueryService;
+    private final HealthCheckPaginationService healthCheckPaginationService;
     private final HealthMetricsService healthMetricsService;
 
     @GetMapping
@@ -56,7 +60,7 @@ public class HealthWebController {
             }
 
             log.debug("헬스 대시보드 데이터 조회 시작");
-            PagedSystemHealthResponse pagedSystemHealth = healthCheckService.getSystemHealthPaged(page, size, groupBy);
+            PagedSystemHealthResponse pagedSystemHealth = healthCheckPaginationService.getSystemHealthPaged(page, size, groupBy);
             log.debug("헬스 대시보드 데이터 조회 완료");
             model.addAttribute("systemHealth", pagedSystemHealth);
             model.addAttribute("pagination", pagedSystemHealth.getPagination());
@@ -66,7 +70,7 @@ public class HealthWebController {
             model.addAttribute("currentGroupBy", groupBy);
 
             Pageable pageable = PageRequest.of(0, 10, Sort.by("checkedAt").descending());
-            Page<HealthCheckResponse> recentChecks = healthCheckService.getHealthHistory(
+            Page<HealthCheckResponse> recentChecks = healthCheckQueryService.getHealthHistory(
                     LocalDateTime.now().minusHours(24), pageable);
             model.addAttribute("recentChecks", recentChecks.getContent());
 
@@ -98,7 +102,7 @@ public class HealthWebController {
             for (String component : components) {
                 try {
                     Pageable pageable = PageRequest.of(0, 1, Sort.by("checkedAt").descending());
-                    Page<HealthCheckResponse> latestCheck = healthCheckService.getComponentHealth(component, pageable);
+                    Page<HealthCheckResponse> latestCheck = healthCheckQueryService.getComponentHealth(component, pageable);
                     if (!latestCheck.getContent().isEmpty()) {
                         model.addAttribute(component + "Status", latestCheck.getContent().get(0));
                     }
@@ -113,7 +117,7 @@ public class HealthWebController {
             } else {
                 pageable = PageRequest.of(page, size, Sort.by("checkedAt").descending());
             }
-            Page<HealthCheckResponse> allHealthChecks = healthCheckService.getHealthHistory(
+            Page<HealthCheckResponse> allHealthChecks = healthCheckQueryService.getHealthHistory(
                     LocalDateTime.now().minusDays(7), pageable);
 
             model.addAttribute("healthChecks", allHealthChecks);
@@ -145,7 +149,7 @@ public class HealthWebController {
             } else {
                 pageable = PageRequest.of(page, size, Sort.by("checkedAt").descending());
             }
-            Page<HealthCheckResponse> healthChecks = healthCheckService.getComponentHealth(component, pageable);
+            Page<HealthCheckResponse> healthChecks = healthCheckQueryService.getComponentHealth(component, pageable);
 
             model.addAttribute("component", component);
             model.addAttribute("healthChecks", healthChecks);
@@ -180,7 +184,7 @@ public class HealthWebController {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("checkedAt").descending());
 
-            Page<HealthCheckResponse> healthChecks = healthCheckService.getHealthHistoryWithFilters(
+            Page<HealthCheckResponse> healthChecks = healthCheckQueryService.getHealthHistoryWithFilters(
                     startDate, endDate, component, status, pageable);
 
             long totalChecks = healthChecks.getTotalElements();
@@ -190,7 +194,7 @@ public class HealthWebController {
             long failedChecks = totalChecks - successfulChecks;
             double successRate = totalChecks > 0 ? (double) successfulChecks / totalChecks * 100 : 0.0;
 
-            List<String> availableComponents = healthCheckService.getAvailableComponents();
+            List<String> availableComponents = healthCheckQueryService.getAvailableComponents();
 
             model.addAttribute("healthChecks", healthChecks);
             model.addAttribute("fromDate", fromDate);
@@ -475,7 +479,7 @@ public class HealthWebController {
                 groupBy = "component";
             }
 
-            PagedSystemHealthResponse response = healthCheckService.getSystemHealthPaged(page, size, groupBy);
+            PagedSystemHealthResponse response = healthCheckPaginationService.getSystemHealthPaged(page, size, groupBy);
 
             log.debug("페이징된 시스템 헬스 API 응답 완료 - 총 컴포넌트: {}, 현재 페이지: {}/{}",
                     response.getTotalComponents(), page + 1, response.getPagination().getTotalPages());
