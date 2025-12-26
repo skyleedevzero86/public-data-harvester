@@ -19,9 +19,6 @@ public class MemberScheduler {
 
     private final MemberRepository memberRepository;
 
-    /**
-     * 매일 자정에 잠긴 계정 해제 처리
-     */
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void unlockExpiredAccounts() {
@@ -39,9 +36,6 @@ public class MemberScheduler {
         log.info("계정 잠금 해제 완료: {} 개 계정", lockedMembers.size());
     }
 
-    /**
-     * 매주 월요일 오전 9시에 승인 대기 회원 알림
-     */
     @Scheduled(cron = "0 0 9 * * MON")
     @Transactional(readOnly = true)
     public void notifyPendingMembers() {
@@ -49,12 +43,10 @@ public class MemberScheduler {
 
         List<Member> pendingMembers = memberRepository.findPendingMembersAfter(
                 MemberStatus.PENDING,
-                LocalDateTime.now().minusDays(7)
-        );
+                LocalDateTime.now().minusDays(7));
 
         if (!pendingMembers.isEmpty()) {
             log.warn("승인 대기중인 회원 {}명이 있습니다.", pendingMembers.size());
-            // 여기서 관리자에게 알림 발송 로직 추가 예정
         }
     }
 }

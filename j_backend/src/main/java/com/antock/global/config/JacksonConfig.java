@@ -5,9 +5,6 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * enum값 검증을 위한 JacksonConfig
- */
 @Configuration
 public class JacksonConfig {
     @Bean

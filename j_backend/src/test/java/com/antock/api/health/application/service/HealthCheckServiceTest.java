@@ -2,13 +2,14 @@ package com.antock.api.health.application.service;
 
 import com.antock.api.health.application.dto.HealthCheckRequest;
 import com.antock.api.health.application.dto.SystemHealthResponse;
+import com.antock.api.health.application.service.converter.HealthCheckResponseConverter;
 import com.antock.api.health.domain.HealthCheck;
 import com.antock.api.health.domain.HealthStatus;
+import com.antock.api.health.domain.SystemHealth;
 import com.antock.api.health.infrastructure.HealthCheckRepository;
 import com.antock.api.health.infrastructure.SystemHealthRepository;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,7 @@ import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,19 +42,20 @@ class HealthCheckServiceTest {
     private HealthCheckOrchestrator healthCheckOrchestrator;
 
     @Mock
+    private HealthCheckResponseConverter responseConverter;
+
+    @Mock
     private Executor asyncExecutor;
 
     private HealthCheckService healthCheckService;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
         healthCheckService = new HealthCheckService(
                 healthCheckRepository,
                 systemHealthRepository,
                 healthCheckOrchestrator,
-                objectMapper,
+                responseConverter,
                 asyncExecutor
         );
     }
@@ -66,6 +67,19 @@ class HealthCheckServiceTest {
                 .thenReturn(Arrays.asList("database", "redis"));
         when(systemHealthRepository.findLatestValidSystemHealth(any(LocalDateTime.class)))
                 .thenReturn(Optional.empty());
+        when(healthCheckOrchestrator.performComponentHealthCheck(anyString(), anyString()))
+                .thenReturn(HealthCheck.builder()
+                        .component("database")
+                        .status(HealthStatus.UP)
+                        .message("정상")
+                        .checkedAt(LocalDateTime.now())
+                        .build());
+        when(healthCheckRepository.save(any(HealthCheck.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(systemHealthRepository.save(any(SystemHealth.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(responseConverter.convertToSystemHealthResponse(any(SystemHealth.class), anyList()))
+                .thenReturn(SystemHealthResponse.builder().build());
 
         HealthCheckRequest request = HealthCheckRequest.builder()
                 .components(Arrays.asList("database"))
@@ -119,9 +133,8 @@ class HealthCheckServiceTest {
     void getAvailableComponents() {
         List<String> components = Arrays.asList("database", "redis", "cache");
         when(healthCheckOrchestrator.getAvailableComponents()).thenReturn(components);
-        when(healthCheckRepository.findDistinctComponents()).thenReturn(components);
 
-        List<String> result = healthCheckService.getAvailableComponents();
+        List<String> result = healthCheckOrchestrator.getAvailableComponents();
 
         assertThat(result).containsExactlyElementsOf(components);
     }

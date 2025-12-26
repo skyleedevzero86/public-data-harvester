@@ -13,9 +13,4 @@ public class ExternalApiException extends CustomException {
         this.externalApiName = externalApiName;
         this.endpoint = endpoint;
     }
-
-    // @Override
-    // public HttpStatus getStatus() {
-    // return super.getStatus();
-    // }
 }
