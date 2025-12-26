@@ -2,18 +2,43 @@ package com.antock.global.common.valid;
 
 import com.antock.global.common.entity.BaseEntity;
 import com.antock.global.common.entity.BaseTimeEntity;
-import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 @DisplayName("EntityIdValidator 테스트")
 class EntityIdValidatorTest {
+
+    @Mock
+    private EntityClassRegistry entityClassRegistry;
+
+    @Mock
+    private ValidationResultHandler resultHandler;
+
+    private EntityIdValidator validator;
+    private List<EntityIdValidationRule> validationRules;
+
+    @BeforeEach
+    void setUp() {
+        validationRules = Arrays.asList(
+                new BaseEntityIdValidationRule(),
+                new NonBaseEntityIdValidationRule()
+        );
+        validator = new EntityIdValidator(entityClassRegistry, validationRules, resultHandler);
+    }
 
     @Test
     @DisplayName("BaseEntity에 @Id가 있는지 확인")
@@ -59,6 +84,19 @@ class EntityIdValidatorTest {
                         .isFalse();
             }
         }
+    }
+
+    @Test
+    @DisplayName("엔티티 클래스 목록을 가져와서 검증 수행")
+    void validateEntityIds() {
+        List<Class<?>> entityClasses = Arrays.asList(
+                com.antock.api.member.domain.Member.class,
+                com.antock.api.health.domain.HealthCheck.class
+        );
+
+        when(entityClassRegistry.getEntityClasses()).thenReturn(entityClasses);
+
+        validator.validateEntityIds();
     }
 }
 
