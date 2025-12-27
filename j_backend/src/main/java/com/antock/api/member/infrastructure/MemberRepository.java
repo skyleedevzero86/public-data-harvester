@@ -118,17 +118,17 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         long countMembersExceedingDailyLimit(@Param("date") LocalDate date, @Param("count") int count);
 
         @Modifying
-        @Query(value = "UPDATE members SET login_fail_count = :failCount, status = :status, account_locked_at = :lockedAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
-        int updateLoginFailBySql(@Param("memberId") Long memberId,
+        @Query("UPDATE Member m SET m.loginFailCount = :failCount, m.status = :status, m.accountLockedAt = :lockedAt, m.modifyDate = CURRENT_TIMESTAMP WHERE m.id = :memberId")
+        int updateLoginFail(@Param("memberId") Long memberId,
                         @Param("failCount") Integer failCount,
-                        @Param("status") String status,
+                        @Param("status") MemberStatus status,
                         @Param("lockedAt") LocalDateTime lockedAt);
 
         @Modifying
-        @Query(value = "UPDATE members SET login_fail_count = :failCount, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
+        @Query("UPDATE Member m SET m.loginFailCount = :failCount, m.modifyDate = CURRENT_TIMESTAMP WHERE m.id = :memberId")
         int updateLoginFailCountOnly(@Param("memberId") Long memberId, @Param("failCount") Integer failCount);
 
-        @Query(value = "SELECT login_fail_count FROM members WHERE id = :memberId", nativeQuery = true)
+        @Query("SELECT m.loginFailCount FROM Member m WHERE m.id = :memberId")
         @QueryHints({
                         @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
         })
@@ -155,8 +155,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         List<com.antock.api.member.application.dto.response.MemberStatsDto> getMemberStats();
 
         @Modifying
-        @Query(value = "UPDATE members SET login_fail_count = 0, last_login_at = :lastLoginAt, modify_date = NOW() WHERE id = :memberId", nativeQuery = true)
-        int updateLoginSuccessBySql(@Param("memberId") Long memberId,
+        @Query("UPDATE Member m SET m.loginFailCount = 0, m.lastLoginAt = :lastLoginAt, m.modifyDate = CURRENT_TIMESTAMP WHERE m.id = :memberId")
+        int updateLoginSuccess(@Param("memberId") Long memberId,
                         @Param("lastLoginAt") LocalDateTime lastLoginAt);
 
         @Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role")

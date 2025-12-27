@@ -98,35 +98,7 @@
   text-decoration: underline;
 }
 
-.password-find-container {
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-  padding: 3rem;
-  text-align: center;
-  max-width: 600px;
-  margin: 2rem auto;
-}
-
-.password-find-icon {
-  font-size: 4rem;
-  color: #007bff;
-  margin-bottom: 1rem;
-}
-
-.password-find-title {
-  color: #2c3e50;
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.password-find-subtitle {
-  color: #7f8c8d;
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
+/* 비밀번호 찾기 페이지는 card 스타일 사용 */
 
 .form-control {
   border-radius: 10px;
@@ -216,57 +188,70 @@
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
   text-align: left;
 }
 
 .info-box h6 {
   color: #495057;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
 }
 
 .info-box ul {
   margin-bottom: 0;
-  padding-left: 20px;
+  padding-left: 1.5rem;
 }
 
 .info-box li {
   color: #6c757d;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
 }
 
 .step-indicator {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  flex-wrap: nowrap;
+  gap: 0;
+  width: 100%;
 }
 
 .step {
-  display: flex;
+  display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  margin: 0 10px;
+  margin: 0;
+  gap: 0.5rem;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .step-number {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: #e9ecef;
   color: #6c757d;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  margin-right: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .step.active .step-number {
   background-color: #007bff;
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
 
 .step.completed .step-number {
@@ -277,6 +262,8 @@
 .step-text {
   font-size: 0.9rem;
   color: #6c757d;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .step.active .step-text {
@@ -291,7 +278,10 @@
 
 .step-arrow {
   color: #dee2e6;
-  margin: 0 5px;
+  margin: 0 1rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+  display: inline-block;
 }
 
 .password-strength-bar {
@@ -465,17 +455,28 @@
     padding: 1.5rem;
   }
 
-  .password-find-container {
-    padding: 2rem;
-    margin: 1rem;
-  }
-
   .step-indicator {
-    flex-direction: column;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  
+  .step-arrow {
+    margin: 0 0.5rem;
+    font-size: 0.875rem;
   }
 
-  .step-arrow {
-    transform: rotate(90deg);
+  .step {
+    margin: 0;
+  }
+
+  .step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .step-text {
+    font-size: 0.8rem;
   }
 }

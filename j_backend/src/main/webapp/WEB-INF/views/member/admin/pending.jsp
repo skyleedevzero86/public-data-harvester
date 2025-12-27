@@ -154,7 +154,6 @@
   </div>
 </div>
 
-<!-- Footer -->
 <%@ include file="../../common/footer.jsp" %>
 <%@ include file="../../common/scripts.jsp" %>
 </body>

@@ -1,5 +1,7 @@
 package com.antock.global.config;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -8,10 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-
 @Slf4j
 @Configuration
 @EnableScheduling
@@ -19,12 +17,12 @@ import java.sql.SQLException;
 public class PerformanceConfig {
 
     private final SlowQueryInterceptor slowQueryInterceptor;
-    private final DataSource dataSource;
+    private final EntityManager entityManager;
 
     @Bean
     @ConditionalOnProperty(name = "app.performance.monitoring.enabled", havingValue = "true")
     public PerformanceMonitoringService performanceMonitoringService() {
-        return new PerformanceMonitoringService(slowQueryInterceptor, dataSource);
+        return new PerformanceMonitoringService(slowQueryInterceptor);
     }
 
     @Scheduled(fixedRate = 300000)
@@ -45,13 +43,11 @@ public class PerformanceConfig {
     }
 
     private void checkDatabaseConnection() {
-        try (Connection connection = dataSource.getConnection()) {
-            if (connection.isValid(5)) {
-                log.debug("Database connection is healthy");
-            } else {
-                log.warn("Database connection validation failed");
-            }
-        } catch (SQLException e) {
+        try {
+            Query query = entityManager.createNativeQuery("SELECT 1");
+            query.getSingleResult();
+            log.debug("Database connection is healthy");
+        } catch (Exception e) {
             log.error("Database connection check failed", e);
         }
     }
@@ -64,11 +60,9 @@ public class PerformanceConfig {
 
     public static class PerformanceMonitoringService {
         private final SlowQueryInterceptor slowQueryInterceptor;
-        private final DataSource dataSource;
 
-        public PerformanceMonitoringService(SlowQueryInterceptor slowQueryInterceptor, DataSource dataSource) {
+        public PerformanceMonitoringService(SlowQueryInterceptor slowQueryInterceptor) {
             this.slowQueryInterceptor = slowQueryInterceptor;
-            this.dataSource = dataSource;
         }
 
         public void recordQueryExecution(long executionTimeMs, String sql) {

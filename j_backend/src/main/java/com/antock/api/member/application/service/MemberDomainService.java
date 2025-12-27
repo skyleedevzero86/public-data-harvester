@@ -215,16 +215,16 @@ public class MemberDomainService {
             member.increaseLoginFailCount();
 
             Integer newFailCount = member.getLoginFailCount();
-            String status = member.getStatus().name();
+            MemberStatus status = member.getStatus();
             LocalDateTime lockedAt = member.getAccountLockedAt();
 
-            int updatedRows = memberRepository.updateLoginFailBySql(
+            int updatedRows = memberRepository.updateLoginFail(
                     member.getId(),
                     newFailCount,
                     status,
                     lockedAt);
 
-            log.info("SQL 직접 업데이트 완료: memberId={}, updatedRows={}, newFailCount={}, status={}, lockedAt={}",
+            log.info("로그인 실패 카운트 업데이트 완료: memberId={}, updatedRows={}, newFailCount={}, status={}, lockedAt={}",
                     member.getId(), updatedRows, newFailCount, status, lockedAt);
 
             return member;
@@ -242,22 +242,22 @@ public class MemberDomainService {
     }
 
     @Transactional
-    public void forceUpdateLoginFailCountBySql(Long memberId, Integer failCount, String status,
+    public void forceUpdateLoginFailCount(Long memberId, Integer failCount, MemberStatus status,
                                                LocalDateTime lockedAt) {
         try {
-            log.debug("SQL로 로그인 실패 카운트 업데이트: memberId={}, failCount={}, status={}, lockedAt={}",
+            log.debug("로그인 실패 카운트 업데이트: memberId={}, failCount={}, status={}, lockedAt={}",
                     memberId, failCount, status, lockedAt);
 
-            int updatedRows = memberRepository.updateLoginFailBySql(memberId, failCount, status, lockedAt);
+            int updatedRows = memberRepository.updateLoginFail(memberId, failCount, status, lockedAt);
 
-            log.info("SQL 업데이트 완료: memberId={}, updatedRows={}, failCount={}, status={}",
+            log.info("로그인 실패 카운트 업데이트 완료: memberId={}, updatedRows={}, failCount={}, status={}",
                     memberId, updatedRows, failCount, status);
 
             if (updatedRows == 0) {
                 log.warn("업데이트된 행이 없음: memberId={}", memberId);
             }
         } catch (Exception e) {
-            log.error("SQL 업데이트 실패: memberId={}, error={}", memberId, e.getMessage(), e);
+            log.error("로그인 실패 카운트 업데이트 실패: memberId={}, error={}", memberId, e.getMessage(), e);
             throw e;
         }
     }
@@ -289,16 +289,16 @@ public class MemberDomainService {
                     memberId, currentFailCount);
 
             Integer newFailCount = currentFailCount + 1;
-            String status = MemberStatus.APPROVED.name();
+            MemberStatus status = MemberStatus.APPROVED;
             LocalDateTime lockedAt = null;
 
             if (newFailCount >= 5) {
-                status = MemberStatus.SUSPENDED.name();
+                status = MemberStatus.SUSPENDED;
                 lockedAt = LocalDateTime.now();
                 log.warn("계정 잠금 처리: memberId={}, failCount={}", memberId, newFailCount);
             }
 
-            int updatedRows = memberRepository.updateLoginFailBySql(memberId, newFailCount, status, lockedAt);
+            int updatedRows = memberRepository.updateLoginFail(memberId, newFailCount, status, lockedAt);
             log.info("로그인 실패 처리 완료: memberId={}, updatedRows={}, newFailCount={}, status={}",
                     memberId, updatedRows, newFailCount, status);
 
@@ -313,7 +313,7 @@ public class MemberDomainService {
         try {
             log.debug("새 트랜잭션에서 로그인 성공 처리: memberId={}", memberId);
 
-            int updatedRows = memberRepository.updateLoginSuccessBySql(memberId, LocalDateTime.now());
+            int updatedRows = memberRepository.updateLoginSuccess(memberId, LocalDateTime.now());
 
             log.info("로그인 성공 처리 완료: memberId={}, updatedRows={}", memberId, updatedRows);
 

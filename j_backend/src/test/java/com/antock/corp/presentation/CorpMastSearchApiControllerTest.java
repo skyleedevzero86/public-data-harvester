@@ -94,11 +94,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 검색 API - 성공")
         void searchApi_WithValidRequest_ShouldReturnSuccessResponse() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(testCorpPage);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "뮤직턴")
                                 .param("page", "0")
@@ -119,12 +117,10 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 검색 API - 빈 결과")
         void searchApi_WithNoResults_ShouldReturnEmptyPage() throws Exception {
-                // given
                 Page<CorpMastManualResponse> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(emptyPage);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "존재하지않는법인")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -138,11 +134,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 검색 API - 복합 조건")
         void searchApi_WithMultipleConditions_ShouldWork() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(testCorpPage);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "주식회사")
                                 .param("city", "서울특별시")
@@ -165,11 +159,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 상세 조회 API - 성공")
         void getByIdApi_WithValidId_ShouldReturnCorp() throws Exception {
-                // given
                 Long corpId = 1L;
                 given(corpMastSearchService.getById(corpId)).willReturn(testCorpResponse);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/{id}", corpId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -185,11 +177,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("사업자번호로 조회 API - 성공")
         void getByBizNoApi_WithValidBizNo_ShouldReturnCorp() throws Exception {
-                // given
                 String bizNo = "140-81-99474";
                 given(corpMastSearchService.getByBizNo(bizNo)).willReturn(testCorpResponse);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", bizNo)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -202,11 +192,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인등록번호로 조회 API - 성공")
         void getByCorpRegNoApi_WithValidCorpRegNo_ShouldReturnCorp() throws Exception {
-                // given
                 String corpRegNo = "1101110918053";
                 given(corpMastSearchService.getByCorpRegNo(corpRegNo)).willReturn(testCorpResponse);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/regno/{corpRegNo}", corpRegNo)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -219,14 +207,12 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 통계 API")
         void getSearchStatisticsApi_ShouldReturnStatistics() throws Exception {
-                // given
                 Map<String, Object> statistics = Map.of(
                                 "totalCount", 100L,
                                 "locationStats", Map.of("서울특별시", 50L, "부산광역시", 30L));
                 given(corpMastSearchService.getSearchStatistics(any(CorpMastManualRequest.class)))
                                 .willReturn(statistics);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/statistics")
                                 .param("bizNm", "주식회사")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -242,11 +228,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 API - 페이징 경계값 테스트")
         void searchApi_WithBoundaryPageValues_ShouldHandleCorrectly() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(testCorpPage);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("page", "0")
                                 .param("size", "1")
@@ -262,11 +246,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 API - 정렬 파라미터")
         void searchApi_WithSortParameter_ShouldWork() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(testCorpPage);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "테스트")
                                 .param("sort", "bizNm,asc")
@@ -281,10 +263,8 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("시/도 목록 API - 빈 결과")
         void getCitiesApi_WithEmptyResult_ShouldReturnEmptyArray() throws Exception {
-                // given
                 given(corpMastSearchService.getAllCities()).willReturn(List.of());
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/cities")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -297,11 +277,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("구/군 목록 API - 존재하지 않는 시/도")
         void getDistrictsByCityApi_WithInvalidCity_ShouldReturnEmptyArray() throws Exception {
-                // given
                 String invalidCity = "존재하지않는시";
                 given(corpMastSearchService.getDistrictsByCity(invalidCity)).willReturn(List.of());
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/districts/{city}", invalidCity)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -313,14 +291,12 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 통계 API - 조건 없음")
         void getSearchStatisticsApi_WithoutConditions_ShouldWork() throws Exception {
-                // given
                 Map<String, Object> statistics = Map.of(
                                 "totalCount", 0L,
                                 "locationStats", Map.of());
                 given(corpMastSearchService.getSearchStatistics(any(CorpMastManualRequest.class)))
                                 .willReturn(statistics);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/statistics")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -333,11 +309,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 API - 응답 시간 검증")
         void searchApi_ResponseTime_ShouldBeReasonable() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class), any(Pageable.class)))
                                 .willReturn(testCorpPage);
 
-                // when
                 long startTime = System.currentTimeMillis();
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "테스트")
@@ -345,7 +319,6 @@ public class CorpMastSearchApiControllerTest {
                                 .with(csrf()))
                                 .andExpect(status().isOk());
 
-                // then
                 long endTime = System.currentTimeMillis();
                 long responseTime = endTime - startTime;
                 assert responseTime < 1000 : "API 응답 시간이 너무 깁니다: " + responseTime + "ms";
@@ -354,12 +327,10 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("사업자번호 조회 API - URL 인코딩 처리")
         void getByBizNoApi_WithEncodedBizNo_ShouldWork() throws Exception {
-                // given
                 String bizNo = "140-81-99474";
                 String encodedBizNo = "140%2D81%2D99474";
                 given(corpMastSearchService.getByBizNo(bizNo)).willReturn(testCorpResponse);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", encodedBizNo)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -370,13 +341,11 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("사업자번호로 조회 API - 존재하지 않는 사업자번호")
         void getByBizNoApi_WithInvalidBizNo_ShouldReturnError() throws Exception {
-                // given
                 String invalidBizNo = "000-00-00000";
                 given(corpMastSearchService.getByBizNo(invalidBizNo))
                                 .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND,
                                                 "해당 사업자번호의 법인정보를 찾을 수 없습니다."));
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/bizno/{bizNo}", invalidBizNo)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -391,11 +360,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("시/도 목록 조회 API")
         void getCitiesApi_ShouldReturnCityList() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시", "부산광역시", "대구광역시");
                 given(corpMastSearchService.getAllCities()).willReturn(cities);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/cities")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -408,12 +375,10 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("구/군 목록 조회 API")
         void getDistrictsByCityApi_WithValidCity_ShouldReturnDistrictList() throws Exception {
-                // given
                 String city = "서울특별시";
                 List<String> districts = Arrays.asList("강남구", "강북구", "강서구");
                 given(corpMastSearchService.getDistrictsByCity(city)).willReturn(districts);
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/districts/{city}", city)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -426,12 +391,10 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 상세 조회 API - 존재하지 않는 ID")
         void getByIdApi_WithInvalidId_ShouldReturnError() throws Exception {
-                // given
                 Long invalidId = 999L;
                 given(corpMastSearchService.getById(invalidId))
                                 .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "법인정보를 찾을 수 없습니다."));
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/{id}", invalidId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -445,7 +408,6 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("법인 상세 조회 API - 잘못된 ID 타입")
         void getByIdApi_WithInvalidIdType_ShouldReturnBadRequest() throws Exception {
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/{id}", "invalid-id")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .with(csrf()))
@@ -458,7 +420,6 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 API - 잘못된 파라미터 타입")
         void searchApi_WithInvalidParameterType_ShouldReturnBadRequest() throws Exception {
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("page", "invalid")
                                 .param("size", "invalid")
@@ -473,11 +434,9 @@ public class CorpMastSearchApiControllerTest {
         @Test
         @DisplayName("검색 API - 서비스 예외 처리")
         void searchApi_WithServiceException_ShouldReturnErrorResponse() throws Exception {
-                // given
                 given(corpMastSearchService.search(any(CorpMastManualRequest.class)))
                                 .willThrow(new BusinessException(ErrorCode.CORP_SEARCH_ERROR, "검색 중 오류 발생"));
 
-                // when & then
                 standaloneMockMvc.perform(get("/api/v1/corp/search")
                                 .param("bizNm", "테스트")
                                 .contentType(MediaType.APPLICATION_JSON)

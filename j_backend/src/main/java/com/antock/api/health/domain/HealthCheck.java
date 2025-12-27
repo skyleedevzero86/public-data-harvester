@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@ToString(exclude = {"details"})
+@ToString(exclude = { "details" })
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 @Comment("시스템 헬스 체크 정보")
 public class HealthCheck extends BaseTimeEntity {
@@ -43,7 +43,7 @@ public class HealthCheck extends BaseTimeEntity {
     @Comment("체크 타입 (manual, scheduled, api)")
     private String checkType;
 
-    @Column(length = 200)
+    @Column(length = 2000)
     @Comment("추가 정보 (JSON 형태)")
     private String details;
 

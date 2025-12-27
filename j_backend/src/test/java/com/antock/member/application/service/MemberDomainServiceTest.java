@@ -31,7 +31,6 @@ class MemberDomainServiceTest {
     @Test
     @DisplayName("회원 생성 시 성공")
     void createMember_Success() {
-        // given
         String username = "testuser";
         String password = "encoded_password";
         String nickname = "테스트";
@@ -44,10 +43,8 @@ class MemberDomainServiceTest {
             return member;
         });
 
-        // when
         Member result = memberDomainService.createMember(username, password, nickname, email);
 
-        // then
         assertThat(result.getUsername()).isEqualTo(username);
         assertThat(result.getNickname()).isEqualTo(nickname);
         assertThat(result.getEmail()).isEqualTo(email);
@@ -60,11 +57,10 @@ class MemberDomainServiceTest {
     @Test
     @DisplayName("중복된 사용자명으로 회원 생성 시 예외 발생")
     void createMember_DuplicateUsername_ThrowsException() {
-        // given
         String username = "testuser";
         given(memberRepository.existsByUsername(username)).willReturn(true);
 
-        // when & then
+ & then
         assertThatThrownBy(() -> memberDomainService.createMember(username, "password", "nickname", "email@test.com"))
                 .isInstanceOf(BusinessException.class);
     }
@@ -72,7 +68,6 @@ class MemberDomainServiceTest {
     @Test
     @DisplayName("회원 승인 성공")
     void approveMember_Success() {
-        // given
         Long memberId = 1L;
         Long approverId = 2L;
 
@@ -87,10 +82,8 @@ class MemberDomainServiceTest {
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
         given(memberRepository.save(any(Member.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-        // when
         Member result = memberDomainService.approveMember(memberId, approverId);
 
-        // then
         assertThat(result.getStatus()).isEqualTo(MemberStatus.APPROVED);
         assertThat(result.getApprovedBy()).isEqualTo(approverId);
         assertThat(result.getApprovedAt()).isNotNull();

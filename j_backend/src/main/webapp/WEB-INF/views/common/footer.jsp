@@ -2,78 +2,7 @@
 pageEncoding="UTF-8"%> <%@ taglib prefix="c"
 uri="http://java.sun.com/jsp/jstl/core" %>
 
-<style>
-  .footer {
-    background-color: #343a40;
-    color: white;
-    padding: 40px 0 20px 0;
-    margin-top: 60px;
-  }
-
-  .footer-logo {
-    margin-bottom: 30px;
-  }
-
-  .footer-logo .main-title {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-
-  .footer-logo .sub-title {
-    font-size: 1rem;
-    color: #adb5bd;
-  }
-
-  .footer-contact {
-    margin-bottom: 25px;
-  }
-
-  .footer-contact .contact-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #f8f9fa;
-  }
-
-  .footer-contact .contact-address,
-  .footer-contact .contact-phone,
-  .footer-contact .contact-email {
-    font-size: 0.9rem;
-    color: #adb5bd;
-    margin-bottom: 5px;
-    line-height: 1.4;
-  }
-
-  .footer-copyright {
-    border-top: 1px solid #495057;
-    padding-top: 20px;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #adb5bd;
-  }
-
-  .footer-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-
-  @media (max-width: 768px) {
-    .footer {
-      padding: 30px 0 15px 0;
-      margin-top: 40px;
-    }
-
-    .footer-logo .main-title {
-      font-size: 1.5rem;
-    }
-
-    .footer-contact .contact-title {
-      font-size: 1rem;
-    }
-  }
-</style>
+<link href="/static/css/footer.css" rel="stylesheet" />
 
 <footer class="footer">
   <div class="footer-container">

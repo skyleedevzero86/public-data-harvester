@@ -100,11 +100,9 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 페이지 - 검색 조건 없이 접근")
         void searchPage_WithoutCondition_ShouldReturnSearchPage() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시", "부산광역시");
                 given(corpMastService.getAllCities()).willReturn(cities);
 
-                // when & then
                 mockMvc.perform(get("/corp/search"))
                                 .andExpect(status().isOk())
                                 .andExpect(view().name("corp/search"))
@@ -117,7 +115,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 페이지 - 법인명으로 검색")
         void searchPage_WithBizNm_ShouldReturnSearchResults() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시", "부산광역시");
                 Map<String, Object> statistics = Map.of("totalCount", 2L, "locationStats", Map.of());
 
@@ -126,7 +123,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("bizNm", "뮤직턴"))
                                 .andExpect(status().isOk())
@@ -140,7 +136,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 페이지 - 지역으로 검색")
         void searchPage_WithLocation_ShouldReturnSearchResults() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시", "부산광역시");
                 List<String> districts = Arrays.asList("강남구", "강북구");
                 Map<String, Object> statistics = Map.of("totalCount", 2L, "locationStats", Map.of());
@@ -151,7 +146,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("city", "서울특별시")
                                 .param("district", "강남구"))
@@ -166,7 +160,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 페이지 - 페이징 파라미터")
         void searchPage_WithPagingParams_ShouldHandleCorrectly() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 Map<String, Object> statistics = Map.of("totalCount", 2L, "locationStats", Map.of());
 
@@ -175,7 +168,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("bizNm", "테스트")
                                 .param("page", "1")
@@ -189,11 +181,9 @@ public class SearchControllerTest {
         @Test
         @DisplayName("법인 상세 페이지 - 정상 조회")
         void detailPage_WithValidId_ShouldReturnDetailPage() throws Exception {
-                // given
                 Long corpId = 1L;
                 given(corpMastService.getById(corpId)).willReturn(testCorpResponse);
 
-                // when & then
                 mockMvc.perform(get("/corp/detail/{id}", corpId))
                                 .andExpect(status().isOk())
                                 .andExpect(view().name("corp/detail"))
@@ -204,14 +194,12 @@ public class SearchControllerTest {
         @Test
         @DisplayName("법인 상세 페이지 - 존재하지 않는 ID")
         void detailPage_WithInvalidId_ShouldRedirectToSearch() throws Exception {
-                // given
                 Long invalidId = 999L;
                 String expectedErrorMessage = "법인정보를 찾을 수 없습니다.";
                 given(corpMastService.getById(invalidId))
                                 .willThrow(new BusinessException(ErrorCode.COMMON_ENTITY_NOT_FOUND,
                                                 expectedErrorMessage));
 
-                // when & then
                 mockMvc.perform(get("/corp/detail/{id}", invalidId))
                                 .andExpect(status().is3xxRedirection())
                                 .andExpect(redirectedUrl("/corp/search"));
@@ -220,12 +208,10 @@ public class SearchControllerTest {
         @Test
         @DisplayName("AJAX - 구/군 목록 조회")
         void getDistrictsByCity_WithValidCity_ShouldReturnDistrictList() throws Exception {
-                // given
                 String city = "서울특별시";
                 List<String> districts = Arrays.asList("강남구", "강북구", "강서구");
                 given(corpMastService.getDistrictsByCity(city)).willReturn(districts);
 
-                // when & then
                 mockMvc.perform(get("/corp/districts/{city}", city))
                                 .andExpect(status().isOk())
                                 .andExpect(content().contentType("application/json"))
@@ -238,7 +224,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 조건 초기화")
         void resetSearch_ShouldRedirectToSearchPage() throws Exception {
-                // when & then
                 mockMvc.perform(post("/corp/search/reset")
                                 .with(csrf()))
                                 .andExpect(status().is3xxRedirection())
@@ -249,7 +234,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("Excel 다운로드 요청")
         void exportToExcel_ShouldRedirectWithMessage() throws Exception {
-                // when & then
                 mockMvc.perform(get("/corp/export")
                                 .param("bizNm", "테스트"))
                                 .andExpect(status().is3xxRedirection())
@@ -260,13 +244,11 @@ public class SearchControllerTest {
         @Test
         @DisplayName("검색 페이지 - 서비스 예외 처리")
         void searchPage_WithServiceException_ShouldHandleGracefully() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 given(corpMastService.getAllCities()).willReturn(cities);
                 given(corpMastService.search(any(CorpMastManualRequest.class)))
                                 .willThrow(new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "검색 중 오류 발생"));
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("bizNm", "테스트")
                                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -283,7 +265,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("사업자번호 형식으로 검색")
         void searchPage_WithFormattedBizNo_ShouldWork() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
@@ -292,7 +273,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("bizNo", "140-81-99474"))
                                 .andExpect(status().isOk())
@@ -304,7 +284,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("판매자ID로 검색")
         void searchPage_WithSellerId_ShouldWork() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
@@ -313,7 +292,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("sellerId", "2025-서울강남"))
                                 .andExpect(status().isOk())
@@ -325,7 +303,6 @@ public class SearchControllerTest {
         @Test
         @DisplayName("법인등록번호로 검색")
         void searchPage_WithCorpRegNo_ShouldWork() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 Map<String, Object> statistics = Map.of("totalCount", 1L, "locationStats", Map.of());
 
@@ -334,7 +311,6 @@ public class SearchControllerTest {
                                 .willReturn(testCorpPage);
                 given(corpMastService.getSearchStatistics(any(CorpMastManualRequest.class))).willReturn(statistics);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("corpRegNo", "1101110918053"))
                                 .andExpect(status().isOk())
@@ -347,11 +323,9 @@ public class SearchControllerTest {
         @Test
         @DisplayName("빈 검색 조건으로 요청")
         void searchPage_WithEmptyConditions_ShouldNotCallSearch() throws Exception {
-                // given
                 List<String> cities = Arrays.asList("서울특별시");
                 given(corpMastService.getAllCities()).willReturn(cities);
 
-                // when & then
                 mockMvc.perform(get("/corp/search")
                                 .param("bizNm", "")
                                 .param("bizNo", "")

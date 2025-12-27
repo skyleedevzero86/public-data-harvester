@@ -10,7 +10,7 @@
 <%@ include file="../common/navigation.jsp" %>
 
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="d-flex justify-content-center align-items-center login-center-wrapper">
         <div class="row justify-content-center w-100">
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow-lg border-0">

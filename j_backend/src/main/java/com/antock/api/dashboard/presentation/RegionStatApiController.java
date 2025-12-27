@@ -93,32 +93,24 @@ public class RegionStatApiController {
         }
     }
 
+    @Deprecated(since = "2024-01-15", forRemoval = true)
     @PostMapping("/admin/add-missing-columns")
     public ApiResponse<Map<String, Object>> addMissingColumns() {
-        try {
-            corpMastRepository.addMissingColumns();
-            return ApiResponse.of(HttpStatus.OK, Map.of(
-                    "message", "Missing columns added successfully",
-                    "columns_added", List.of("rep_nm", "estb_dt", "road_nm_addr", "jibun_addr", "corp_status")));
-        } catch (Exception e) {
-            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
-                    "error", e.getMessage(),
-                    "message", "Failed to add missing columns"));
-        }
+        return ApiResponse.of(HttpStatus.GONE, Map.of(
+                "error", "UnsupportedOperationException",
+                "message", "런타임 DDL 실행은 지원되지 않습니다. 데이터베이스 스키마 변경은 Flyway 마이그레이션 스크립트를 통해 관리해야 합니다.",
+                "migration_script", "src/main/resources/db/migration/V2__Add_corp_mast_additional_columns.sql",
+                "deprecated", true));
     }
 
+    @Deprecated(since = "2024-01-15", forRemoval = true)
     @PostMapping("/admin/add-sample-data")
     public ApiResponse<Map<String, Object>> addSampleData() {
-        try {
-            corpMastRepository.addSampleData();
-            return ApiResponse.of(HttpStatus.OK, Map.of(
-                    "message", "Sample data added successfully",
-                    "regions_updated", List.of("울산광역시 중구", "세종특별자치시")));
-        } catch (Exception e) {
-            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
-                    "error", e.getMessage(),
-                    "message", "Failed to add sample data"));
-        }
+        return ApiResponse.of(HttpStatus.GONE, Map.of(
+                "error", "UnsupportedOperationException",
+                "message", "런타임 데이터 변경은 지원되지 않습니다. 샘플 데이터는 Flyway 마이그레이션 스크립트를 통해 관리해야 합니다.",
+                "migration_script", "src/main/resources/db/migration/V3__Add_sample_data_for_corp_mast.sql",
+                "deprecated", true));
     }
 
     @GetMapping("/debug/fields")
