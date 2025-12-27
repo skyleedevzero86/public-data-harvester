@@ -191,18 +191,28 @@ DECLARE
     v_sejong_total INTEGER;
 BEGIN
     -- 울산광역시 중구에 데이터가 있는 행 수 카운트
-    SELECT 
-        COUNT(*) FILTER (WHERE rep_nm IS NOT NULL AND rep_nm != '') INTO v_ulsan_with_data,
-        COUNT(*) INTO v_ulsan_total
+    SELECT COUNT(*) INTO v_ulsan_total
     FROM corp_mast
     WHERE si_nm = '울산광역시' AND sgg_nm = '중구';
     
+    SELECT COUNT(*) INTO v_ulsan_with_data
+    FROM corp_mast
+    WHERE si_nm = '울산광역시' 
+    AND sgg_nm = '중구'
+    AND rep_nm IS NOT NULL 
+    AND rep_nm != '';
+    
     -- 세종특별자치시에 데이터가 있는 행 수 카운트
-    SELECT 
-        COUNT(*) FILTER (WHERE rep_nm IS NOT NULL AND rep_nm != '') INTO v_sejong_with_data,
-        COUNT(*) INTO v_sejong_total
+    SELECT COUNT(*) INTO v_sejong_total
     FROM corp_mast
     WHERE si_nm = '세종특별자치시' AND sgg_nm = '세종특별자치시';
+    
+    SELECT COUNT(*) INTO v_sejong_with_data
+    FROM corp_mast
+    WHERE si_nm = '세종특별자치시' 
+    AND sgg_nm = '세종특별자치시'
+    AND rep_nm IS NOT NULL 
+    AND rep_nm != '';
     
     RAISE NOTICE '데이터 검증 - 울산광역시 중구: %/% 행에 데이터가 있습니다 (%.1f%%)', 
                  v_ulsan_with_data, v_ulsan_total, 

@@ -29,16 +29,15 @@ public class CorpMastRepositoryImpl implements CorpMastRepositoryCustom {
     }
 
     @Deprecated(since = "2024-01-15", forRemoval = true)
-    @Override
     public void addMissingColumns() {
         throw new UnsupportedOperationException(
             "런타임 DDL 실행은 지원되지 않습니다. " +
             "데이터베이스 스키마 변경은 Flyway 마이그레이션 스크립트를 통해 관리해야 합니다. " +
-            "자세한 내용은 src/main/resources/db/migration/V2__Add_corp_mast_additional_columns.sql을 참조하세요."
+            "자세한 내용은 src/main/resources/db/migration/V1__Add_corp_mast_additional_columns.sql을 참조하세요."
         );
     }
 
-    @Override
+    @Deprecated(since = "2024-01-15", forRemoval = true)
     public void addSampleData() {
         List<CorpMast> corpMasts = em.createQuery(
             "SELECT c FROM CorpMast c WHERE c.siNm = :siNm AND c.sggNm = :sggNm",

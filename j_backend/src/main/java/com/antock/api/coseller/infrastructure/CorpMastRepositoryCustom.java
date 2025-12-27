@@ -13,10 +13,4 @@ public interface CorpMastRepositoryCustom {
             "GROUP BY c.siNm, c.sggNm " +
             "ORDER BY COUNT(c) DESC")
     List<Object[]> getRegionStats();
-
-    @Deprecated(since = "2024-01-15", forRemoval = true)
-    void addMissingColumns();
-
-    @Deprecated(since = "2024-01-15", forRemoval = true)
-    void addSampleData();
 }
