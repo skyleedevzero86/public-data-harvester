@@ -4,7 +4,6 @@ import com.antock.api.member.application.dto.request.MemberUpdateRequest;
 import com.antock.api.member.application.dto.response.MemberResponse;
 import com.antock.api.member.application.service.*;
 import com.antock.api.member.domain.Member;
-import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,12 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,143 +24,105 @@ import static org.mockito.Mockito.*;
 class MemberApplicationServiceTest {
 
     @Mock
-    private MemberDomainService memberDomainService;
+    private MemberAuthService memberAuthService;
 
     @Mock
-    private AuthTokenService authTokenService;
+    private MemberManagementService memberManagementService;
 
     @Mock
-    private RateLimitServiceInterface rateLimitService;
-
-    @Mock
-    private MemberCacheService memberCacheService;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    private MemberQueryService memberQueryService;
 
     @Mock
     private MemberPasswordService memberPasswordService;
 
     @Mock
-    private Executor asyncExecutor;
-
-    @Mock
-    private MemberRepository memberRepository;
+    private MemberCacheService memberCacheService;
 
     private MemberApplicationService memberApplicationService;
 
     @BeforeEach
     void setUp() {
         memberApplicationService = new MemberApplicationService(
-                memberDomainService,
-                authTokenService,
-                rateLimitService,
-                memberCacheService,
-                passwordEncoder,
+                memberAuthService,
+                memberManagementService,
+                memberQueryService,
                 memberPasswordService,
-                asyncExecutor,
-                memberRepository
+                memberCacheService
         );
     }
 
     @Test
-    @DisplayName("현재 사용자 정보 조회 - 캐시 히트")
-    void getCurrentMemberInfo_CacheHit() {
-        // given
+    @DisplayName("사용자 정보 조회")
+    void getMemberInfo_Success() {
         Long memberId = 1L;
-        MemberResponse cachedResponse = createTestMemberResponse(memberId);
+        MemberResponse expectedResponse = createTestMemberResponse(memberId);
 
-        when(memberCacheService.getMemberFromCache(memberId)).thenReturn(cachedResponse);
+        when(memberQueryService.getMemberInfo(memberId)).thenReturn(expectedResponse);
 
-        // when
-        MemberResponse result = memberApplicationService.getCurrentMemberInfo(memberId);
+        MemberResponse result = memberApplicationService.getMemberInfo(memberId);
 
-        // then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(memberId);
 
-        verify(memberCacheService).getMemberFromCache(memberId);
-        verify(memberDomainService, never()).findById(any());
-        verify(memberCacheService, never()).cacheMemberResponse(any());
+        verify(memberQueryService).getMemberInfo(memberId);
     }
 
     @Test
-    @DisplayName("현재 사용자 정보 조회 - 캐시 미스 후 DB 조회")
-    void getCurrentMemberInfo_CacheMiss_ThenDbQuery() {
-        // given
+    @DisplayName("사용자 정보 조회 - 캐시 사용")
+    void getMemberInfo_WithCache() {
         Long memberId = 1L;
-        Member testMember = createTestMember(memberId);
+        MemberResponse expectedResponse = createTestMemberResponse(memberId);
 
-        when(memberCacheService.getMemberFromCache(memberId)).thenReturn(null);
-        when(memberDomainService.findById(memberId)).thenReturn(Optional.of(testMember));
+        when(memberQueryService.getMemberInfo(memberId)).thenReturn(expectedResponse);
 
-        // when
-        MemberResponse result = memberApplicationService.getCurrentMemberInfo(memberId);
+        MemberResponse result = memberApplicationService.getMemberInfo(memberId);
 
-        // then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(memberId);
 
-        verify(memberCacheService).getMemberFromCache(memberId);
-        verify(memberDomainService).findById(memberId);
-        verify(memberCacheService).cacheMemberResponse(any(MemberResponse.class));
+        verify(memberQueryService).getMemberInfo(memberId);
     }
 
     @Test
-    @DisplayName("프로필 업데이트 시 캐시 무효화")
-    void updateProfile_EvictsCache() {
-        // given
+    @DisplayName("프로필 업데이트")
+    void updateProfile_Success() {
         Long memberId = 1L;
         MemberUpdateRequest request = createMemberUpdateRequest("New Nickname", "new@example.com");
-        Member updatedMember = createTestMember(memberId);
+        MemberResponse expectedResponse = createTestMemberResponse(memberId);
 
-        when(memberDomainService.updateMemberProfile(memberId, "New Nickname", "new@example.com"))
-                .thenReturn(updatedMember);
+        when(memberManagementService.updateProfile(memberId, request)).thenReturn(expectedResponse);
 
-        // when
         MemberResponse result = memberApplicationService.updateProfile(memberId, request);
 
-        // then
         assertThat(result).isNotNull();
-
-        verify(memberCacheService).evictMemberCache(memberId);
-        verify(memberCacheService).cacheMemberResponse(any(MemberResponse.class));
-        verify(memberCacheService).cacheMemberProfile(any(MemberResponse.class));
+        verify(memberManagementService).updateProfile(memberId, request);
     }
 
     @Test
-    @DisplayName("회원 승인 시 캐시 무효화")
-    void approveMember_EvictsCache() {
-        // given
+    @DisplayName("회원 승인")
+    void approveMember_Success() {
         Long memberId = 1L;
         Long approverId = 2L;
-        Member approvedMember = createTestMember(memberId);
+        MemberResponse expectedResponse = createTestMemberResponse(memberId);
 
-        when(memberDomainService.approveMember(memberId, approverId)).thenReturn(approvedMember);
+        when(memberManagementService.approveMember(memberId, approverId)).thenReturn(expectedResponse);
 
-        // when
         MemberResponse result = memberApplicationService.approveMember(memberId, approverId);
 
-        // then
         assertThat(result).isNotNull();
-
-        verify(memberCacheService).evictMemberCache(memberId);
-        verify(memberCacheService).cacheMemberResponse(any(MemberResponse.class));
+        verify(memberManagementService).approveMember(memberId, approverId);
     }
 
     @Test
     @DisplayName("캐시 통계 조회")
     void getCacheStatistics_Success() {
-        // given
         MemberCacheService.CacheStatistics expectedStats =
                 new MemberCacheService.CacheStatistics(10, 2, 0, 83.3, 12, true);
 
         when(memberCacheService.getCacheStatistics()).thenReturn(expectedStats);
 
-        // when
         MemberCacheService.CacheStatistics result = memberApplicationService.getCacheStatistics();
 
-        // then
         assertThat(result).isNotNull();
         assertThat(result.getCacheHits()).isEqualTo(10);
         assertThat(result.getCacheMisses()).isEqualTo(2);
@@ -176,22 +134,16 @@ class MemberApplicationServiceTest {
     @Test
     @DisplayName("캐시 서비스가 null인 경우 빈 통계 반환")
     void getCacheStatistics_WhenCacheServiceIsNull() {
-        // given
         memberApplicationService = new MemberApplicationService(
-                memberDomainService,
-                authTokenService,
-                rateLimitService,
-                null,
-                passwordEncoder,
+                memberAuthService,
+                memberManagementService,
+                memberQueryService,
                 memberPasswordService,
-                asyncExecutor,
-                memberRepository
+                null
         );
 
-        // when
         MemberCacheService.CacheStatistics result = memberApplicationService.getCacheStatistics();
 
-        // then
         assertThat(result).isNotNull();
         assertThat(result.getCacheHits()).isEqualTo(0);
         assertThat(result.getCacheMisses()).isEqualTo(0);

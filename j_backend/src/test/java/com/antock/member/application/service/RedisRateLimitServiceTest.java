@@ -42,7 +42,6 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("Redis 속도 제한 정상 동작")
     void checkRateLimit_Redis_Success() {
-        // given
         String identifier = "user123";
         String action = "login";
         String expectedKey = "rate_limit:login:user123";
@@ -51,7 +50,6 @@ class RedisRateLimitServiceTest {
         when(valueOperations.increment(expectedKey)).thenReturn(6L);
         when(redisTemplate.expire(eq(expectedKey), any())).thenReturn(true);
 
-        // when & then
         assertThatCode(() -> rateLimitService.checkRateLimit(identifier, action))
                 .doesNotThrowAnyException();
 
@@ -62,14 +60,12 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("속도 제한 초과 시 예외 발생")
     void checkRateLimit_ExceedsLimit_ThrowsException() {
-        // given
         String identifier = "user123";
         String action = "login";
         String expectedKey = "rate_limit:login:user123";
 
-        when(valueOperations.get(expectedKey)).thenReturn("100"); // 제한값과 동일
+        when(valueOperations.get(expectedKey)).thenReturn("100");
 
-        // when & then
         assertThatThrownBy(() -> rateLimitService.checkRateLimit(identifier, action))
                 .isInstanceOf(BusinessException.class);
 
@@ -80,14 +76,12 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("Redis 연결 실패 시 메모리 fallback 동작")
     void checkRateLimit_RedisFailure_FallbackToMemory() {
-        // given
         String identifier = "user123";
         String action = "login";
 
         when(valueOperations.get(anyString()))
                 .thenThrow(new org.springframework.data.redis.RedisConnectionFailureException("Connection failed"));
 
-        // when & then
         assertThatCode(() -> rateLimitService.checkRateLimit(identifier, action))
                 .doesNotThrowAnyException();
         int currentCount = rateLimitService.getCurrentCount(identifier, action);
@@ -97,13 +91,11 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("메모리 기반 속도 제한 정상 동작")
     void checkRateLimit_Memory_Success() {
-        // given
         String identifier = "user456";
         String action = "join";
 
         ReflectionTestUtils.setField(rateLimitService, "redisEnabled", false);
 
-        // when & then
         assertThatCode(() -> {
             rateLimitService.checkRateLimit(identifier, action);
             rateLimitService.checkRateLimit(identifier, action);
@@ -116,17 +108,14 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("현재 카운트 조회 성공")
     void getCurrentCount_Success() {
-        // given
         String identifier = "user123";
         String action = "login";
         String expectedKey = "rate_limit:login:user123";
 
         when(valueOperations.get(expectedKey)).thenReturn("5");
 
-        // when
         int result = rateLimitService.getCurrentCount(identifier, action);
 
-        // then
         assertThat(result).isEqualTo(5);
         verify(valueOperations).get(expectedKey);
     }
@@ -134,18 +123,15 @@ class RedisRateLimitServiceTest {
     @Test
     @DisplayName("제한 재설정 성공")
     void resetLimit_Success() {
-        // given
         String identifier = "user123";
         String action = "login";
         String expectedKey = "rate_limit:login:user123";
 
         when(redisTemplate.delete(expectedKey)).thenReturn(true);
 
-        // when
         assertThatCode(() -> rateLimitService.resetLimit(identifier, action))
                 .doesNotThrowAnyException();
 
-        // then
         verify(redisTemplate).delete(expectedKey);
     }
 }

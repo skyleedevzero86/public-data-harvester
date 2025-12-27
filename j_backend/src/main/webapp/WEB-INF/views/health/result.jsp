@@ -5,7 +5,7 @@ uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="헬스 체크 결과" />
 <c:set var="pageCSS" value="${['health.css']}" />
-<c:set var="pageJS" value="${['health.js']}" />
+<c:set var="pageJS" value="${['health.js', 'health-result.js']}" />
 
 <!DOCTYPE html>
 <html>
@@ -235,18 +235,5 @@ uri="http://java.sun.com/jsp/jstl/fmt" %>
 
     <%@ include file="../common/footer.jsp" %> <%@ include
     file="../common/scripts.jsp" %>
-    <script>
-      function showDetails(component, details) {
-        document.getElementById("detailModalTitle").textContent =
-          component + " 상세 정보";
-        document.getElementById("detailModalBody").textContent = details;
-      }
-
-      function refreshResults() {
-        location.reload();
-      }
-
-      setInterval(refreshResults, 60000);
-    </script>
   </body>
 </html>

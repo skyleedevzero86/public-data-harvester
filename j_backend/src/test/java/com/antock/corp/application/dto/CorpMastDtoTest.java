@@ -14,7 +14,6 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 검색 조건 정리 테스트")
     void corpMastSearchRequest_ShouldCleanSearchConditions() {
-        // given
         CorpMastManualRequest request = new CorpMastManualRequest();
         request.setBizNm("  주식회사 테스트  ");
         request.setBizNo("140-81-99474");
@@ -23,7 +22,7 @@ class CorpMastDtoTest {
         request.setCity("  서울특별시  ");
         request.setDistrict("  강남구  ");
 
-        // when & then
+ & then
         assertThat(request.getBizNmForSearch()).isEqualTo("주식회사 테스트");
         assertThat(request.getBizNoForSearch()).isEqualTo("14081999474");
         assertThat(request.getSellerIdForSearch()).isEqualTo("2025-서울강남-01714");
@@ -35,10 +34,9 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - null 값 처리")
     void corpMastSearchRequest_WithNullValues_ShouldReturnNull() {
-        // given
         CorpMastManualRequest request = new CorpMastManualRequest();
 
-        // when & then
+ & then
         assertThat(request.getBizNmForSearch()).isNull();
         assertThat(request.getBizNoForSearch()).isNull();
         assertThat(request.getSellerIdForSearch()).isNull();
@@ -50,13 +48,12 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 빈 문자열 처리")
     void corpMastSearchRequest_WithEmptyStrings_ShouldReturnNull() {
-        // given
         CorpMastManualRequest request = new CorpMastManualRequest();
         request.setBizNm("");
         request.setBizNo("   ");
         request.setSellerId("");
 
-        // when & then
+ & then
         assertThat(request.getBizNmForSearch()).isEmpty();
         assertThat(request.getBizNoForSearch()).isEmpty();
         assertThat(request.getSellerIdForSearch()).isEmpty();
@@ -65,7 +62,6 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 검색 조건 존재 여부 확인")
     void corpMastSearchRequest_HasSearchCondition_ShouldWork() {
-        // given
         CorpMastManualRequest emptyRequest = new CorpMastManualRequest();
 
         CorpMastManualRequest requestWithBizNm = new CorpMastManualRequest();
@@ -75,7 +71,7 @@ class CorpMastDtoTest {
         requestWithEmptyStrings.setBizNm("");
         requestWithEmptyStrings.setBizNo("   ");
 
-        // when & then
+ & then
         assertThat(emptyRequest.hasSearchCondition()).isFalse();
         assertThat(requestWithBizNm.hasSearchCondition()).isTrue();
         assertThat(requestWithEmptyStrings.hasSearchCondition()).isFalse();
@@ -84,10 +80,9 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 기본값 설정")
     void corpMastSearchRequest_DefaultValues_ShouldBeSet() {
-        // given
         CorpMastManualRequest request = new CorpMastManualRequest();
 
-        // when & then
+ & then
         assertThat(request.getPage()).isEqualTo(0);
         assertThat(request.getSize()).isEqualTo(20);
         assertThat(request.getSort()).isEqualTo("id,desc");
@@ -96,9 +91,7 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastResponse - Entity에서 DTO 변환")
     void corpMastResponse_FromEntity_ShouldConvertCorrectly() {
-        // given
         CorpMast entity = CorpMast.builder()
-                .id(1L)
                 .sellerId("2025-서울강남-01714")
                 .bizNm("주식회사 뮤직턴")
                 .bizNo("140-81-99474")
@@ -108,11 +101,10 @@ class CorpMastDtoTest {
                 .sggNm("강남구")
                 .username("admin")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(entity, "id", 1L);
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getSellerId()).isEqualTo("2025-서울강남-01714");
         assertThat(response.getBizNm()).isEqualTo("주식회사 뮤직턴");
@@ -127,83 +119,67 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastResponse - 포맷된 사업자번호")
     void corpMastResponse_FormattedBizNo_ShouldFormatCorrectly() {
-        // given
         CorpMast entity = CorpMast.builder()
                 .bizNo("140-81-99474")
                 .build();
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getFormattedBizNo()).isEqualTo("140-81-99474");
     }
 
     @Test
     @DisplayName("CorpMastResponse - 하이픈 없는 사업자번호 포맷팅")
     void corpMastResponse_FormattedBizNo_WithoutHyphen_ShouldAddHyphens() {
-        // given
         CorpMast entity = CorpMast.builder()
                 .bizNo("1408199474")
                 .build();
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getFormattedBizNo()).isEqualTo("140-81-9474");
     }
 
     @Test
     @DisplayName("CorpMastResponse - 잘못된 길이의 사업자번호")
     void corpMastResponse_FormattedBizNo_WithInvalidLength_ShouldReturnOriginal() {
-        // given
         CorpMast entity = CorpMast.builder()
                 .bizNo("12345")
                 .build();
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getFormattedBizNo()).isEqualTo("12345");
     }
 
     @Test
     @DisplayName("CorpMastResponse - null 사업자번호")
     void corpMastResponse_FormattedBizNo_WithNull_ShouldReturnNull() {
-        // given
         CorpMast entity = CorpMast.builder()
                 .bizNo(null)
                 .build();
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getFormattedBizNo()).isNull();
     }
 
     @Test
     @DisplayName("CorpMastResponse - 전체 주소 조합")
     void corpMastResponse_FullAddress_ShouldCombineCorrectly() {
-        // given
         CorpMast entity = CorpMast.builder()
                 .siNm("서울특별시")
                 .sggNm("강남구")
                 .build();
 
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        // then
         assertThat(response.getFullAddress()).isEqualTo("서울특별시 강남구");
     }
 
     @Test
     @DisplayName("CorpMastResponse - Builder 패턴 테스트")
     void corpMastResponse_Builder_ShouldWork() {
-        // when
         CorpMastManualResponse response = CorpMastManualResponse.builder()
                 .id(1L)
                 .bizNm("테스트 법인")
@@ -212,7 +188,6 @@ class CorpMastDtoTest {
                 .sggNm("강남구")
                 .build();
 
-        // then
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getBizNm()).isEqualTo("테스트 법인");
         assertThat(response.getBizNo()).isEqualTo("123-45-67890");
@@ -222,10 +197,9 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 사업자번호 하이픈 제거 확인")
     void corpMastSearchRequest_BizNoForSearch_ShouldRemoveHyphens() {
-        // given
         CorpMastManualRequest request = new CorpMastManualRequest();
 
-        // when & then
+ & then
         request.setBizNo("140-81-99474");
         assertThat(request.getBizNoForSearch()).isEqualTo("14081999474");
 
@@ -239,14 +213,13 @@ class CorpMastDtoTest {
     @Test
     @DisplayName("CorpMastSearchRequest - 모든 생성자 테스트")
     void corpMastSearchRequest_Constructors_ShouldWork() {
-        // given & when
+ & when
         CorpMastManualRequest defaultRequest = new CorpMastManualRequest();
         CorpMastManualRequest allArgsRequest = new CorpMastManualRequest(
                 "테스트법인", "123-45-67890", "seller123", "corp123",
                 "서울특별시", "강남구", 1, 10, "bizNm,asc"
         );
 
-        // then
         assertThat(defaultRequest.getBizNm()).isNull();
         assertThat(defaultRequest.getPage()).isEqualTo(0);
         assertThat(defaultRequest.getSize()).isEqualTo(20);

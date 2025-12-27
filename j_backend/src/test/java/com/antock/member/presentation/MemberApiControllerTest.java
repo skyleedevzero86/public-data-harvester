@@ -36,7 +36,6 @@ class MemberApiControllerTest {
     @Test
     @DisplayName("회원가입 API 성공")
     void join_Success() throws Exception {
-        // given
         MemberJoinRequest request = MemberJoinRequest.builder()
                 .username("testuser")
                 .password("Test1234!@")
@@ -57,7 +56,6 @@ class MemberApiControllerTest {
 
         given(memberApplicationService.join(any(MemberJoinRequest.class))).willReturn(response);
 
-        // when & then
         mockMvc.perform(post("/api/v1/members/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -70,15 +68,13 @@ class MemberApiControllerTest {
     @Test
     @DisplayName("회원가입 API 유효성 검증 실패")
     void join_ValidationFailed() throws Exception {
-        // given
         MemberJoinRequest request = MemberJoinRequest.builder()
-                .username("") // 빈 사용자명
-                .password("123") // 짧은 비밀번호
+                .username("")
+                .password("123")
                 .nickname("")
                 .email("invalid-email")
                 .build();
 
-        // when & then
         mockMvc.perform(post("/api/v1/members/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

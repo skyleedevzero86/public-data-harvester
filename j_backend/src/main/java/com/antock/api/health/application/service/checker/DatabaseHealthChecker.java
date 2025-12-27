@@ -2,12 +2,12 @@ package com.antock.api.health.application.service.checker;
 
 import com.antock.api.health.domain.HealthCheckResult;
 import com.antock.api.health.domain.HealthStatus;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DatabaseHealthChecker implements ComponentHealthChecker {
 
-    private final DataSource dataSource;
+    private final EntityManager entityManager;
 
     @Override
     public String getComponentName() {
@@ -25,10 +25,10 @@ public class DatabaseHealthChecker implements ComponentHealthChecker {
 
     @Override
     public HealthCheckResult check() {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         try {
             long startTime = System.currentTimeMillis();
-            Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            Query query = entityManager.createNativeQuery("SELECT 1");
+            Integer result = ((Number) query.getSingleResult()).intValue();
             long responseTime = System.currentTimeMillis() - startTime;
 
             Map<String, Object> details = new HashMap<>();
