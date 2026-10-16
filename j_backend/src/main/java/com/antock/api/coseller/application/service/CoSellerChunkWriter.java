@@ -3,6 +3,7 @@ package com.antock.api.coseller.application.service;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CoSellerChunkWriter {
@@ -20,20 +25,44 @@ public class CoSellerChunkWriter {
     private final CoSellerStorageService storageService;
 
     public List<CorpMastCreateDTO> prepare(List<BizCsvInfoDto> chunk, String username, String city, String district) {
-        List<CorpMastCreateDTO> prepared = new ArrayList<>();
+        List<CompletableFuture<Optional<CorpMastCreateDTO>>> futures = new ArrayList<>(chunk.size());
         for (BizCsvInfoDto row : chunk) {
-            Optional<CorpMastCreateDTO> fromApi = apiService.processAsync(row, username).join();
-            if (fromApi.isPresent()) {
-                prepared.add(applyRequestedRegion(fromApi.get(), city, district));
-                continue;
-            }
-            if (city != null && district != null) {
-                prepared.addAll(dataMapper.mapToCorpMastCreateDTO(List.of(row), username, city, district));
-            } else {
-                prepared.addAll(dataMapper.mapToCorpMastCreateDTO(List.of(row), username));
-            }
+            futures.add(apiService.processAsync(row, username));
+        }
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .exceptionally(ex -> null)
+                .join();
+
+        List<CorpMastCreateDTO> prepared = new ArrayList<>();
+        for (int i = 0; i < chunk.size(); i++) {
+            appendRow(prepared, chunk.get(i), futures.get(i), username, city, district);
         }
         return prepared;
+    }
+
+    private void appendRow(List<CorpMastCreateDTO> prepared, BizCsvInfoDto row,
+            CompletableFuture<Optional<CorpMastCreateDTO>> future, String username, String city, String district) {
+        Optional<CorpMastCreateDTO> fromApi = readApiResult(row, future);
+        if (fromApi.isPresent()) {
+            prepared.add(applyRequestedRegion(fromApi.get(), city, district));
+            return;
+        }
+        if (city != null && district != null) {
+            prepared.addAll(dataMapper.mapToCorpMastCreateDTO(List.of(row), username, city, district));
+        } else {
+            prepared.addAll(dataMapper.mapToCorpMastCreateDTO(List.of(row), username));
+        }
+    }
+
+    private Optional<CorpMastCreateDTO> readApiResult(BizCsvInfoDto row,
+            CompletableFuture<Optional<CorpMastCreateDTO>> future) {
+        try {
+            Optional<CorpMastCreateDTO> fromApi = future.join();
+            return fromApi == null ? Optional.empty() : fromApi;
+        } catch (CompletionException | CancellationException e) {
+            log.warn("API 보강 실패, 기본 매핑으로 저장: bizNo={}", row.getBizNo());
+            return Optional.empty();
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

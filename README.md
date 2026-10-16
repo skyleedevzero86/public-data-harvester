@@ -11,12 +11,13 @@
 공공 데이터(CSV)와 외부 API(법인등록번호, 행정구역코드)를 활용해
 통신판매 사업자 정보를 수집·가공·저장하는 백엔드 시스템입니다.
 
-- **CSV 데이터 필터링**: 시/도, 구/군별 통신판매 사업자 데이터(CSV)에서 법인 데이터만 선별
-- **공공 API 연동**: 법인등록번호, 행정구역코드 등 추가 정보 실시간 수집
-- **비동기 병렬 처리**: 대량 데이터도 빠르게 처리 (CompletableFuture 기반)
-- **유연한 저장소 구조**: JPA 기반, H2/PostgreSQL 등 DB 교체 용이
-- **운영/관리 기능**: 캐시/레이트리밋/헬스체크/모니터링 내장
-- **환경별 설정 분리**: dev/prod 프로필, application.yml 기반 설정
+- **법인 정보 관리**: 법인 등록, 수정, 삭제, 검색
+- **회원 관리**: 회원가입, 로그인, 권한 관리
+- **파일 관리**: 파일 업로드/다운로드, MinIO/Local 저장소 지원
+- **CSV 배치 처리**: 대량 데이터 처리 및 내보내기
+- **대시보드**: 지역별 통계 및 성능 모니터링
+- **캐시 관리**: Redis/Memory 기반 캐시 시스템
+- **보안**: JWT 기반 인증, Rate Limiting
 
 
 ---
@@ -115,3 +116,61 @@ src/
 # 운영 환경 (prod, H2/로컬파일 사용)
 ./gradlew runProd
 ```
+
+### API 테스트
+
+```bash
+# Swagger UI를 통한 테스트
+# 또는 Postman Collection 사용
+```
+
+## 📈 성능 최적화
+
+### 캐싱 전략
+
+- Redis 기반 분산 캐시
+- Local Memory 캐시 (Fallback)
+- Cache Eviction 정책
+
+### 배치 처리
+
+- Chunk 기반 처리
+- 비동기 실행
+- 재시도 메커니즘
+
+### 데이터베이스 최적화
+
+- 인덱스 최적화
+- N+1 쿼리 방지
+- Connection Pool 설정
+
+## 🚨 문제 해결
+
+### 일반적인 문제
+
+1. **Redis 연결 실패**: Memory 캐시로 자동 Fallback
+2. **파일 업로드 실패**: 저장소 설정 확인
+3. **JWT 토큰 만료**: Refresh Token 사용
+
+### 로그 확인
+
+```bash
+# 애플리케이션 로그
+tail -f logs/application.log
+
+# 에러 로그
+tail -f logs/error.log
+```
+
+## 📞 지원
+
+- **개발팀**: sleekydz86@naver.com
+- **문서**: [API Documentation](http://localhost:8080/swagger-ui.html)
+- **이슈**: GitHub Issues
+
+
+
+## 📌 트러블슈팅
+- [Spring Security 테스트에서 커스텀 사용자 인증 객체 주입 문제 해결](https://velog.io/@sleekydevzero86/spring-security-test-with-custom-user)
+- [대규모 더미 데이터 생성 시 N+1 문제 해결](https://velog.io/@sleekydevzero86/jpa-n-plus-1-solution)
+

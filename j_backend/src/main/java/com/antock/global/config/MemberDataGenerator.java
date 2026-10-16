@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,7 +35,6 @@ public class MemberDataGenerator {
     private static final int REJECTED_RATIO = 3;
     private static final int WITHDRAWN_RATIO = 2;
 
-    @Transactional
     public void generateMembers(int totalCount) {
         if (memberRepository.count() > 0 && !dataInitProperties.isForceInit()) {
             log.info("기존 회원 데이터가 존재합니다. 생성을 건너뜁니다. (강제초기화: {})",
