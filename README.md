@@ -124,7 +124,7 @@ src/
 # 또는 Postman Collection 사용
 ```
 
-## 📈 성능 최적화
+## 성능 최적화
 
 ### 캐싱 전략
 
@@ -144,7 +144,7 @@ src/
 - N+1 쿼리 방지
 - Connection Pool 설정
 
-## 🚨 문제 해결
+## 문제 해결
 
 ### 일반적인 문제
 
@@ -162,7 +162,7 @@ tail -f logs/application.log
 tail -f logs/error.log
 ```
 
-## 📞 지원
+## 지원
 
 - **개발팀**: sleekydz86@naver.com
 - **문서**: [API Documentation](http://localhost:8080/swagger-ui.html)
@@ -170,7 +170,7 @@ tail -f logs/error.log
 
 
 
-## 📌 트러블슈팅
+## 트러블슈팅
 - [Spring Security 테스트에서 커스텀 사용자 인증 객체 주입 문제 해결](https://velog.io/@sleekydevzero86/spring-security-test-with-custom-user)
 - [대규모 더미 데이터 생성 시 N+1 문제 해결](https://velog.io/@sleekydevzero86/jpa-n-plus-1-solution)
 
