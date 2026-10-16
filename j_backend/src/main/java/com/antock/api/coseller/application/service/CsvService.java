@@ -20,6 +20,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -95,6 +96,65 @@ public class CsvService {
         long processingTime = stopWatch.getTotalTimeMillis();
 
         return validData;
+    }
+
+    public void readInChunks(String fileName, int chunkSize, Consumer<List<BizCsvInfoDto>> chunkConsumer) {
+        if (chunkSize < 1) {
+            throw new IllegalArgumentException("청크 크기는 1 이상이어야 합니다.");
+        }
+
+        List<BizCsvInfoDto> chunk = new ArrayList<>(chunkSize);
+        int totalLines = 0;
+
+        try (InputStream inputStream = csvFileReadStrategy.readFile(fileName);
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(inputStream, detectEncoding(inputStream)), bufferSize)) {
+
+            String line;
+            boolean isFirstLine = true;
+
+            while ((line = reader.readLine()) != null && totalLines < maxLines) {
+                totalLines++;
+
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue;
+                }
+
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+
+                BizCsvInfoDto dto = parseRow(line);
+                if (dto == null) {
+                    continue;
+                }
+
+                chunk.add(dto);
+                if (chunk.size() == chunkSize) {
+                    chunkConsumer.accept(List.copyOf(chunk));
+                    chunk.clear();
+                }
+            }
+
+            if (!chunk.isEmpty()) {
+                chunkConsumer.accept(List.copyOf(chunk));
+            }
+        } catch (IOException e) {
+            throw new CsvParsingException("CSV 파일을 읽을 수 없습니다: " + fileName, e);
+        }
+    }
+
+    private BizCsvInfoDto parseRow(String line) {
+        try {
+            String[] tokens = parseCsvLine(line);
+            if (tokens != null && tokens.length >= CsvConstants.MIN_REQUIRED_COLUMNS) {
+                return parseCsvData(tokens);
+            }
+        } catch (Exception e) {
+            log.debug("CSV 행 파싱 실패");
+        }
+        return null;
     }
 
     private Charset detectEncoding(InputStream inputStream) {

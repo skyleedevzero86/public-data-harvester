@@ -132,33 +132,37 @@
               </thead>
               <tbody id="realtimeTableBody">
               <c:forEach var="component" items="${components}">
-                <tr id="component-${component.name}">
-                  <td><i class="bi bi-gear"></i> ${component.name}</td>
+                <c:set var="componentUp" value="${component.lastStatus != null && component.lastStatus.code == 'UP'}"/>
+                <c:set var="componentStatus" value="${component.lastStatus != null ? component.lastStatus.code : 'UNKNOWN'}"/>
+                <c:set var="componentResponseTime" value="${component.averageResponseTime != null ? component.averageResponseTime : 0}"/>
+                <c:set var="componentSuccessRate" value="${component.successRate != null ? component.successRate : 0}"/>
+                <tr id="component-${component.component}">
+                  <td><i class="bi bi-gear"></i> ${component.component}</td>
                   <td>
                           <span
-                                  class="badge bg-${component.healthy ? 'success' : 'danger'}"
+                                  class="badge bg-${componentUp ? 'success' : 'danger'}"
                           >
                             <i
-                                    class="bi bi-${component.healthy ? 'check-circle' : 'x-circle'}"
+                                    class="bi bi-${componentUp ? 'check-circle' : 'x-circle'}"
                             ></i>
-                            ${component.status}
+                            ${componentStatus}
                           </span>
                   </td>
                   <td class="response-time">
                           <span
-                                  class="badge bg-${component.responseTime < 1000 ? 'success' : component.responseTime < 3000 ? 'warning' : 'danger'}"
+                                  class="badge bg-${componentResponseTime < 1000 ? 'success' : componentResponseTime < 3000 ? 'warning' : 'danger'}"
                           >
-                            ${component.responseTime}ms
+                            <fmt:formatNumber value="${componentResponseTime}" pattern="#"/>ms
                           </span>
                   </td>
                   <td class="success-rate">
                     <div class="progress" style="height: 20px">
                       <div
-                              class="progress-bar bg-${component.successRate >= 95 ? 'success' : component.successRate >= 80 ? 'warning' : 'danger'}"
-                              style="width: ${component.successRate}%"
+                              class="progress-bar bg-${componentSuccessRate >= 95 ? 'success' : componentSuccessRate >= 80 ? 'warning' : 'danger'}"
+                              style="width: ${componentSuccessRate}%"
                       >
                         <fmt:formatNumber
-                                value="${component.successRate}"
+                                value="${componentSuccessRate}"
                                 pattern="#.##"
                         />%
                       </div>
@@ -166,7 +170,7 @@
                   </td>
                   <td class="last-check">
                     <fmt:formatDate
-                            value="${component.lastCheckTime}"
+                            value="${component.lastCheckTimeAsDate}"
                             pattern="HH:mm:ss"
                     />
                   </td>
@@ -279,7 +283,7 @@
   }
 
   function updateRealtimeData() {
-    fetch("/api/health/realtime")
+    fetch("/health/api/metrics/realtime")
             .then((response) => response.json())
             .then((data) => {
               updateCharts(data);
@@ -295,9 +299,9 @@
   function updateCharts(data) {
     const now = new Date().toLocaleTimeString();
 
-    if (responseTimeChart && data.avgResponseTime !== undefined) {
+    if (responseTimeChart && data.averageResponseTime !== undefined) {
       responseTimeChart.data.labels.push(now);
-      responseTimeChart.data.datasets[0].data.push(data.avgResponseTime);
+      responseTimeChart.data.datasets[0].data.push(data.averageResponseTime);
 
       if (responseTimeChart.data.labels.length > 20) {
         responseTimeChart.data.labels.shift();
@@ -321,68 +325,52 @@
   }
 
   function updateTable(data) {
-    if (data.components) {
-      data.components.forEach((component) => {
-        const row = document.getElementById(`component-${component.name}`);
-        if (row) {
-          const statusCell = row.cells[1];
-          statusCell.innerHTML = `
-                        <span class="badge bg-${
-                          component.healthy ? "success" : "danger"
-                        }">
-                            <i class="bi bi-${
-                              component.healthy ? "check-circle" : "x-circle"
-                            }"></i>
-                            ${component.status}
-                        </span>
-                    `;
+    const components = data.componentMetrics || [];
+    components.forEach((component) => {
+      const row = document.getElementById("component-" + component.component);
+      if (!row) {
+        return;
+      }
+      const healthy = component.lastStatus === "UP";
+      const status = component.lastStatus || "UNKNOWN";
+      const responseTime = Number(component.averageResponseTime || 0);
+      const successRate = Number(component.successRate || 0);
+      const lastCheck = component.lastCheckTime
+        ? new Date(component.lastCheckTime).toLocaleTimeString()
+        : "-";
+      const responseClass =
+        responseTime < 1000 ? "success" : responseTime < 3000 ? "warning" : "danger";
+      const rateClass =
+        successRate >= 95 ? "success" : successRate >= 80 ? "warning" : "danger";
 
-          const responseTimeCell = row.cells[2];
-          responseTimeCell.innerHTML = `
-                        <span class="badge bg-${
-                          component.responseTime < 1000
-                            ? "success"
-                            : component.responseTime < 3000
-                            ? "warning"
-                            : "danger"
-                        }">
-                            ${component.responseTime}ms
-                        </span>
-                    `;
-
-          const successRateCell = row.cells[3];
-          successRateCell.innerHTML = `
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-${
-                              component.successRate >= 95
-                                ? "success"
-                                : component.successRate >= 80
-                                ? "warning"
-                                : "danger"
-                            }"
-                                 style="width: ${component.successRate}%">
-                                ${component.successRate.toFixed(2)}%
-                            </div>
-                        </div>
-                    `;
-
-          const lastCheckCell = row.cells[4];
-          lastCheckCell.textContent = new Date().toLocaleTimeString();
-        }
-      });
-    }
+      row.cells[1].innerHTML =
+        '<span class="badge bg-' + (healthy ? "success" : "danger") + '">' +
+        '<i class="bi bi-' + (healthy ? "check-circle" : "x-circle") + '"></i> ' +
+        status +
+        "</span>";
+      row.cells[2].innerHTML =
+        '<span class="badge bg-' + responseClass + '">' +
+        Math.round(responseTime) +
+        "ms</span>";
+      row.cells[3].innerHTML =
+        '<div class="progress" style="height: 20px;">' +
+        '<div class="progress-bar bg-' + rateClass + '" style="width: ' +
+        successRate +
+        '%">' +
+        successRate.toFixed(2) +
+        "%</div></div>";
+      row.cells[4].textContent = lastCheck;
+    });
   }
 
   function updateStats(data) {
-    if (data.avgResponseTime !== undefined) {
+    if (data.averageResponseTime !== undefined && data.averageResponseTime !== null) {
       document.getElementById("avgResponseTime").textContent =
-              data.avgResponseTime + "ms";
+              Math.round(data.averageResponseTime) + "ms";
     }
 
-    if (data.activeComponents !== undefined) {
-      document.getElementById("activeComponents").textContent =
-              data.activeComponents;
-    }
+    const activeCount = (data.componentMetrics || []).length;
+    document.getElementById("activeComponents").textContent = activeCount;
   }
 
   function updateLastUpdateTime() {

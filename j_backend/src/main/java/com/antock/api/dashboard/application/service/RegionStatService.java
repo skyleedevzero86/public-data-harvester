@@ -65,6 +65,10 @@ public class RegionStatService {
         }
     }
 
+    public long countCorps(String city, String district) {
+        return corpMastRepository.countCorpsForRegionStats(city, district);
+    }
+
     public List<String> getCities() {
         return corpMastRepository.findDistinctCities();
     }

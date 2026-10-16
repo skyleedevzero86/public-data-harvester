@@ -2,6 +2,8 @@ package com.antock.api.coseller.presentation;
 
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.service.CoSellerService;
+import com.antock.api.coseller.value.City;
+import com.antock.api.coseller.value.District;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,8 +40,8 @@ class CoSellerRestControllerTest {
     @WithMockUser
     void saveCoSeller_Success() throws Exception {
         RegionRequestDto request = RegionRequestDto.builder()
-                .city("서울특별시")
-                .district("강남구")
+                .city(City.서울특별시)
+                .district(District.강남구)
                 .build();
 
         given(cosellerService.saveCoSeller(any(RegionRequestDto.class), anyString())).willReturn(100);
@@ -83,8 +85,7 @@ class CoSellerRestControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isBadRequest());
     }
 
     @Test

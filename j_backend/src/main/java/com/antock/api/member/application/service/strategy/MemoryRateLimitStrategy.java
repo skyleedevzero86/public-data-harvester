@@ -2,7 +2,9 @@ package com.antock.api.member.application.service.strategy;
 
 import com.antock.api.member.application.service.RateLimitSecurityInfo;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,6 +22,21 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
     @Value("${custom.security.rate-limit.memory-cache-limit:1000}")
     private int memoryCacheLimit;
 
+    @Value("${custom.security.rate-limit.memory-cache-ttl-minutes:5}")
+    private int memoryCacheTtlMinutes = 5;
+
+    @PostConstruct
+    public void init() {
+        memoryCacheTtlMinutes = clampTtlMinutes(memoryCacheTtlMinutes);
+    }
+
+    public static int clampTtlMinutes(int minutes) {
+        if (minutes < 1) {
+            return 1;
+        }
+        return Math.min(minutes, 5);
+    }
+
     private final ConcurrentHashMap<String, RateLimitInfo> memoryCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, BlockInfo> blockedIdentifiers = new ConcurrentHashMap<>();
     private final Set<String> whitelistedIdentifiers = ConcurrentHashMap.newKeySet();
@@ -32,7 +49,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
             info.reset(now);
         }
 
@@ -47,7 +64,10 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
     public int getCurrentCount(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = memoryCache.get(key);
-        return info != null ? info.getCount() : 0;
+        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+            return 0;
+        }
+        return info.getCount();
     }
 
     @Override
@@ -62,7 +82,8 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
 
     @Override
     public void blockIdentifier(String identifier, String reason, long blockDurationMinutes) {
-        long expiryTime = System.currentTimeMillis() / 1000 + (blockDurationMinutes * 60);
+        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
 
@@ -148,7 +169,8 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
             return false;
         }
 
-        long windowStart = System.currentTimeMillis() - (violationWindowMinutes * 60 * 1000);
+        long windowMinutes = Math.min(violationWindowMinutes, memoryCacheTtlMinutes);
+        long windowStart = System.currentTimeMillis() - (windowMinutes * 60 * 1000);
         int violationsInWindow = tracker.getViolationsInWindow(windowStart);
 
         return violationsInWindow >= maxViolationsBeforeBlock;
@@ -157,6 +179,19 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
     public int getViolationCount(String identifier) {
         ViolationTracker tracker = violationTrackers.get(identifier);
         return tracker != null ? tracker.getViolationCount() : 0;
+    }
+
+    @Scheduled(fixedDelay = 60000)
+    public void evictExpiredEntries() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(memoryCacheTtlMinutes);
+        memoryCache.entrySet().removeIf(entry -> entry.getValue().getCreatedAt().isBefore(cutoff));
+        long nowSec = System.currentTimeMillis() / 1000;
+        blockedIdentifiers.entrySet().removeIf(entry -> entry.getValue().getExpiryTime() < nowSec);
+        long cutoffMs = System.currentTimeMillis() - memoryCacheTtlMinutes * 60_000L;
+        violationTrackers.entrySet().removeIf(entry -> {
+            long last = entry.getValue().getLastViolationTime();
+            return last > 0 && last < cutoffMs;
+        });
     }
 
     public void cleanupMemoryCache() {

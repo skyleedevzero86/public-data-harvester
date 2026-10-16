@@ -7,6 +7,13 @@ public interface RateLimitServiceInterface {
     void resetLimit(String identifier, String action);
     boolean isRedisAvailable();
 
+    default boolean probeRedis() {
+        return isRedisAvailable();
+    }
+
+    default void resumeAfterRedisRecovery() {
+    }
+
     void blockIdentifier(String identifier, String reason, long blockDurationMinutes);
     void unblockIdentifier(String identifier);
     boolean isIdentifierBlocked(String identifier);

@@ -36,6 +36,7 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
     @Override
     public BufferedReader getBufferedReader(String fileName) throws IOException {
         try {
+            requireSafeObjectKey(fileName);
             if (!isMinioAvailable()) {
                 throw new IOException("MinIO 서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.");
             }
@@ -44,6 +45,7 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
             if (actualFileName == null) {
                 throw new IOException("파일이 MinIO 버킷에 존재하지 않습니다: " + fileName);
             }
+            requireSafeObjectKey(actualFileName);
 
             InputStream inputStream = minioClient.getObject(
                     GetObjectArgs.builder()
@@ -52,6 +54,8 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
                             .build());
 
             return new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (ErrorResponseException e) {
             throw new IOException("MinIO에서 파일을 읽을 수 없습니다: " + fileName, e);
         } catch (Exception e) {
@@ -62,6 +66,7 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
     @Override
     public InputStream readFile(String fileName) {
         try {
+            requireSafeObjectKey(fileName);
             if (!isMinioAvailable()) {
                 throw new RuntimeException("MinIO 서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.");
             }
@@ -70,16 +75,25 @@ public class MinioFileReadStrategy implements CsvFileReadStrategy {
             if (actualFileName == null) {
                 throw new RuntimeException("파일이 MinIO 버킷에 존재하지 않습니다: " + fileName);
             }
+            requireSafeObjectKey(actualFileName);
 
             return minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
                             .object(actualFileName)
                             .build());
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (ErrorResponseException e) {
             throw new RuntimeException("MinIO에서 파일을 읽을 수 없습니다: " + fileName, e);
         } catch (Exception e) {
             throw new RuntimeException("MinIO 파일 로드 실패: " + fileName, e);
+        }
+    }
+
+    private void requireSafeObjectKey(String key) {
+        if (key == null || key.startsWith("/") || key.startsWith("../") || key.contains("../") || key.contains("..\\")) {
+            throw new IllegalArgumentException("허용되지 않은 파일 경로입니다.");
         }
     }
 

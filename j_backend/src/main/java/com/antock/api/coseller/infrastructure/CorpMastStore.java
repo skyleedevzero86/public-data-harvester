@@ -10,6 +10,8 @@ public interface CorpMastStore {
 
     void saveAll(List<CorpMast> entityList);
 
+    int upsertAll(List<CorpMast> rows);
+
     boolean existsByBizNo(String bizNo);
 
     Optional<CorpMast> findByBizNo(String bizNo);

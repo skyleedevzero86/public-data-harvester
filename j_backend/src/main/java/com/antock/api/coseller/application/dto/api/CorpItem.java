@@ -10,5 +10,5 @@ import lombok.ToString;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CorpItem {
-    private String crno; //법인 등록 번호
+    private String crno;
 }

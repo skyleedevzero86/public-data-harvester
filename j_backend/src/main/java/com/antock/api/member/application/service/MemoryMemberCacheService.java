@@ -61,6 +61,7 @@ public class MemoryMemberCacheService implements MemberCacheService {
 
     @PostConstruct
     public void init() {
+        cacheTtlMinutes = cacheTtlMinutes < 1 ? 1 : Math.min(cacheTtlMinutes, 5);
         log.info("MemoryMemberCacheService 초기화 완료 - TTL: {}분", cacheTtlMinutes);
     }
 

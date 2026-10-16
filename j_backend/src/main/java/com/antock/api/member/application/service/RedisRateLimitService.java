@@ -59,6 +59,9 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     @Value("${custom.security.rate-limit.memory-cache-limit:1000}")
     private int memoryCacheLimit;
 
+    @Value("${custom.security.rate-limit.memory-cache-ttl-minutes:5}")
+    private int memoryCacheTtlMinutes = 5;
+
     private final AtomicBoolean useRedis = new AtomicBoolean(false);
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
     private final AtomicInteger cleanupCount = new AtomicInteger(0);
@@ -98,6 +101,7 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
 
     @PostConstruct
     public void init() {
+        memoryCacheTtlMinutes = memoryCacheTtlMinutes < 1 ? 1 : Math.min(memoryCacheTtlMinutes, 5);
         if (redisEnabled && redisTemplate != null) {
             initializeRedisConnection();
         } else {
@@ -123,6 +127,19 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     @Override
     public boolean isRedisAvailable() {
         return useRedis.get() && checkRedisConnection();
+    }
+
+    @Override
+    public boolean probeRedis() {
+        return checkRedisConnection();
+    }
+
+    @Override
+    public void resumeAfterRedisRecovery() {
+        consecutiveFailures.set(0);
+        cleanupMemoryCache();
+        useRedis.set(checkRedisConnection());
+        log.info("Redis 복구: 메모리 캐시를 비우고 Redis 사용={}", useRedis.get());
     }
 
     @Override
@@ -355,7 +372,7 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
             info.reset(now);
         }
 
@@ -374,7 +391,8 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     }
 
     private void blockIdentifierWithMemory(String identifier, String reason, long blockDurationMinutes) {
-        long expiryTime = System.currentTimeMillis() / 1000 + (blockDurationMinutes * 60);
+        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
 
@@ -449,7 +467,8 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
             return false;
         }
 
-        long windowStart = System.currentTimeMillis() - (violationWindowMinutes * 60 * 1000);
+        long windowMinutes = Math.min(violationWindowMinutes, memoryCacheTtlMinutes);
+        long windowStart = System.currentTimeMillis() - (windowMinutes * 60 * 1000);
         int violationsInWindow = tracker.getViolationsInWindow(windowStart);
 
         return violationsInWindow >= maxViolationsBeforeBlock;
@@ -468,7 +487,10 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     private int getCurrentCountWithMemory(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = memoryCache.get(key);
-        return info != null ? info.getCount() : 0;
+        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+            return 0;
+        }
+        return info.getCount();
     }
 
     private void resetLimitWithMemory(String identifier, String action) {

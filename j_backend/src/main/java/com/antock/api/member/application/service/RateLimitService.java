@@ -65,6 +65,19 @@ public class RateLimitService implements RateLimitServiceInterface {
     }
 
     @Override
+    public boolean probeRedis() {
+        return redisStrategy.isAvailable();
+    }
+
+    @Override
+    public void resumeAfterRedisRecovery() {
+        consecutiveFailures.set(0);
+        memoryStrategy.cleanupMemoryCache();
+        useRedis.set(redisStrategy.isAvailable());
+        log.info("Redis 복구: 메모리 캐시를 비우고 Redis 사용={}", useRedis.get());
+    }
+
+    @Override
     public void checkRateLimit(String identifier, String action) {
         if (getCurrentStrategy().isWhitelisted(identifier)) {
             log.debug("화이트리스트된 식별자 {} - rate limiting 건너뜀", identifier);

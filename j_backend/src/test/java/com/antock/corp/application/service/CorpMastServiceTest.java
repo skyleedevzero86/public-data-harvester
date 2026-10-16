@@ -271,7 +271,7 @@ class CorpMastServiceTest {
     @DisplayName("페이지 크기 제한 테스트")
     void search_WithLargePageSize_ShouldLimitPageSize() {
         CorpMastManualRequest request = new CorpMastManualRequest();
-        request.setSize(200); // 제한을 초과하는 크기
+        request.setSize(200);
         request.setPage(0);
 
         Page<CorpMast> mockPage = new PageImpl<>(testCorpList, PageRequest.of(0, 100), 2);
