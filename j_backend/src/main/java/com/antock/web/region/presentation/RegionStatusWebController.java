@@ -56,6 +56,7 @@ public class RegionStatusWebController {
             model.addAttribute("district", district);
             model.addAttribute("cities", cities);
             model.addAttribute("districts", districts);
+            addSummary(model, city, district, regionStatsPage.getTotalElements());
 
             log.info("Region status page loaded successfully - total elements: {}, current page: {}",
                     regionStatsPage.getTotalElements(), page);
@@ -77,8 +78,20 @@ public class RegionStatusWebController {
             model.addAttribute("district", district);
             model.addAttribute("cities", List.of());
             model.addAttribute("districts", List.of());
+            addSummary(model, city, district, 0);
             return "region/status";
         }
+    }
+
+    private void addSummary(Model model, String city, String district, long totalRegions) {
+        long totalCorps = totalRegions == 0 ? 0 : regionStatService.countCorps(city, district);
+        double averageCorpsPerRegion = totalRegions == 0 ? 0 : (double) totalCorps / totalRegions;
+        long topRegions = (long) Math.ceil(totalRegions * 0.1d);
+
+        model.addAttribute("totalRegions", totalRegions);
+        model.addAttribute("totalCorps", totalCorps);
+        model.addAttribute("averageCorpsPerRegion", averageCorpsPerRegion);
+        model.addAttribute("topRegions", topRegions);
     }
 
 }

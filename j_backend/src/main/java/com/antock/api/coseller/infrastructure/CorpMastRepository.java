@@ -75,6 +75,12 @@ public interface CorpMastRepository extends JpaRepository<CorpMast, Long>, CorpM
                         @Param("city") String city,
                         @Param("district") String district);
 
+        @Query("SELECT COUNT(c) FROM CorpMast c " +
+                        "WHERE c.siNm IS NOT NULL AND c.sggNm IS NOT NULL " +
+                        "AND (:city IS NULL OR :city = '' OR c.siNm = :city) " +
+                        "AND (:district IS NULL OR :district = '' OR c.sggNm = :district)")
+        long countCorpsForRegionStats(@Param("city") String city, @Param("district") String district);
+
         @Query("SELECT DISTINCT c.siNm FROM CorpMast c WHERE c.siNm IS NOT NULL AND c.siNm != '' ORDER BY c.siNm")
         List<String> findDistinctCities();
 
