@@ -83,7 +83,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
             info.reset(now);
         }
 
@@ -105,7 +105,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
     public int getCurrentCount(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = rateLimitMap.get(key);
-        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+        if (info == null || info.getCreatedAt().plusMinutes(1).isBefore(LocalDateTime.now())) {
             return 0;
         }
         return info.getCount();
@@ -123,7 +123,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
 
     @Override
     public void blockIdentifier(String identifier, String reason, long blockDurationMinutes) {
-        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long minutes = Math.max(blockDurationMinutes, 1);
         long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
@@ -205,7 +205,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
             return false;
         }
 
-        long windowStart = System.currentTimeMillis() - (memoryCacheTtlMinutes * 60 * 1000L);
+        long windowStart = System.currentTimeMillis() - (violationWindowMinutes * 60 * 1000L);
         int violationsInLastHour = tracker.getViolationsInWindow(windowStart);
 
         return violationsInLastHour >= maxViolationsBeforeBlock;

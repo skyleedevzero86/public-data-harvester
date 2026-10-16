@@ -4,6 +4,7 @@ import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -24,12 +26,16 @@ public class CoSellerChunkWriter {
     private final CoSellerDataMapper dataMapper;
     private final CoSellerStorageService storageService;
 
+    @Value("${batch.api-timeout-seconds:30}")
+    private long apiTimeoutSeconds = 30;
+
     public List<CorpMastCreateDTO> prepare(List<BizCsvInfoDto> chunk, String username, String city, String district) {
         List<CompletableFuture<Optional<CorpMastCreateDTO>>> futures = new ArrayList<>(chunk.size());
         for (BizCsvInfoDto row : chunk) {
             futures.add(apiService.processAsync(row, username));
         }
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .orTimeout(apiTimeoutSeconds, TimeUnit.SECONDS)
                 .exceptionally(ex -> null)
                 .join();
 
@@ -56,6 +62,11 @@ public class CoSellerChunkWriter {
 
     private Optional<CorpMastCreateDTO> readApiResult(BizCsvInfoDto row,
             CompletableFuture<Optional<CorpMastCreateDTO>> future) {
+        if (!future.isDone()) {
+            future.cancel(true);
+            log.warn("API 보강 시간 초과, 기본 매핑으로 저장: bizNo={}", row.getBizNo());
+            return Optional.empty();
+        }
         try {
             Optional<CorpMastCreateDTO> fromApi = future.join();
             return fromApi == null ? Optional.empty() : fromApi;

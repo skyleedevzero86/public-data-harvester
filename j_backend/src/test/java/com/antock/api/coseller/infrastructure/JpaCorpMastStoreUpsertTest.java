@@ -50,7 +50,8 @@ class JpaCorpMastStoreUpsertTest {
 
         String updateClause = sql.getValue().substring(sql.getValue().indexOf("ON CONFLICT"));
         assertThat(sql.getValue()).contains("ON CONFLICT (biz_no) DO UPDATE");
-        assertThat(updateClause).contains("biz_nm = EXCLUDED.biz_nm");
+        assertThat(updateClause).contains("rep_nm = COALESCE(NULLIF(EXCLUDED.rep_nm, ''), corp_mast.rep_nm)");
+        assertThat(updateClause).contains("road_nm_addr = COALESCE(NULLIF(EXCLUDED.road_nm_addr, ''), corp_mast.road_nm_addr)");
         assertThat(updateClause).contains("modify_date = now()");
         assertThat(updateClause).doesNotContain("create_date");
         assertThat(setter.getValue().getBatchSize()).isEqualTo(1);

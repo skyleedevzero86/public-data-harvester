@@ -4,7 +4,9 @@ import com.antock.api.member.application.service.RateLimitServiceInterface;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.Status;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,6 +15,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class RedisHealthIndicator implements HealthIndicator {
 
+    public static final Status DEGRADED = new Status("DEGRADED");
+
     private final RateLimitServiceInterface rateLimitService;
     private final ApplicationEventPublisher eventPublisher;
     private final AtomicBoolean redisUp = new AtomicBoolean(false);
@@ -20,6 +24,15 @@ public class RedisHealthIndicator implements HealthIndicator {
 
     @Override
     public Health health() {
+        return refresh();
+    }
+
+    @Scheduled(fixedDelay = 10000)
+    public void probeRedis() {
+        refresh();
+    }
+
+    private Health refresh() {
         try {
             boolean connected = rateLimitService.probeRedis();
             if (connected) {
@@ -31,20 +44,23 @@ public class RedisHealthIndicator implements HealthIndicator {
                         .build();
             }
             markOutage();
-            return Health.down()
-                    .withDetail("redis", "연결 안됨")
-                    .withDetail("backend", "Memory fallback")
-                    .withDetail("status", "DOWN")
-                    .withDetail("warning", "서버별 메모리 캐시로 요청을 처리 중")
-                    .build();
+            return degraded("연결 안됨", null);
         } catch (Exception e) {
             markOutage();
-            return Health.down()
-                    .withDetail("redis", "오류")
-                    .withDetail("error", e.getMessage())
-                    .withDetail("status", "DOWN")
-                    .build();
+            return degraded("오류", e.getMessage());
         }
+    }
+
+    private Health degraded(String redisDetail, String error) {
+        Health.Builder builder = Health.status(DEGRADED)
+                .withDetail("redis", redisDetail)
+                .withDetail("backend", "Memory fallback")
+                .withDetail("status", "DEGRADED")
+                .withDetail("warning", "서버별 메모리 캐시로 요청을 처리 중");
+        if (error != null) {
+            builder.withDetail("error", error);
+        }
+        return builder.build();
     }
 
     private void publishIfRecovered() {

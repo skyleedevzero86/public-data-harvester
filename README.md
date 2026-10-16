@@ -20,9 +20,29 @@
 
 ---
 
+## 문서
+
+기능 명세와 다이어그램은 `j_backend/src/main/resources/docs`에 있다.
+
+- [기능 요구사항](j_backend/src/main/resources/docs/FRS.md)
+- [유스케이스 시나리오](j_backend/src/main/resources/docs/UsecaseScenario.md)
+- [컴포넌트 다이어그램](j_backend/src/main/resources/docs/diagram/ComponentDiagram.md)
+- [시퀀스 다이어그램](j_backend/src/main/resources/docs/diagram/sequence/README.md)
+  - [로그인·인증](j_backend/src/main/resources/docs/diagram/sequence/01_authentication.md)
+  - [사용자 관리](j_backend/src/main/resources/docs/diagram/sequence/02_user_management.md)
+  - [이메일](j_backend/src/main/resources/docs/diagram/sequence/03_email_service.md)
+  - [계정 잠금](j_backend/src/main/resources/docs/diagram/sequence/04_security_account_lock.md)
+  - [법인 정보](j_backend/src/main/resources/docs/diagram/sequence/05_corporation_management.md)
+  - [파일 관리](j_backend/src/main/resources/docs/diagram/sequence/06_file_management.md)
+  - [대시보드·통계](j_backend/src/main/resources/docs/diagram/sequence/07_dashboard_statistics.md)
+
+같은 폴더의 SQL 파일은 스키마 보정과 점검용이다.
+
+---
+
 ## 아키텍처
 
-### 1. ** 아키텍처**
+### 1. public-data-harvester 아키텍처
 
 ```mermaid
 graph TD
@@ -47,10 +67,10 @@ graph TD
 ### 2. **주요 기술 스택**
 
 - Spring Boot 3.x, Spring Data JPA, Spring Security, Actuator
-- H2/PostgreSQL, Redis (환경별 선택)
-- CompletableFuture, @Async (비동기)
-- Minio (파일), OpenAPI(Swagger)
-- Lombok, Jasypt(암호화), Testcontainers(테스트)
+- H2/PostgreSQL, Redis
+- CompletableFuture, @Async
+- 파일업로드, OpenAPI(Swagger)
+- Lombok, 암호화, Testcontainers
 
 ---
 
@@ -58,9 +78,13 @@ graph TD
 
 - **CSV 데이터 필터링 및 저장**: 시/도, 구/군별 CSV에서 법인 데이터만 추출, DB 저장
 - **공공 API 연동**: 법인등록번호, 행정구역코드 실시간 조회 및 병합
-- **비동기 병렬 처리**: 대량 데이터도 빠르게 처리 (CompletableFuture)
+- **비동기 병렬 처리**: 대량 데이터도 빠르게 처리
 - **운영/관리**: 캐시/레이트리밋/헬스체크/모니터링 API 제공
-- **환경별 설정**: dev(로컬+Redis+Minio), prod(H2+로컬파일) 등 profile별 분리
+- **회원**: 역할은 USER, MANAGER, ADMIN. 상태는 승인 대기, 승인, 정지, 거부, 탈퇴. 로그인 실패 5회면 계정을 잠그고, 비밀번호 찾기 메일을 보낸다.
+- **관리자**: 회원 승인·거부·역할 변경, 캐시와 Rate Limit 조회·차단·화이트리스트
+- **법인 검색**: 법인명, 사업자번호, 판매자 ID, 법인등록번호, 지역. 결과는 Excel로 내보낸다.
+- **파일**: 업로드 최대 100MB, 유형 검증, Local/MinIO, 다운로드
+- **웹 화면**: JSP 로그인·회원가입·프로필, 관리자 법인/회원/파일/대시보드
 
 ---
 
@@ -106,10 +130,10 @@ src/
 ## 실행 방법
 
 ```bash
-# 운영 환경 (dev, Redis/Minio 사용)
+# 개발 환경
 ./gradlew runDev
 
-# 개발 환경 (prod, H2/로컬파일 사용)
+# 운영 환경
 ./gradlew runProd
 ```
 
@@ -128,9 +152,9 @@ src/
 - Local Memory 캐시
 - Cache Eviction 정책
 
-Redis가 끊기면 서버마다 메모리 캐시와 요청 횟수를 따로 둔다.
-장애 중 일관성보다 가용성 선택. 메모리 항목은 1~5분 안에 만료된다.
-`RedisHealthIndicator`가 DOWN에서 UP으로 바뀌면 메모리 캐시를 비우고 Redis로 되돌린다.
+Redis가 끊기면 서버마다 메모리 캐시와 요청 횟수를 따로 둔다.<br/>
+장애 중 일관성보다 가용성 선택. 메모리 캐시 TTL은 1~5분이고, 요청 횟수 창과 차단 시간은 이 값과 따로 둔다.<br/>
+Redis가 끊기면 헬스 상태는 DEGRADED이고 readiness에서는 빼 둔다. 10초마다 복구를 확인하고, UP으로 돌아오면 메모리 캐시를 비운다.<br/>
 
 ### 배치 처리
 
@@ -144,14 +168,27 @@ Redis가 끊기면 서버마다 메모리 캐시와 요청 횟수를 따로 둔�
 - N+1 쿼리 방지
 - Connection Pool 설정
 
-법인 목록에서 이력까지 읽을 때의 JDBC 문 개수. `@BatchSize(100)` 적용 후를 같은 코드로 측정했다.
+법인 이력을 읽을 때 JDBC 문 개수. 2,001회는 배치 설정이 전혀 없을 때의 순수 N+1이다.<br/>
+이 앱에는 처음부터 `default_batch_fetch_size: 16`이 있어서, `@BatchSize`만 빼면 2,001회가 되지 않는다.<br/>
+이력을 화면에 보여주는 기능은 없고, `/dev/nplus1`은 이 횟수를 재는 측정용이다.<br/>
 
-| 법인 수         | 개선 전 | 개선 후 |
-| --------------- | ------: | ------: |
-| 2,000건         | 2,001회 |    21회 |
-| 900건 (현재 DB) |   901회 |    10회 |
+| 법인 수 | 배치 설정 없음 | 전역 `default_batch_fetch_size: 16` | `@BatchSize(100)` |
+| ------: | -------------: | ----------------------------------: | ----------------: |
+|   2,000 |        2,001회 |                               126회 |              21회 |
+|     900 |          901회 |                                58회 |              10회 |
 
-<img width="996" height="465" alt="image" src="https://github.com/user-attachments/assets/e65696af-e27a-43f0-80eb-d305e1839085" />
+2,000건은 목록 1회에 2,000/16=125회, 2,000/100=20회가 더해진다. <br/>
+900건은 1+900/16=58회, 1+900/100=10회다.<br/>
+
+### CSV 저장
+
+- 청크마다 커밋한다. 실패한 청크는 기록하고, 성공한 청크는 남긴다.
+- 파일 경로는 `normalize`와 기준 경로 검사로 막는다.
+- Redis가 끊기면 메모리로 요청을 받고, 복구되면 그 메모리 캐시를 비운다.
+- 헬스 상태는 DEGRADED이고 readiness에서는 제외한다. 메모리 항목 TTL과 요청 횟수 창은 따로 둔다.
+- 같은 사업자번호는 `ON CONFLICT`로 갱신한다. 빈 대표자명과 주소는 기존 값을 덮지 않는다.
+- 이력 조회 쿼리 수는 위 표와 같다.
+- 배치 없음 2,001회, 전역 16이면 126회, `@BatchSize(100)`이면 21회다.
 
 ## 문제 해결
 

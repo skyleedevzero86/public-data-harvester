@@ -372,7 +372,7 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
             info.reset(now);
         }
 
@@ -391,7 +391,7 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     }
 
     private void blockIdentifierWithMemory(String identifier, String reason, long blockDurationMinutes) {
-        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long minutes = Math.max(blockDurationMinutes, 1);
         long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
@@ -467,8 +467,7 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
             return false;
         }
 
-        long windowMinutes = Math.min(violationWindowMinutes, memoryCacheTtlMinutes);
-        long windowStart = System.currentTimeMillis() - (windowMinutes * 60 * 1000);
+        long windowStart = System.currentTimeMillis() - (violationWindowMinutes * 60 * 1000);
         int violationsInWindow = tracker.getViolationsInWindow(windowStart);
 
         return violationsInWindow >= maxViolationsBeforeBlock;
@@ -487,7 +486,14 @@ public class RedisRateLimitService implements RateLimitServiceInterface {
     private int getCurrentCountWithMemory(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = memoryCache.get(key);
-        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+        if (info == null) {
+            return 0;
+        }
+        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+            memoryCache.remove(key);
+            return 0;
+        }
+        if (info.getCreatedAt().plusMinutes(1).isBefore(LocalDateTime.now())) {
             return 0;
         }
         return info.getCount();

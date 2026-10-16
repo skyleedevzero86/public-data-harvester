@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,8 +62,15 @@ public class HealthCheckService {
     @Transactional
     public SystemHealthResponse performSystemHealthCheck(List<String> components, String checkType) {
         List<CompletableFuture<HealthCheck>> futures = components.stream()
-                .map(component -> CompletableFuture.supplyAsync(() -> performComponentHealthCheck(component, checkType),
-                        asyncExecutor))
+                .map(component -> CompletableFuture.supplyAsync(
+                                () -> performComponentHealthCheck(component, checkType), asyncExecutor)
+                        .orTimeout(5, TimeUnit.SECONDS)
+                        .exceptionally(ex -> HealthCheck.builder()
+                                .component(component)
+                                .status(HealthStatus.DOWN)
+                                .message("헬스 체크 시간 초과")
+                                .checkedAt(LocalDateTime.now())
+                                .build()))
                 .collect(Collectors.toList());
 
         List<HealthCheck> healthChecks = futures.stream()

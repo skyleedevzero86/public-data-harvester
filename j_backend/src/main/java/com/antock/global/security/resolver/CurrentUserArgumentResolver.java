@@ -6,7 +6,7 @@ import com.antock.global.security.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
@@ -19,10 +19,13 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
     private final JwtTokenProvider jwtTokenProvider;
+
+    public CurrentUserArgumentResolver(ObjectProvider<JwtTokenProvider> jwtTokenProvider) {
+        this.jwtTokenProvider = jwtTokenProvider.getIfAvailable();
+    }
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -44,7 +47,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
             HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
             if (request != null) {
                 String token = extractTokenFromRequest(request);
-                if (token != null) {
+                if (token != null && jwtTokenProvider != null) {
                     try {
                         if (!jwtTokenProvider.validateToken(token)) {
                             log.warn("Invalid token provided for CurrentUser resolution");

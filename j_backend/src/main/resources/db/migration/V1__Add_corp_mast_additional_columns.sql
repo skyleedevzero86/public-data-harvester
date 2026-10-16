@@ -1,22 +1,14 @@
 -- =====================================================================================
--- Flyway 마이그레이션: corp_mast 테이블에 추가 컬럼 추가
+-- Flyway 마이그레이션: corp_mast 추가 컬럼
+-- 프로젝트: Public Data Harvester J-Backend
 -- 마이그레이션 버전: V1
 -- 작성일: 2025-12-27
--- 작성자: 시스템 마이그레이션
--- 설명: rep_nm, estb_dt, road_nm_addr, jibun_addr, corp_status 컬럼 추가
--- 
--- 사전 조건:
---   - corp_mast 테이블이 존재해야 함
---   - 새 컬럼을 위한 충분한 디스크 공간 필요
---   - 적절한 데이터베이스 권한 필요
---
--- 롤백 전략:
---   - 필요시 컬럼을 개별적으로 삭제 가능
---   - 데이터 손실 없음 (모든 컬럼은 nullable)
---
--- 성능 영향:
---   - 낮음: PostgreSQL에서 nullable 컬럼 추가는 메타데이터 작업
---   - 테이블 잠금 시간: 최소 (컬럼당 밀리초 단위)
+-- 설명: 법인 마스터에 대표자명, 설립일자, 주소, 법인상태 컬럼을 추가한다
+-- =====================================================================================
+
+-- =====================================================================================
+-- 1. corp_mast 추가 컬럼
+-- 설명: 테이블이 있을 때만 없는 컬럼을 추가하고 컬럼 코멘트를 남긴다
 -- =====================================================================================
 
 DO $$
@@ -118,22 +110,19 @@ EXCEPTION
         RAISE EXCEPTION '마이그레이션 V1 실패: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
 END $$;
 
--- 자주 조회되는 컬럼에 대한 인덱스 생성 (성능 최적화용, 선택사항)
--- 롤백 시 컬럼 추가에 영향을 주지 않도록 별도로 생성
+-- =====================================================================================
+-- 2. 인덱스
+-- 설명: 추가 컬럼 조회용. 값이 있는 행만 담는다
+-- =====================================================================================
 
-CREATE INDEX IF NOT EXISTS idx_corp_mast_rep_nm 
-ON corp_mast(rep_nm) 
-WHERE rep_nm IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_corp_mast_rep_nm ON corp_mast(rep_nm) WHERE rep_nm IS NOT NULL;           -- 대표자명 조회용
+CREATE INDEX IF NOT EXISTS idx_corp_mast_corp_status ON corp_mast(corp_status) WHERE corp_status IS NOT NULL; -- 법인상태 조회용
+CREATE INDEX IF NOT EXISTS idx_corp_mast_estb_dt ON corp_mast(estb_dt) WHERE estb_dt IS NOT NULL;         -- 설립일자 조회용
 
-CREATE INDEX IF NOT EXISTS idx_corp_mast_corp_status 
-ON corp_mast(corp_status) 
-WHERE corp_status IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_corp_mast_estb_dt 
-ON corp_mast(estb_dt) 
-WHERE estb_dt IS NOT NULL;
-
--- 마이그레이션 성공 여부 검증
+-- =====================================================================================
+-- 3. 검증
+-- 설명: 다섯 컬럼이 모두 있는지 확인한다
+-- =====================================================================================
 DO $$
 DECLARE
     v_expected_columns TEXT[] := ARRAY['rep_nm', 'estb_dt', 'road_nm_addr', 'jibun_addr', 'corp_status'];
