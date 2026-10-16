@@ -2,6 +2,8 @@ package com.antock.api.coseller.presentation;
 
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.service.CoSellerService;
+import com.antock.api.coseller.value.City;
+import com.antock.api.coseller.value.District;
 import com.antock.global.common.response.ApiResponse;
 import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
@@ -36,15 +38,11 @@ public class CoSellerRestController {
 
     @PostMapping("/save-simple")
     public ApiResponse<Integer> saveCoSellerSimple(
-            @RequestBody Map<String, String> request,
+            @Valid @RequestBody RegionRequestDto regionRequestDto,
             @CurrentUser AuthenticatedUser user) {
         try {
-            String city = request.get("city");
-            String district = request.get("district");
-
-            if (city == null || district == null) {
-                return ApiResponse.error("시/도와 구/군 정보가 필요합니다.");
-            }
+            String city = regionRequestDto.getCity().getValue();
+            String district = regionRequestDto.getDistrict().getValue();
 
             String username = (user != null) ? user.getUsername() : "system";
             int savedCount = cosellerService.saveCoSeller(city, district, username);
@@ -56,7 +54,7 @@ public class CoSellerRestController {
             }
         } catch (Exception e) {
             log.error("코셀러 데이터 저장 실패: {} {} - {}",
-                    request.get("city"), request.get("district"), e.getMessage(), e);
+                    regionRequestDto.getCity(), regionRequestDto.getDistrict(), e.getMessage(), e);
             return ApiResponse.error("데이터 저장에 실패했습니다: " + e.getMessage());
         }
     }
@@ -92,9 +90,9 @@ public class CoSellerRestController {
 
     @GetMapping("/debug/test-file-read")
     public ApiResponse<Map<String, Object>> testFileRead(
-            @RequestParam String city,
-            @RequestParam String district) {
-        String fileName = city + "_" + district + ".csv";
+            @RequestParam City city,
+            @RequestParam District district) {
+        String fileName = city.getValue() + "_" + district.getValue() + ".csv";
         try {
             var csvService = cosellerService.getCsvService();
             var csvList = csvService.readCsvFile(fileName);
@@ -157,17 +155,19 @@ public class CoSellerRestController {
 
     @GetMapping("/debug/test-insert")
     public ApiResponse<Map<String, Object>> testInsert(
-            @RequestParam String city,
-            @RequestParam String district) {
+            @RequestParam City city,
+            @RequestParam District district) {
+        String cityValue = city.getValue();
+        String districtValue = district.getValue();
         try {
             String username = "test-user";
-            int savedCount = cosellerService.saveCoSeller(city, district, username);
+            int savedCount = cosellerService.saveCoSeller(cityValue, districtValue, username);
 
             Map<String, Object> result = Map.of(
                     "success", true,
                     "savedCount", savedCount,
-                    "city", city,
-                    "district", district,
+                    "city", cityValue,
+                    "district", districtValue,
                     "username", username);
 
             return ApiResponse.success(result, "데이터 삽입 테스트가 완료되었습니다.");
@@ -176,8 +176,8 @@ public class CoSellerRestController {
             Map<String, Object> errorResult = Map.of(
                     "success", false,
                     "error", e.getMessage(),
-                    "city", city,
-                    "district", district);
+                    "city", cityValue,
+                    "district", districtValue);
             return ApiResponse.error("데이터 삽입 테스트에 실패했습니다: " + e.getMessage(), errorResult);
         }
     }
