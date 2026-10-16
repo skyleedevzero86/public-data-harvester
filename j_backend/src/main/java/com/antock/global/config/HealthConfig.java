@@ -1,5 +1,6 @@
 package com.antock.global.config;
 
+import com.antock.api.admin.health.RedisHealthIndicator;
 import com.antock.api.health.application.HealthCheckScheduler;
 import com.antock.api.health.application.service.HealthCheckService;
 import com.antock.api.health.infrastructure.HealthCheckRepository;
@@ -108,14 +109,15 @@ public class HealthConfig {
                             .withDetail("status", "UP")
                             .build();
                 } else {
-                    return org.springframework.boot.actuate.health.Health.down()
+                    return org.springframework.boot.actuate.health.Health.status(RedisHealthIndicator.DEGRADED)
                             .withDetail("component", "redis")
-                            .withDetail("status", "DOWN")
+                            .withDetail("status", "DEGRADED")
+                            .withDetail("backend", "Memory fallback")
                             .build();
                 }
             } catch (Exception e) {
                 log.error("Redis 헬스 인디케이터 실행 중 오류", e);
-                return org.springframework.boot.actuate.health.Health.down()
+                return org.springframework.boot.actuate.health.Health.status(RedisHealthIndicator.DEGRADED)
                         .withDetail("component", "redis")
                         .withDetail("error", e.getMessage())
                         .build();

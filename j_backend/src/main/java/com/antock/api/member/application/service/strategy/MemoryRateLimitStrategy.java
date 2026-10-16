@@ -25,6 +25,9 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
     @Value("${custom.security.rate-limit.memory-cache-ttl-minutes:5}")
     private int memoryCacheTtlMinutes = 5;
 
+    @Value("${custom.security.rate-limit.violation-window-minutes:60}")
+    private long violationWindowMinutes = 60;
+
     @PostConstruct
     public void init() {
         memoryCacheTtlMinutes = clampTtlMinutes(memoryCacheTtlMinutes);
@@ -49,7 +52,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
             info.reset(now);
         }
 
@@ -64,7 +67,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
     public int getCurrentCount(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = memoryCache.get(key);
-        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+        if (info == null || info.getCreatedAt().plusMinutes(1).isBefore(LocalDateTime.now())) {
             return 0;
         }
         return info.getCount();
@@ -82,7 +85,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
 
     @Override
     public void blockIdentifier(String identifier, String reason, long blockDurationMinutes) {
-        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long minutes = Math.max(blockDurationMinutes, 1);
         long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
@@ -169,8 +172,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
             return false;
         }
 
-        long windowMinutes = Math.min(violationWindowMinutes, memoryCacheTtlMinutes);
-        long windowStart = System.currentTimeMillis() - (windowMinutes * 60 * 1000);
+        long windowStart = System.currentTimeMillis() - (violationWindowMinutes * 60 * 1000);
         int violationsInWindow = tracker.getViolationsInWindow(windowStart);
 
         return violationsInWindow >= maxViolationsBeforeBlock;
@@ -187,7 +189,7 @@ public class MemoryRateLimitStrategy implements RateLimitStrategy {
         memoryCache.entrySet().removeIf(entry -> entry.getValue().getCreatedAt().isBefore(cutoff));
         long nowSec = System.currentTimeMillis() / 1000;
         blockedIdentifiers.entrySet().removeIf(entry -> entry.getValue().getExpiryTime() < nowSec);
-        long cutoffMs = System.currentTimeMillis() - memoryCacheTtlMinutes * 60_000L;
+        long cutoffMs = System.currentTimeMillis() - violationWindowMinutes * 60_000L;
         violationTrackers.entrySet().removeIf(entry -> {
             long last = entry.getValue().getLastViolationTime();
             return last > 0 && last < cutoffMs;

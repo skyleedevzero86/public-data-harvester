@@ -3,10 +3,12 @@ package com.antock.global.config;
 import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import com.antock.global.common.exception.BusinessException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+@Profile("search-page")
 @ControllerAdvice
 public class TestExceptionHandler {
     private final CorpMastManualService corpMastSearchService;

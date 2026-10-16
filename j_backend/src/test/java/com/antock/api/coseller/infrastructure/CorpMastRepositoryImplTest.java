@@ -57,9 +57,9 @@ class CorpMastRepositoryImplTest {
     @Test
     @DisplayName("런타임 DDL 실행은 지원되지 않음")
     void addMissingColumns_ThrowsException() {
-        CorpMastRepository repository = corpMastRepository;
-        
-        assertThatThrownBy(() -> repository.addMissingColumns())
+        CorpMastRepositoryImpl repository = new CorpMastRepositoryImpl();
+
+        assertThatThrownBy(repository::addMissingColumns)
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessageContaining("런타임 DDL 실행은 지원되지 않습니다");
     }

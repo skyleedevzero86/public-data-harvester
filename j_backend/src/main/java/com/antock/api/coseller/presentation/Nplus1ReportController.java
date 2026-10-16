@@ -39,27 +39,35 @@ public class Nplus1ReportController {
                     """);
         }
         int saved = report.before().queries() - report.after().queries();
+        int globalBatch = 1 + (report.rows() + 15) / 16;
         return page(measuredAt, """
-                <p class="lead">법인 %s건의 이력을 한 번 읽을 때 실행된 JDBC 문 개수입니다. @BatchSize(%d).</p>
+                <p class="lead">법인 %s건의 이력을 한 번 읽을 때 실행된 JDBC 문 개수입니다. 앞 숫자는 배치 설정이 전혀 없을 때의 순수 N+1이고, 이 앱의 이전 상태가 아닙니다. 전역 default_batch_fetch_size 16만 있으면 %s회입니다.</p>
                 <div class="nums">
                   <div>
-                    <div class="label">개선 전, 건별 조회</div>
+                    <div class="label">배치 설정 없음</div>
                     <div class="num before">%s회</div>
                     <div class="meta">%d ms, 이력 %s건</div>
                   </div>
                   <div>
-                    <div class="label">개선 후, BatchSize</div>
+                    <div class="label">전역 16</div>
+                    <div class="num mid">%s회</div>
+                    <div class="meta">1 + 법인 수 / 16</div>
+                  </div>
+                  <div>
+                    <div class="label">@BatchSize(%d)</div>
                     <div class="num after">%s회</div>
                     <div class="meta">%d ms, 이력 %s건</div>
                   </div>
                 </div>
-                <p class="saved">쿼리 %s회를 줄였습니다.</p>
+                <p class="saved">배치 없음 대비 @BatchSize가 쿼리 %s회를 줄입니다.</p>
                 """.formatted(
                 format(report.rows()),
-                report.batchSize(),
+                format(globalBatch),
                 format(report.before().queries()),
                 report.before().millis(),
                 format(report.before().historyRows()),
+                format(globalBatch),
+                report.batchSize(),
                 format(report.after().queries()),
                 report.after().millis(),
                 format(report.after().historyRows()),
@@ -85,6 +93,7 @@ public class Nplus1ReportController {
                     .label { color: #5c6570; font-size: 16px; }
                     .num { font-size: 64px; font-weight: 700; line-height: 1.1; }
                     .before { color: #9b1c1c; }
+                    .mid { color: #8a5a00; }
                     .after { color: #0f6b3c; }
                     .meta { color: #5c6570; margin-top: 8px; }
                     .saved { font-size: 20px; }

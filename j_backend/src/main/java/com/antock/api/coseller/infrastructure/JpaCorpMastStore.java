@@ -31,16 +31,16 @@ public class JpaCorpMastStore implements CorpMastStore {
             ON CONFLICT (biz_no) DO UPDATE SET
                 seller_id = EXCLUDED.seller_id,
                 biz_nm = EXCLUDED.biz_nm,
-                corp_reg_no = EXCLUDED.corp_reg_no,
-                region_cd = EXCLUDED.region_cd,
+                corp_reg_no = COALESCE(NULLIF(EXCLUDED.corp_reg_no, ''), corp_mast.corp_reg_no),
+                region_cd = COALESCE(NULLIF(EXCLUDED.region_cd, ''), corp_mast.region_cd),
                 si_nm = EXCLUDED.si_nm,
                 sgg_nm = EXCLUDED.sgg_nm,
                 username = EXCLUDED.username,
-                rep_nm = EXCLUDED.rep_nm,
-                estb_dt = EXCLUDED.estb_dt,
-                road_nm_addr = EXCLUDED.road_nm_addr,
-                jibun_addr = EXCLUDED.jibun_addr,
-                corp_status = EXCLUDED.corp_status,
+                rep_nm = COALESCE(NULLIF(EXCLUDED.rep_nm, ''), corp_mast.rep_nm),
+                estb_dt = COALESCE(NULLIF(EXCLUDED.estb_dt, ''), corp_mast.estb_dt),
+                road_nm_addr = COALESCE(NULLIF(EXCLUDED.road_nm_addr, ''), corp_mast.road_nm_addr),
+                jibun_addr = COALESCE(NULLIF(EXCLUDED.jibun_addr, ''), corp_mast.jibun_addr),
+                corp_status = COALESCE(NULLIF(EXCLUDED.corp_status, ''), corp_mast.corp_status),
                 modify_date = now()
             """;
 

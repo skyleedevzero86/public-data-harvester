@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.mockito.Mockito;
 @WebMvcTest(CorpMastSearchWebController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(TestExceptionHandler.class)
+@ActiveProfiles("search-page")
 @WithMockUser(roles = "ADMIN")
 @DisplayName("CorpMastWebController 테스트")
 public class SearchControllerTest {

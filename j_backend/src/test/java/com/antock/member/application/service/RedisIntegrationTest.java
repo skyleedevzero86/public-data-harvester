@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.*;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 class RedisIntegrationTest {
 
@@ -82,7 +82,6 @@ class RedisIntegrationTest {
         MemberResponse memberResponse = createTestMemberResponse();
         Long memberId = memberResponse.getId();
 
- 후 여러 번 조회
         memberCacheService.cacheMemberResponse(memberResponse);
 
         memberCacheService.getMemberFromCache(memberId);

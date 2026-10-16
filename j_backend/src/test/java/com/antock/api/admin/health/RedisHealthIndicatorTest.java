@@ -22,7 +22,7 @@ class RedisHealthIndicatorTest {
         when(rateLimitService.probeRedis()).thenReturn(false, true, true);
         RedisHealthIndicator indicator = new RedisHealthIndicator(rateLimitService, publisher);
 
-        assertThat(indicator.health().getStatus()).isEqualTo(Status.DOWN);
+        assertThat(indicator.health().getStatus()).isEqualTo(RedisHealthIndicator.DEGRADED);
         assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
         assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
 

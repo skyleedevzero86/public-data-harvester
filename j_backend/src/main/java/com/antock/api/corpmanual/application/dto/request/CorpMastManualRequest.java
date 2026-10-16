@@ -78,19 +78,20 @@ public class CorpMastManualRequest {
     private String sort = "id,desc";
 
     public String getBizNmForSearch() {
-        return bizNm != null ? bizNm.trim() : null;
+        return blankToNull(bizNm);
     }
 
     public String getBizNoForSearch() {
-        return bizNo != null ? bizNo.trim().replaceAll("-", "") : null;
+        String value = blankToNull(bizNo);
+        return value == null ? null : value.replace("-", "");
     }
 
     public String getSellerIdForSearch() {
-        return sellerId != null ? sellerId.trim() : null;
+        return blankToNull(sellerId);
     }
 
     public String getCorpRegNoForSearch() {
-        return corpRegNo != null ? corpRegNo.trim() : null;
+        return blankToNull(corpRegNo);
     }
 
     public String getCityForSearch() {
@@ -102,9 +103,16 @@ public class CorpMastManualRequest {
     }
 
     public boolean hasSearchCondition() {
-        return getBizNmForSearch() != null || getBizNoForSearch() != null ||
-                getBizNoForSearch() != null || getCorpRegNoForSearch() != null ||
-                getCityForSearch() != null || getDistrictForSearch() != null;
+        return getBizNmForSearch() != null || getBizNoForSearch() != null
+                || getSellerIdForSearch() != null || getCorpRegNoForSearch() != null
+                || getCityForSearch() != null || getDistrictForSearch() != null;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     public String getBizNm() {

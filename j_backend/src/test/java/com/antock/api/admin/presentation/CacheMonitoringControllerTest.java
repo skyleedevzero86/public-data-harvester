@@ -63,8 +63,6 @@ class CacheMonitoringControllerTest {
     @DisplayName("특정 회원 캐시 무효화 성공")
     @WithMockUser(roles = "ADMIN")
     void evictMemberCache_Success() throws Exception {
-        doNothing().when(memberApplicationService).evictMemberCache(anyLong());
-
         mockMvc.perform(delete("/api/admin/cache/members/1")
                         .with(csrf()))
                 .andExpect(status().isOk())

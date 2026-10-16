@@ -5,8 +5,8 @@ import com.antock.global.security.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -17,12 +17,17 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
 
     private final MemberApplicationService memberApplicationService;
     private final JwtTokenProvider jwtTokenProvider;
+
+    public PasswordChangeRequiredInterceptor(ObjectProvider<MemberApplicationService> memberApplicationService,
+            ObjectProvider<JwtTokenProvider> jwtTokenProvider) {
+        this.memberApplicationService = memberApplicationService.getIfAvailable();
+        this.jwtTokenProvider = jwtTokenProvider.getIfAvailable();
+    }
 
     private final List<String> excludePatterns = Arrays.asList(
             "/members/password/change",
@@ -58,7 +63,7 @@ public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
 
         try {
             Long memberId = extractMemberIdFromToken(request);
-            if (memberId == null) {
+            if (memberId == null || memberApplicationService == null) {
                 return true;
             }
 
@@ -89,10 +94,10 @@ public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
-                    if ("accessToken".equals(cookie.getName())) {
+                    if ("accessToken".equals(cookie.getName()) && jwtTokenProvider != null) {
                         String token = cookie.getValue();
                         String username = jwtTokenProvider.getUsernameFromToken(token);
-                        if (username != null) {
+                        if (username != null && memberApplicationService != null) {
                             return memberApplicationService.getMemberIdByUsername(username);
                         }
                     }
