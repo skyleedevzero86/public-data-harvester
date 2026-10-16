@@ -1,5 +1,4 @@
-![image](https://github.com/user-attachments/assets/0ab4c671-8dfc-4498-8f6d-47b3b9d5ab4d)
-![image](https://github.com/user-attachments/assets/68edacdd-3ccb-4f2c-8371-a2cca89aca93)
+<img width="1892" height="896" alt="image" src="https://github.com/user-attachments/assets/04a868e3-4082-4e1e-8e88-759664a73f6c" />
 
 <br/>
 
@@ -23,7 +22,7 @@
 
 ## 아키텍처
 
-### 1. **DDD + 레이어드 아키텍처**
+### 1. ** 아키텍처**
 
 ```mermaid
 graph TD
@@ -152,7 +151,7 @@ Redis가 끊기면 서버마다 메모리 캐시와 요청 횟수를 따로 둔�
 | 2,000건         | 2,001회 |    21회 |
 | 900건 (현재 DB) |   901회 |    10회 |
 
-<이미지 참조>
+<img width="996" height="465" alt="image" src="https://github.com/user-attachments/assets/e65696af-e27a-43f0-80eb-d305e1839085" />
 
 ## 문제 해결
 
