@@ -3,8 +3,6 @@ package com.antock.api.coseller.application.service;
 import com.antock.api.coseller.application.dto.CorpMastCreateDTO;
 import com.antock.api.coseller.application.dto.RegionRequestDto;
 import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
-import com.antock.api.coseller.domain.CorpMast;
-import com.antock.api.coseller.infrastructure.CorpMastStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,45 +11,37 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CoSellerService {
 
-    private final CoSellerCsvProcessor csvProcessor;
-    private final CoSellerDataMapper dataMapper;
+    static final int CHUNK_SIZE = 100;
+
     private final CoSellerStorageService storageService;
     private final CoSellerApiService apiService;
     private final CsvService csvService;
+    private final CoSellerChunkWriter chunkWriter;
+    private final FailedChunkRecorder failedChunkRecorder;
 
     public CsvService getCsvService() {
         return csvService;
     }
 
-    @Transactional
     public int saveCoSeller(RegionRequestDto requestDto, String username) {
-        List<BizCsvInfoDto> csvList = csvProcessor.readCsvByRegion(requestDto);
-        if (csvList.isEmpty()) {
-            return 0;
-        }
-
-        return processBatch(csvList, username, null, null);
+        String fileName = requestDto.getCity().getValue() + "_" + requestDto.getDistrict().getValue() + ".csv";
+        return processFile(fileName, username, null, null);
     }
 
-    @Transactional
     public int saveCoSeller(String city, String district, String username) {
-        List<BizCsvInfoDto> csvList = csvProcessor.readCsvByCityAndDistrict(city, district);
-        if (csvList.isEmpty()) {
-            return 0;
-        }
-
-        return processBatch(csvList, username, city, district);
+        String fileName = city + "_" + district + ".csv";
+        return processFile(fileName, username, city, district);
     }
 
-    @Transactional
     public void processBatch(List<BizCsvInfoDto> csvList, String username) {
-        processBatch(csvList, username, null, null);
+        processList(csvList, "inline-batch", username, null, null);
     }
 
     @Transactional
@@ -64,27 +54,45 @@ public class CoSellerService {
         return apiService.processAsync(csvInfo, username);
     }
 
-    private int processBatch(List<BizCsvInfoDto> csvList, String username, String city, String district) {
-        int batchSize = 100;
-        int totalSaved = 0;
+    private int processFile(String fileName, String username, String city, String district) {
+        AtomicInteger totalSaved = new AtomicInteger();
+        AtomicInteger offset = new AtomicInteger();
+        csvService.readInChunks(fileName, CHUNK_SIZE, chunk -> {
+            int startIndex = offset.getAndAdd(chunk.size());
+            totalSaved.addAndGet(handleChunk(fileName, startIndex, chunk, username, city, district));
+        });
+        return totalSaved.get();
+    }
 
-        for (int i = 0; i < csvList.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, csvList.size());
-            List<BizCsvInfoDto> batch = csvList.subList(i, end);
-
-            List<CorpMastCreateDTO> corpCreateDtoList;
-            if (city != null && district != null) {
-                corpCreateDtoList = dataMapper.mapToCorpMastCreateDTO(batch, username, city, district);
-            } else {
-                corpCreateDtoList = dataMapper.mapToCorpMastCreateDTO(batch, username);
-            }
-
-            if (!corpCreateDtoList.isEmpty()) {
-                int savedCnt = storageService.saveCorpMastList(corpCreateDtoList, username);
-                totalSaved += savedCnt;
-            }
+    private int processList(List<BizCsvInfoDto> csvList, String fileName, String username, String city, String district) {
+        if (csvList == null || csvList.isEmpty()) {
+            return 0;
         }
-
+        int totalSaved = 0;
+        for (int i = 0; i < csvList.size(); i += CHUNK_SIZE) {
+            int end = Math.min(i + CHUNK_SIZE, csvList.size());
+            List<BizCsvInfoDto> chunk = csvList.subList(i, end);
+            totalSaved += handleChunk(fileName, i, chunk, username, city, district);
+        }
         return totalSaved;
+    }
+
+    private int handleChunk(String fileName, int startIndex, List<BizCsvInfoDto> chunk, String username, String city,
+            String district) {
+        try {
+            List<CorpMastCreateDTO> prepared = chunkWriter.prepare(chunk, username, city, district);
+            return chunkWriter.saveChunk(prepared, username);
+        } catch (Exception e) {
+            recordFailure(fileName, startIndex, chunk, e);
+            return 0;
+        }
+    }
+
+    private void recordFailure(String fileName, int startIndex, List<BizCsvInfoDto> chunk, Exception error) {
+        try {
+            failedChunkRecorder.record(fileName, startIndex, chunk, error);
+        } catch (Exception recordError) {
+            log.error("실패 청크 기록 실패: file={}, startIndex={}", fileName, startIndex, recordError);
+        }
     }
 }
