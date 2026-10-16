@@ -1,6 +1,7 @@
 package com.antock.api.member.application.service;
 
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,14 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
     @Value("${custom.security.rate-limit.violation-window-minutes:60}")
     private long violationWindowMinutes;
 
+    @Value("${custom.security.rate-limit.memory-cache-ttl-minutes:5}")
+    private int memoryCacheTtlMinutes = 5;
+
+    @PostConstruct
+    public void init() {
+        memoryCacheTtlMinutes = memoryCacheTtlMinutes < 1 ? 1 : Math.min(memoryCacheTtlMinutes, 5);
+    }
+
     public InMemoryRateLimitService() {
         scheduler.scheduleAtFixedRate(this::cleanupExpiredEntries, 1, 1, TimeUnit.MINUTES);
         scheduler.scheduleAtFixedRate(this::cleanupExpiredBlocks, 5, 5, TimeUnit.MINUTES);
@@ -74,7 +83,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (info.getCreatedAt().plusMinutes(1).isBefore(now)) {
+        if (info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(now)) {
             info.reset(now);
         }
 
@@ -96,7 +105,10 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
     public int getCurrentCount(String identifier, String action) {
         String key = generateKey(identifier, action);
         RateLimitInfo info = rateLimitMap.get(key);
-        return info != null ? info.getCount() : 0;
+        if (info == null || info.getCreatedAt().plusMinutes(memoryCacheTtlMinutes).isBefore(LocalDateTime.now())) {
+            return 0;
+        }
+        return info.getCount();
     }
 
     @Override
@@ -111,7 +123,8 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
 
     @Override
     public void blockIdentifier(String identifier, String reason, long blockDurationMinutes) {
-        long expiryTime = System.currentTimeMillis() / 1000 + (blockDurationMinutes * 60);
+        long minutes = Math.min(Math.max(blockDurationMinutes, 1), memoryCacheTtlMinutes);
+        long expiryTime = System.currentTimeMillis() / 1000 + (minutes * 60);
         BlockInfo blockInfo = new BlockInfo(reason, expiryTime, LocalDateTime.now());
         blockedIdentifiers.put(identifier, blockInfo);
 
@@ -192,8 +205,8 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
             return false;
         }
 
-        long oneHourAgo = System.currentTimeMillis() - (60 * 60 * 1000);
-        int violationsInLastHour = tracker.getViolationsInWindow(oneHourAgo);
+        long windowStart = System.currentTimeMillis() - (memoryCacheTtlMinutes * 60 * 1000L);
+        int violationsInLastHour = tracker.getViolationsInWindow(windowStart);
 
         return violationsInLastHour >= maxViolationsBeforeBlock;
     }
@@ -205,7 +218,7 @@ public class InMemoryRateLimitService implements RateLimitServiceInterface, Auto
 
     private void cleanupExpiredEntries() {
         try {
-            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(5);
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(memoryCacheTtlMinutes);
             rateLimitMap.entrySet().removeIf(entry ->
                     entry.getValue().getCreatedAt().isBefore(cutoff));
         } catch (Exception e) {
