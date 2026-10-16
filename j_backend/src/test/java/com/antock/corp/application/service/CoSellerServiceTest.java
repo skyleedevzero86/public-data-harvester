@@ -85,7 +85,6 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("데이터 저장 로직 검증")
         void saveCoSeller_save_success() throws Exception {
-                // given
                 when(csvService.readCsvFile(anyString()))
                                 .thenReturn(csvInfoList);
 
@@ -104,10 +103,8 @@ public class CoSellerServiceTest {
 
                 doNothing().when(corpMastStore).save(any(CorpMast.class));
 
-                // when
                 int savedCount = coSellerService.saveCoSeller(requestDto, "testuser");
 
-                // then
                 assertThat(savedCount).isEqualTo(2);
                 verify(corpMastStore, times(2)).save(any(CorpMast.class));
                 verify(corpMastHistoryStore, times(2)).save(any());
@@ -116,7 +113,6 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("csv list를 넣어서 dto 반환 코드 검증 ")
         public void proccessAsync_success() throws Exception {
-                // given
                 when(corpApiClient.getCorpRegNo(eq(csvInfoList.get(0).getBizNo())))
                                 .thenReturn(CompletableFuture.completedFuture("111111-1234567"));
 
@@ -127,10 +123,8 @@ public class CoSellerServiceTest {
                                                 .sggNm("강남구")
                                                 .build()));
 
-                // when
                 Optional<CorpMastCreateDTO> result = coSellerService.processAsync(csvInfoList.get(0), "testuser").get();
 
-                // then
                 assertThat(result).isPresent();
                 assertThat(result.get().getCorpRegNo()).isEqualTo("111111-1234567");
                 assertThat(result.get().getRegionCd()).isEqualTo("1168010300");
@@ -142,19 +136,16 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("API둘다 실패시 csvInfo 데이터를 가진 CorpMastCreateDTO 반환")
         void processAsync_fail_when_api_calls_return_null_or_empty() throws Exception {
-                // given
                 when(corpApiClient.getCorpRegNo(anyString()))
                                 .thenReturn(CompletableFuture.completedFuture(null));
 
                 when(regionApiClient.getRegionInfo(anyString()))
                                 .thenReturn(CompletableFuture.completedFuture(null));
 
-                // when
                 CompletableFuture<Optional<CorpMastCreateDTO>> future = coSellerService
                                 .processAsync(csvInfoList.get(0), "testuser");
                 Optional<CorpMastCreateDTO> result = future.get();
 
-                // then
                 assertThat(result).isPresent();
                 assertThat(result.get().getCorpRegNo()).isEqualTo("");
                 assertThat(result.get().getRegionCd()).isEqualTo("");
@@ -168,7 +159,6 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("API 호출 중 예외 발생 시 빈 Optional 반환")
         void processAsync_exception_in_api_call() throws Exception {
-                // given
                 when(corpApiClient.getCorpRegNo(anyString()))
                                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Corp API error")));
 
@@ -179,26 +169,23 @@ public class CoSellerServiceTest {
                                                 .sggNm("강남구")
                                                 .build()));
 
-                // when
                 CompletableFuture<Optional<CorpMastCreateDTO>> future = coSellerService
                                 .processAsync(csvInfoList.get(0), "testuser");
                 Optional<CorpMastCreateDTO> result = future.get();
 
-                // then
                 assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("saveCoSeller: 중복 bizNo 처리 검증")
         void saveCoSeller_handles_duplicate_bizNo() {
-                // given
                 List<BizCsvInfoDto> testCsvList = new ArrayList<>();
                 testCsvList.add(BizCsvInfoDto.builder().sellerId("id1").bizNo("123-45-67890").bizNm("Org1")
                                 .bizAddress("Addr1").build());
                 testCsvList.add(BizCsvInfoDto.builder().sellerId("id2").bizNo("987-65-43210").bizNm("Org2")
                                 .bizAddress("Addr2").build());
                 testCsvList.add(BizCsvInfoDto.builder().sellerId("id3").bizNo("123-45-67890").bizNm("Org1_Duplicate")
-                                .bizAddress("Addr1_Dup").build()); // Duplicate
+                                .bizAddress("Addr1_Dup").build());
 
                 when(csvService.readCsvFile(anyString())).thenReturn(testCsvList);
 
@@ -214,10 +201,8 @@ public class CoSellerServiceTest {
 
                 doNothing().when(corpMastStore).save(any(CorpMast.class));
 
-                // when
                 int savedCount = coSellerService.saveCoSeller(requestDto, "testuser");
 
-                // then
                 assertThat(savedCount).isEqualTo(2);
                 verify(corpMastStore, times(2)).save(any(CorpMast.class));
                 verify(corpMastHistoryStore, times(3)).save(any());
@@ -226,7 +211,6 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("saveCoSeller: DataIntegrityViolationException 처리 검증")
         void saveCoSeller_handles_dataIntegrityViolationException() {
-                // given
                 List<BizCsvInfoDto> testCsvList = List.of(
                                 BizCsvInfoDto.builder().sellerId("id1").bizNo("123-45-67890").bizNm("Org1")
                                                 .bizAddress("Addr1").build());
@@ -241,10 +225,8 @@ public class CoSellerServiceTest {
                 doThrow(new DataIntegrityViolationException("Simulated unique constraint violation"))
                                 .when(corpMastStore).save(any(CorpMast.class));
 
-                // when
                 int savedCount = coSellerService.saveCoSeller(requestDto, "testuser");
 
-                // then
                 assertThat(savedCount).isEqualTo(0);
                 verify(corpMastStore, times(1)).save(any(CorpMast.class));
                 verify(corpMastHistoryStore, times(1)).save(any());
@@ -253,7 +235,6 @@ public class CoSellerServiceTest {
         @Test
         @DisplayName("saveCoSeller: 일반 예외 처리 검증")
         void saveCoSeller_handles_general_exception() {
-                // given
                 List<BizCsvInfoDto> testCsvList = List.of(
                                 BizCsvInfoDto.builder().sellerId("id1").bizNo("123-45-67890").bizNm("Org1")
                                                 .bizAddress("Addr1").build());
@@ -268,11 +249,9 @@ public class CoSellerServiceTest {
                 doThrow(new RuntimeException("Simulated unexpected error"))
                                 .when(corpMastStore).save(any(CorpMast.class));
 
-                // when
                 int savedCount = coSellerService.saveCoSeller(requestDto, "testuser");
 
-                // then
-                assertThat(savedCount).isEqualTo(0); // 아무것도 저장되지 않음
+                assertThat(savedCount).isEqualTo(0);
                 verify(corpMastStore, times(1)).save(any(CorpMast.class));
                 verify(corpMastHistoryStore, times(1)).save(any());
         }

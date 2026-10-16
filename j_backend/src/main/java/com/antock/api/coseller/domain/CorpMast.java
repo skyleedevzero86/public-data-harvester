@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +72,6 @@ public class CorpMast extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "corpMast", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @BatchSize(size = 100)
-    @Fetch(FetchMode.SUBSELECT)
     @JsonIgnore
     private List<CorpMastHistory> histories = new ArrayList<>();
 

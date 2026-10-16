@@ -208,7 +208,7 @@ public class PasswordFindService {
                         helper.setTo(email);
                         helper.setFrom(fromEmail);
                         helper.setSubject("[통신판매사업자관리 시스템] 비밀번호 재설정");
-                        helper.setText(buildEmailContent(username, resetLink), true); // HTML 지원
+                        helper.setText(buildEmailContent(username, resetLink), true);
 
                         mailSender.send(message);
                         log.info("비밀번호 재설정 이메일 전송 완료 - email: {}", email);

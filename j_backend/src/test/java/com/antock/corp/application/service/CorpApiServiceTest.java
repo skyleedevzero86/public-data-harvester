@@ -32,13 +32,13 @@ public class CorpApiServiceTest {
     @InjectMocks
     private CorpApiService apiService;
 
-    private String bizNo = ""; //사업자 번호
+    private String bizNo = "";
     private URI mockUri;
     private String mockResponseBody ="";
 
     @BeforeEach
     void setUp() throws Exception {
-        bizNo =  "631-37-01624"; //임의로 추출
+        bizNo =  "631-37-01624";
         mockUri = new URI("https://test.api");
 
         mockResponseBody = """
@@ -55,31 +55,25 @@ public class CorpApiServiceTest {
     @Test
     @DisplayName("API에서 정상 값을 받았을 경우 동작 확인")
     public void get_CorpRegNo_from_API() throws Exception {
-        //given
         when(corpApiProperties.buildRequestUrlWithBizNo(bizNo)).thenReturn(mockUri);
         when(restTemplate.getForEntity(mockUri,String.class)).thenReturn(
                 new ResponseEntity<>(mockResponseBody, HttpStatus.OK)
         );
 
-        //when
         CompletableFuture<String> future = apiService.getCorpRegNo(bizNo);
-        String result = future.get(); //111111-1234567
+        String result = future.get();
 
-        //then
         assertThat(result).isEqualTo("111111-1234567");
     }
 
     @Test
     @DisplayName("API 타임아웃 예외 발생 시 동작 확인")
     void exception_CorpRegNo_from_API() throws Exception {
-        //given
         when(corpApiProperties.buildRequestUrlWithBizNo(bizNo)).thenReturn(mockUri);
         when(restTemplate.getForEntity(mockUri,String.class))
                 .thenThrow(new ResourceAccessException("Timeout"));
 
-        //when
         String result = apiService.getCorpRegNo(bizNo).get();
-        //then
         assertThat(result).isEqualTo("");
     }
 }
