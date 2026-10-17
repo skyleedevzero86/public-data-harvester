@@ -158,9 +158,16 @@ Redis가 끊기면 헬스 상태는 DEGRADED이고 readiness에서는 빼 둔다
 
 ### 배치 처리
 
-- Chunk 기반 처리
-- 비동기 실행
-- 재시도 메커니즘
+- 지역 단위 비동기 실행
+- 청크 단위 처리
+  - 청크 하나가 실패하면 그 지역 처리를 멈추고 ERROR 이력을 남긴다
+  - 다른 지역은 계속 처리한다
+- 외부 API 재시도: 연결 오류와 5xx만 최대 3회, 1초부터 2배씩 늘려 기다린다. 4xx와 잘못된 응답은 재시도하지 않는다
+  - 처음에는 `@Retryable`이 같은 클래스 안의 private 메서드에 붙어 있어 프록시를 거치지 않았고, `@EnableRetry`도 없었다
+  - 예외 종류도 `IOException`으로 잡혀 있어 RestTemplate 예외에 걸리지 않았다
+  - API 호출을 `CorpInfoFetcher` 빈으로 분리하고 `CsvRetryConfig`에서 `@EnableRetry`를 켠 뒤, 재시도 동작을 테스트로 확인했다
+- API가 XML 응답을 보내거나, JSON 파싱에 실패하거나, `items`가 배열이 아니면 일부 결과를 정상처럼 쓰지 않고 `CorpApiResponseException`으로 처리한다
+- 로그에 남기는 API 주소는 serviceKey를 `****`로 가린다
 
 ### 데이터베이스 최적화
 
@@ -197,6 +204,7 @@ Redis가 끊기면 헬스 상태는 DEGRADED이고 readiness에서는 빼 둔다
 1. **Redis 연결 실패**: Memory 캐시로 자동 Fallback. 장애 중 일관성보다 가용성 선택. 복구 후 메모리 캐시는 비운다.
 2. **파일 업로드 실패**: 저장소 설정 확인
 3. **JWT 토큰 만료**: Refresh Token 사용
+4. **공공데이터 API 장애**: 연결 오류·5xx는 3회까지 재시도한다. 그래도 실패하면 그 지역을 ERROR 이력으로 남기고 나머지 지역은 계속 처리한다.
 
 ### 로그 확인
 

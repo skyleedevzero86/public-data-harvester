@@ -1,7 +1,7 @@
 package com.antock.api.csv.application.service;
 
 import com.antock.api.csv.domain.CsvBatchHistory;
-import com.antock.api.csv.infrastructure.CorpInfoApiClient;
+import com.antock.api.csv.infrastructure.CorpInfoFetcher;
 import com.antock.api.csv.infrastructure.CsvBatchHistoryRepository;
 import com.antock.api.csv.infrastructure.CsvFileWriter;
 import com.antock.api.coseller.value.City;
@@ -11,9 +11,6 @@ import com.antock.global.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -33,15 +30,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequiredArgsConstructor
 public class CsvBatchService {
 
-    private final CorpInfoApiClient apiClient;
+    private final CorpInfoFetcher corpInfoFetcher;
     private final CsvFileWriter fileWriter;
     private final CsvBatchHistoryRepository historyRepo;
-
-    @Value("${batch.retry.max-attempts:3}")
-    private int maxRetryAttempts;
-
-    @Value("${batch.retry.delay:1000}")
-    private long retryDelay;
 
     @Value("${batch.chunk-size:1000}")
     private int chunkSize;
@@ -124,7 +115,7 @@ public class CsvBatchService {
 
         try {
 
-            List<Map<String, Object>> data = fetchDataWithRetry(cityName, districtName);
+            List<Map<String, Object>> data = corpInfoFetcher.fetch(cityName, districtName);
 
             if (data.isEmpty()) {
                 log.warn("{} {} 지역에서 데이터를 찾을 수 없음", cityName, districtName);
@@ -161,17 +152,6 @@ public class CsvBatchService {
             } finally {
                 totalProcessed.incrementAndGet();
             }
-        }
-    }
-
-    @Retryable(retryFor = { IOException.class,
-            DataAccessException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
-    private List<Map<String, Object>> fetchDataWithRetry(String city, String district) {
-        try {
-            return apiClient.fetchAll(city, district);
-        } catch (Exception e) {
-            log.warn("API 호출 실패 (재시도 예정): {} {}, 오류: {}", city, district, e.getMessage());
-            throw e;
         }
     }
 

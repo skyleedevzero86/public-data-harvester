@@ -33,34 +33,45 @@ public class CorpInfoApiClient {
             String apiUrl = String.format(
                     "%s%s?serviceKey=%s&pageNo=%d&numOfRows=1000&resultType=json&ctpvNm=%s&signguNm=%s",
                     url, endpoint, serviceKey, page, encode(city), encode(district));
-            log.info("API 호출 URL: {}", apiUrl);
+            log.info("API 호출 URL: {}", maskServiceKey(apiUrl));
             String responseStr = restTemplate.getForObject(apiUrl, String.class);
             if (responseStr == null || responseStr.trim().isEmpty())
                 break;
             if (responseStr.trim().startsWith("<")) {
-                log.error("API 파싱에러 확인: " + responseStr);
-                break;
+                log.error("API 응답이 XML입니다. JSON 객체를 기대했습니다.");
+                throw new CorpApiResponseException("법인 API 응답이 XML입니다. JSON 객체를 기대했습니다.");
             }
-            try {
-                Map<String, Object> response = mapper.readValue(responseStr, Map.class);
-                Object itemsObj = response.get("items");
-                if (itemsObj instanceof List<?> items) {
-                    if (items.isEmpty())
-                        break;
-                    for (Object item : items) {
-                        if (item instanceof Map) {
-                            result.add((Map<String, Object>) item);
-                        }
-                    }
-                } else {
+            Map<String, Object> response = readResponse(mapper, responseStr);
+            Object itemsObj = response.get("items");
+            if (itemsObj instanceof List<?> items) {
+                if (items.isEmpty())
                     break;
+                for (Object item : items) {
+                    if (item instanceof Map) {
+                        result.add((Map<String, Object>) item);
+                    }
                 }
-            } catch (Exception e) {
-                log.error("JSON 파싱 실패: " + e.getMessage());
-                break;
+            } else {
+                throw new CorpApiResponseException("법인 API 응답의 items가 배열이 아닙니다. JSON 배열을 기대했습니다.");
             }
         }
         return result;
+    }
+
+    private Map<String, Object> readResponse(ObjectMapper mapper, String responseStr) {
+        try {
+            return mapper.readValue(responseStr, Map.class);
+        } catch (Exception e) {
+            log.error("JSON 파싱 실패: {}", e.getMessage());
+            throw new CorpApiResponseException("법인 API 응답 JSON 파싱에 실패했습니다. JSON 객체를 기대했습니다.", e);
+        }
+    }
+
+    private String maskServiceKey(String apiUrl) {
+        if (serviceKey == null || serviceKey.isEmpty()) {
+            return apiUrl;
+        }
+        return apiUrl.replace(serviceKey, "****");
     }
 
     private static String encode(String s) {
