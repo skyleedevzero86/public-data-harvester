@@ -1,7 +1,7 @@
 package com.antock.api.csv.application.service;
 
 import com.antock.api.csv.domain.CsvBatchHistory;
-import com.antock.api.csv.infrastructure.CorpInfoApiClient;
+import com.antock.api.csv.infrastructure.CorpInfoFetcher;
 import com.antock.api.csv.infrastructure.CsvBatchHistoryRepository;
 import com.antock.api.csv.infrastructure.CsvFileWriter;
 import com.antock.api.coseller.value.City;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 class CsvBatchServiceTest {
 
     @Mock
-    private CorpInfoApiClient apiClient;
+    private CorpInfoFetcher corpInfoFetcher;
 
     @Mock
     private CsvFileWriter fileWriter;
@@ -45,8 +45,6 @@ class CsvBatchServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(csvBatchService, "maxRetryAttempts", 3);
-        ReflectionTestUtils.setField(csvBatchService, "retryDelay", 1000L);
         ReflectionTestUtils.setField(csvBatchService, "chunkSize", 1000);
         ReflectionTestUtils.setField(csvBatchService, "maxConcurrent", 5);
     }
@@ -58,20 +56,20 @@ class CsvBatchServiceTest {
         data.put("sellerId", "seller1");
         data.put("bizNm", "테스트 법인");
 
-        when(apiClient.fetchAll(anyString(), anyString())).thenReturn(Arrays.asList(data));
+        when(corpInfoFetcher.fetch(anyString(), anyString())).thenReturn(Arrays.asList(data));
         doNothing().when(fileWriter).writeCsv(anyString(), anyString(), anyList(), anyList(), anyMap());
         when(historyRepo.save(any(CsvBatchHistory.class))).thenReturn(new CsvBatchHistory());
 
         csvBatchService.processDistrict(City.서울특별시, District.강남구);
 
-        verify(apiClient).fetchAll(anyString(), anyString());
+        verify(corpInfoFetcher).fetch(anyString(), anyString());
         verify(fileWriter).writeCsv(anyString(), anyString(), anyList(), anyList(), anyMap());
     }
 
     @Test
     @DisplayName("지역 처리 - 데이터 없음")
     void processDistrict_noData() {
-        when(apiClient.fetchAll(anyString(), anyString())).thenReturn(Arrays.asList());
+        when(corpInfoFetcher.fetch(anyString(), anyString())).thenReturn(Arrays.asList());
         when(historyRepo.save(any(CsvBatchHistory.class))).thenReturn(new CsvBatchHistory());
 
         csvBatchService.processDistrict(City.서울특별시, District.강남구);
@@ -82,7 +80,7 @@ class CsvBatchServiceTest {
     @Test
     @DisplayName("지역 처리 - API 호출 실패")
     void processDistrict_apiFailure() {
-        when(apiClient.fetchAll(anyString(), anyString())).thenThrow(new RuntimeException("API error"));
+        when(corpInfoFetcher.fetch(anyString(), anyString())).thenThrow(new RuntimeException("API error"));
 
         assertThatThrownBy(() -> csvBatchService.processDistrict(City.서울특별시, District.강남구))
                 .isInstanceOf(BusinessException.class)
@@ -95,7 +93,7 @@ class CsvBatchServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("sellerId", "seller1");
 
-        when(apiClient.fetchAll(anyString(), anyString())).thenReturn(Arrays.asList(data));
+        when(corpInfoFetcher.fetch(anyString(), anyString())).thenReturn(Arrays.asList(data));
         doThrow(new IOException("Write error")).when(fileWriter).writeCsv(anyString(), anyString(), anyList(), anyList(), anyMap());
 
         assertThatThrownBy(() -> csvBatchService.processDistrict(City.서울특별시, District.강남구))
