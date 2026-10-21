@@ -4,7 +4,7 @@
                                                                                                 uri="http://java.sun.com/jsp/jstl/fmt"%>
 
 <c:set var="pageTitle" value="지역별 상세 통계" />
-<c:set var="pageCSS" value="${['region.css']}" />
+<c:set var="pageCSS" value="${['corp.css', 'region.css']}" />
 <c:set var="pageJS" value="${['region.js']}" />
 
 <!DOCTYPE html>
@@ -12,10 +12,11 @@
 <head>
   <%@ include file="../common/head.jsp" %>
 </head>
-<body>
+<body class="region-detail-page">
 <%@ include file="../common/navigation.jsp" %>
 
-<div class="container mt-4">
+<div class="page-fill">
+<div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-geo-alt"></i> 지역별 상세 통계</h2>
     <div class="dropdown custom-dropdown">
@@ -122,91 +123,52 @@
     </div>
   </div>
 
-  <c:if test="${not empty siNm}">
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle"></i> <strong>${siNm}</strong> 지역의 상세
+  <c:if test="${not empty city}">
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      <i class="bi bi-info-circle"></i> <strong>${city}</strong> 지역의 상세
       통계를 표시하고 있습니다.
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   </c:if>
 
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h5 class="card-title text-primary">
-            <i class="bi bi-geo-alt"></i> 총 지역 수
-          </h5>
-          <h2 class="text-primary">${totalRegions}</h2>
+  <div class="search-container">
+    <h5 class="search-title"><i class="bi bi-search"></i> 검색 조건</h5>
+    <div class="search-form">
+      <div class="row g-3">
+        <div class="col-12">
+          <label for="regionSearch" class="form-label">지역명</label>
+          <input
+                  type="text"
+                  class="form-control"
+                  id="regionSearch"
+                  placeholder="시/도 또는 구/군을 입력하세요"
+          />
         </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h5 class="card-title text-success">
-            <i class="bi bi-building"></i> 총 법인 수
-          </h5>
-          <h2 class="text-success">
-            <fmt:formatNumber value="${totalCorps}" pattern="#,###" />
-          </h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h5 class="card-title text-info">
-            <i class="bi bi-calculator"></i> 평균 법인/지역
-          </h5>
-          <h2 class="text-info">
-            <fmt:formatNumber
-                    value="${averageCorpsPerRegion}"
-                    pattern="#.#"
-            />
-          </h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h5 class="card-title text-warning">
-            <i class="bi bi-star"></i> 상위 지역
-          </h5>
-          <h2 class="text-warning">${topRegions}</h2>
-        </div>
+      <div class="search-buttons">
+        <button type="button" class="btn btn-primary btn-search" onclick="searchRegions()">
+          <i class="bi bi-search"></i> 검색
+        </button>
+        <button type="button" class="btn btn-secondary btn-reset" onclick="resetRegionSearch()">
+          <i class="bi bi-arrow-clockwise"></i> 초기화
+        </button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header">
+  <div class="results-container">
+    <div class="results-header">
       <div class="d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
-          <i class="bi bi-table"></i> 지역별 상세 현황
-          <c:if test="${not empty siNm}"> - ${siNm} </c:if>
+          <i class="bi bi-list-ul"></i> 지역별 상세 현황
+          <c:if test="${not empty city}"> - ${city}</c:if>
         </h5>
-        <div class="input-group" style="width: 300px">
-          <input
-                  type="text"
-                  class="form-control"
-                  placeholder="지역명 검색..."
-                  id="regionSearch"
-          />
-          <button
-                  class="btn btn-outline-secondary"
-                  type="button"
-                  onclick="searchRegions()"
-          >
-            <i class="bi bi-search"></i>
-          </button>
-        </div>
+        <span class="badge bg-light text-dark fs-6">총 ${totalElements}건</span>
       </div>
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-dark">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
           <tr>
             <th>순위</th>
             <th>시/도</th>
@@ -230,12 +192,12 @@
                           ${status.index + 1}
                       </span>
               </td>
-              <td><i class="bi bi-geo-alt"></i> ${region.siNm}</td>
+              <td><i class="bi bi-geo-alt"></i> ${region.city}</td>
               <td>
                 <i class="bi bi-geo"></i>
                 <c:choose>
-                  <c:when test="${not empty region.sggNm}">
-                    ${region.sggNm}
+                  <c:when test="${not empty region.district}">
+                    ${region.district}
                   </c:when>
                   <c:otherwise>
                     <span class="text-muted">전체</span>
@@ -255,10 +217,10 @@
                   <div
                           class="progress-bar bg-primary"
                           role="progressbar"
-                          style="width: ${region.percentage}%"
+                          style="width: ${region.completionRate}%"
                   >
                     <fmt:formatNumber
-                            value="${region.percentage}"
+                            value="${region.completionRate}"
                             pattern="#.##"
                     />%
                   </div>
@@ -266,7 +228,7 @@
               </td>
               <td>
                 <a
-                        href="/corp/list?siNm=${region.siNm}<c:if test='${not empty region.sggNm}'>&sggNm=${region.sggNm}</c:if>"
+                        href="/corp/list?siNm=${region.city}<c:if test='${not empty region.district}'>&sggNm=${region.district}</c:if>"
                         class="btn btn-sm btn-outline-primary"
                 >
                   <i class="bi bi-eye"></i> 상세
@@ -276,13 +238,12 @@
           </c:forEach>
           </tbody>
         </table>
-      </div>
     </div>
-  </div>
 
-  <c:if test="${totalPages > 1}">
-    <nav aria-label="페이지 네비게이션" class="mt-4">
-      <ul class="pagination justify-content-center">
+    <c:if test="${totalPages > 1}">
+      <div class="pagination-container">
+        <nav aria-label="페이지 네비게이션">
+          <ul class="pagination justify-content-center mb-0">
         <li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
           <a
                   class="page-link"
@@ -311,18 +272,29 @@
             다음
           </a>
         </li>
-      </ul>
-    </nav>
-  </c:if>
+          </ul>
+        </nav>
+      </div>
+    </c:if>
+  </div>
+</div>
 </div>
 
 <%@ include file="../common/footer.jsp" %> <%@ include
         file="../common/scripts.jsp" %>
 <script>
+  function resetRegionSearch() {
+    const input = document.getElementById("regionSearch");
+    if (!input) {
+      return;
+    }
+    input.value = "";
+    searchRegions();
+  }
+
   function searchRegions() {
-    const searchTerm = document
-            .getElementById("regionSearch")
-            .value.toLowerCase();
+    const input = document.getElementById("regionSearch");
+    const searchTerm = input ? input.value.toLowerCase() : "";
     const rows = document.querySelectorAll("tbody tr");
 
     rows.forEach((row) => {

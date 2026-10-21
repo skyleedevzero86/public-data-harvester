@@ -3,6 +3,16 @@
     padding-bottom: 20px;
 }
 
+body.region-detail-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body.region-detail-page .page-fill {
+    flex: 1;
+}
+
 .dropdown-menu {
     min-width: 200px !important;
     padding: 10px 0;
