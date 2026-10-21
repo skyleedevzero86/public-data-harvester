@@ -92,16 +92,9 @@ public class CorpMastManualService {
         return corpMastPage.map(this::convertToSearchResponse);
     }
 
-    public Page<CorpMastManualResponse> findForList(
-            boolean isAdmin,
-            String username,
-            CorpMastForm form,
-            int page,
-            int size) {
+    public Page<CorpMastManualResponse> findForList(CorpMastForm form, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         return corpMastManualRepository.searchCorpMast(
-                isAdmin,
-                username,
                 form.getBizNm(),
                 form.getBizNo(),
                 form.getCorpRegNo(),

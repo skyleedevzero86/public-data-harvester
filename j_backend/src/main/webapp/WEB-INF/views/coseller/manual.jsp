@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
 <c:set var="pageTitle" value="CoSeller 수동 등록" />
 <c:set var="pageCSS" value="${['corp.css']}" />
@@ -42,9 +43,14 @@
         </div>
       </div>
       <div class="search-buttons">
-        <button type="button" class="btn btn-primary" onclick="submitCoseller()">
-          <i class="bi bi-check-circle"></i> 등록
-        </button>
+        <sec:authorize access="hasAnyRole('ADMIN','MANAGER')">
+          <button type="button" class="btn btn-primary" onclick="submitCoseller()">
+            <i class="bi bi-check-circle"></i> 등록
+          </button>
+        </sec:authorize>
+        <sec:authorize access="!hasAnyRole('ADMIN','MANAGER')">
+          <p class="text-muted mb-0">등록은 관리자 또는 매니저만 할 수 있습니다.</p>
+        </sec:authorize>
       </div>
     </form>
   </div>

@@ -66,15 +66,12 @@ public interface CorpMastManualRepository extends JpaRepository<CorpMast, Long>,
         Optional<CorpMast> findByCorpRegNo(@Param("corpRegNo") String corpRegNo);
 
         @Query("SELECT c FROM CorpMast c " +
-                        "WHERE (:isAdmin = true OR c.username = :username) " +
-                        "AND (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
+                        "WHERE (:bizNm IS NULL OR :bizNm = '' OR LOWER(c.bizNm) LIKE LOWER(CONCAT('%', :bizNm, '%'))) " +
                         "AND (:bizNo IS NULL OR :bizNo = '' OR c.bizNo = :bizNo) " +
                         "AND (:corpRegNo IS NULL OR :corpRegNo = '' OR c.corpRegNo = :corpRegNo) " +
                         "AND (:siNm IS NULL OR :siNm = '' OR LOWER(TRIM(c.siNm)) = LOWER(TRIM(:siNm))) " +
                         "AND (:sggNm IS NULL OR :sggNm = '' OR LOWER(TRIM(c.sggNm)) = LOWER(TRIM(:sggNm)))")
         Page<CorpMast> searchCorpMast(
-                        @Param("isAdmin") boolean isAdmin,
-                        @Param("username") String username,
                         @Param("bizNm") String bizNm,
                         @Param("bizNo") String bizNo,
                         @Param("corpRegNo") String corpRegNo,

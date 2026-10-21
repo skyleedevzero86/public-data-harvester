@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
 <c:set var="pageTitle" value="법인 목록" />
 <c:set var="pageCSS" value="${['corp.css']}" />
@@ -13,9 +14,11 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-building"></i> 법인 목록</h2>
         <div>
-          <a href="/corp/create" class="btn btn-success btn-create">
-            <i class="bi bi-plus-circle"></i> 신규등록
-          </a>
+          <sec:authorize access="hasAnyRole('ADMIN','MANAGER')">
+            <a href="/corp/create" class="btn btn-success btn-create">
+              <i class="bi bi-plus-circle"></i> 신규등록
+            </a>
+          </sec:authorize>
         </div>
       </div>
 
@@ -166,14 +169,7 @@
                           <span class="address-info">${corp.sggNm}</span>
                         </td>
                         <td>
-                          <span class="badge bg-info">
-                            <c:choose>
-                              <c:when test="${isAdmin}"
-                                >${corp.username}</c:when
-                              >
-                              <c:otherwise>본인</c:otherwise>
-                            </c:choose>
-                          </span>
+                          <span class="badge bg-info">${corp.username}</span>
                         </td>
                         <td>
                           <div class="btn-group" role="group">
@@ -253,10 +249,12 @@
               <div class="no-results">
                 <i class="bi bi-building"></i>
                 <h5>등록된 법인 정보가 없습니다</h5>
-                <p class="text-muted">첫 번째 법인을 등록해보세요.</p>
-                <a href="/corp/create" class="btn btn-primary btn-create">
-                  <i class="bi bi-plus-circle"></i> 첫 번째 법인 등록하기
-                </a>
+                <sec:authorize access="hasAnyRole('ADMIN','MANAGER')">
+                  <p class="text-muted">첫 번째 법인을 등록해보세요.</p>
+                  <a href="/corp/create" class="btn btn-primary btn-create">
+                    <i class="bi bi-plus-circle"></i> 첫 번째 법인 등록하기
+                  </a>
+                </sec:authorize>
               </div>
             </c:otherwise>
           </c:choose>

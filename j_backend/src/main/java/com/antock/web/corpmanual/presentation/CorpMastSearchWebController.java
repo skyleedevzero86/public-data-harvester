@@ -32,17 +32,10 @@ public class CorpMastSearchWebController {
             @RequestParam(defaultValue = "10") int size,
             Model model) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-
-        Page<CorpMastManualResponse> corpList = corpMastService.findForList(
-                isAdmin, username, form, page, size);
+        Page<CorpMastManualResponse> corpList = corpMastService.findForList(form, page, size);
 
         model.addAttribute("corpList", corpList);
         model.addAttribute("form", form);
-        model.addAttribute("isAdmin", isAdmin);
         return "corp/list";
     }
 

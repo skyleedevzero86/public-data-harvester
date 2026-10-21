@@ -36,27 +36,46 @@ class CorpMastManualServiceListTest {
     private CorpMastManualService corpMastManualService;
 
     @Test
-    @DisplayName("검색 조건이 없어도 관리자는 저장된 법인 목록을 조회한다")
+    @DisplayName("검색 조건이 없어도 저장된 법인 목록을 조회한다")
     void findForList_withoutSearchCondition() {
-        CorpMast saved = CorpMast.builder()
+        CorpMast saved = savedCorp();
+        given(corpMastManualRepository.searchCorpMast(
+                isNull(), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(saved)));
+
+        Page<CorpMastManualResponse> result = corpMastManualService.findForList(new CorpMastForm(), 0, 10);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getBizNm()).isEqualTo("테스트법인");
+        assertThat(result.getContent().get(0).getSiNm()).isEqualTo("서울특별시");
+    }
+
+    @Test
+    @DisplayName("로그인 계정과 관계없이 지역 조건으로 법인 목록을 조회한다")
+    void findForList_filtersByRegionNotOwner() {
+        CorpMast saved = savedCorp();
+        CorpMastForm form = new CorpMastForm();
+        form.setSiNm("서울특별시");
+        form.setSggNm("강남구");
+        given(corpMastManualRepository.searchCorpMast(
+                isNull(), isNull(), isNull(), eq("서울특별시"), eq("강남구"), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(saved)));
+
+        Page<CorpMastManualResponse> result = corpMastManualService.findForList(form, 0, 10);
+
+        assertThat(result.getContent().get(0).getSggNm()).isEqualTo("강남구");
+    }
+
+    private CorpMast savedCorp() {
+        return CorpMast.builder()
                 .sellerId("seller")
                 .bizNm("테스트법인")
                 .bizNo("123-45-67890")
                 .corpRegNo("110111-0000000")
                 .regionCd("11680")
                 .siNm("서울특별시")
-                .sggNm("강서구")
+                .sggNm("강남구")
                 .username("admin0001")
                 .build();
-        given(corpMastManualRepository.searchCorpMast(
-                eq(true), eq("admin0001"), isNull(), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
-                .willReturn(new PageImpl<>(List.of(saved)));
-
-        Page<CorpMastManualResponse> result = corpMastManualService.findForList(
-                true, "admin0001", new CorpMastForm(), 0, 10);
-
-        assertThat(result.getTotalElements()).isEqualTo(1);
-        assertThat(result.getContent().get(0).getBizNm()).isEqualTo("테스트법인");
-        assertThat(result.getContent().get(0).getSiNm()).isEqualTo("서울특별시");
     }
 }
