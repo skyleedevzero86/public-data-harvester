@@ -25,19 +25,44 @@ public class CoSellerService {
     private final CsvService csvService;
     private final CoSellerChunkWriter chunkWriter;
     private final FailedChunkRecorder failedChunkRecorder;
+    private final ManualRegistrationHistory manualRegistrationHistory;
 
     public CsvService getCsvService() {
         return csvService;
     }
 
     public int saveCoSeller(RegionRequestDto requestDto, String username) {
-        String fileName = requestDto.getCity().getValue() + "_" + requestDto.getDistrict().getValue() + ".csv";
-        return processFile(fileName, username, null, null);
+        return saveRegion(requestDto.getCity().getValue(), requestDto.getDistrict().getValue(), username, false);
     }
 
     public int saveCoSeller(String city, String district, String username) {
+        return saveRegion(city, district, username, true);
+    }
+
+    public List<ManualRegistrationHistory.Row> recentManualHistories() {
+        return manualRegistrationHistory.recent();
+    }
+
+    private int saveRegion(String city, String district, String username, boolean keepRegionOnRows) {
         String fileName = city + "_" + district + ".csv";
-        return processFile(fileName, username, city, district);
+        String rowCity = keepRegionOnRows ? city : null;
+        String rowDistrict = keepRegionOnRows ? district : null;
+        try {
+            int saved = processFile(fileName, username, rowCity, rowDistrict);
+            remember(username, city, district, fileName, saved, null);
+            return saved;
+        } catch (RuntimeException exception) {
+            remember(username, city, district, fileName, 0, exception);
+            throw exception;
+        }
+    }
+
+    private void remember(String username, String city, String district, String fileName, int savedCount, Exception error) {
+        try {
+            manualRegistrationHistory.record(username, city, district, fileName, savedCount, error);
+        } catch (RuntimeException exception) {
+            log.error("수동 등록 이력 저장 실패: {} {}", city, district, exception);
+        }
     }
 
     public void processBatch(List<BizCsvInfoDto> csvList, String username) {

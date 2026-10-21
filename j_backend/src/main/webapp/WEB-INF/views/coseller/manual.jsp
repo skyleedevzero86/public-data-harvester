@@ -1,62 +1,98 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %> <%@ taglib
-prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="pageTitle" value="CoSeller 수동 등록" />
+<c:set var="pageCSS" value="${['corp.css']}" />
+<c:set var="pageJS" value="${['utils.js']}" />
 
-<html>
-  <head>
-    <%@ include file="../common/head.jsp" %>
-  </head>
-  <body>
-  <%@ include file="../common/navigation.jsp" %>
-    <h2>CoSeller 수동 등록</h2>
-    <form id="cosellerForm" onsubmit="return false;">
-      <label for="city">시/도:</label>
-      <select name="city" id="city">
-        <c:forEach var="city" items="${cities}">
-          <option value="${city}">${city.value}</option>
-        </c:forEach>
-      </select>
-      <label for="district">구/군:</label>
-      <select name="district" id="district">
-        <c:forEach var="district" items="${districts}">
-          <option value="${district}">${district.value}</option>
-        </c:forEach>
-      </select>
-      <button type="button" onclick="submitCoseller()">등록</button>
+<%@ include file="../common/header.jsp" %>
+<%@ include file="../common/navigation.jsp" %>
+
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cloud-upload"></i> CoSeller 수동 등록</h2>
+  </div>
+
+  <c:if test="${not empty resultMsg}">
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      <i class="bi bi-info-circle"></i> ${resultMsg}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  </c:if>
+
+  <div class="search-container">
+    <h5 class="search-title"><i class="bi bi-geo-alt"></i> 지역 선택</h5>
+    <form id="cosellerForm" class="search-form" onsubmit="return false;">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="city" class="form-label">시/도</label>
+          <select class="form-select" name="city" id="city">
+            <c:forEach var="city" items="${cities}">
+              <option value="${city}">${city.value}</option>
+            </c:forEach>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="district" class="form-label">구/군</label>
+          <select class="form-select" name="district" id="district">
+            <c:forEach var="district" items="${districts}">
+              <option value="${district}">${district.value}</option>
+            </c:forEach>
+          </select>
+        </div>
+      </div>
+      <div class="search-buttons">
+        <button type="button" class="btn btn-primary" onclick="submitCoseller()">
+          <i class="bi bi-check-circle"></i> 등록
+        </button>
+      </div>
     </form>
+  </div>
 
-    <c:if test="${not empty resultMsg}">
-      <div style="margin-top: 20px; color: blue">${resultMsg}</div>
-    </c:if>
+  <div class="results-container">
+    <div class="results-header">
+      <h5 class="mb-0"><i class="bi bi-list-ul"></i> 등록 이력</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>등록자</th>
+            <th>시/도</th>
+            <th>구/군</th>
+            <th>등록일시</th>
+            <th>결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          <c:choose>
+            <c:when test="${empty histories}">
+              <tr>
+                <td colspan="5" class="text-muted">등록 이력이 없습니다.</td>
+              </tr>
+            </c:when>
+            <c:otherwise>
+              <c:forEach var="history" items="${histories}">
+                <tr>
+                  <td><c:out value="${history.username}" /></td>
+                  <td><c:out value="${history.city}" /></td>
+                  <td><c:out value="${history.district}" /></td>
+                  <td><c:out value="${history.registeredAt}" /></td>
+                  <td>
+                    <span class="badge ${history.success ? 'bg-success' : 'bg-danger'}">
+                      <c:out value="${history.result}" />
+                    </span>
+                  </td>
+                </tr>
+              </c:forEach>
+            </c:otherwise>
+          </c:choose>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-    <h3>등록 이력 (샘플)</h3>
-    <table border="1">
-      <tr>
-        <th>등록자</th>
-        <th>시/도</th>
-        <th>구/군</th>
-        <th>등록일시</th>
-        <th>결과</th>
-      </tr>
-      <tr>
-        <td>admin</td>
-        <td>서울특별시</td>
-        <td>강서구</td>
-        <td>2024-07-07 12:34:56</td>
-        <td>성공(100건)</td>
-      </tr>
-      <tr>
-        <td>user1</td>
-        <td>서울특별시</td>
-        <td>강남구</td>
-        <td>2024-07-06 09:12:00</td>
-        <td>실패(중복 3건)</td>
-      </tr>
-    </table>
-
-    <%@ include file="../common/footer.jsp" %>
-  </body>
-
-  <%@ include file="../common/scripts.jsp" %>
+<%@ include file="../common/footer.jsp" %>
+</body>
 </html>

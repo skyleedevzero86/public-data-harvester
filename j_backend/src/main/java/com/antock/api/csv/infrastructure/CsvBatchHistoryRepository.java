@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface CsvBatchHistoryRepository extends JpaRepository<CsvBatchHistory, Long> {
     List<CsvBatchHistory> findTop10ByOrderByTimestampDesc();
+
+    List<CsvBatchHistory> findTop20ByUsernameIsNotNullOrderByTimestampDesc();
 }

@@ -52,9 +52,11 @@ function submitCoseller() {
         } else {
           alert("등록 실패 또는 중복: " + JSON.stringify(data));
         }
+        window.location.reload();
       })
       .catch((err) => {
         alert("에러: " + (err.resultMsg || err.message || JSON.stringify(err)));
+        window.location.reload();
       });
 }
 
