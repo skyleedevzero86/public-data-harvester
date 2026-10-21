@@ -8,9 +8,6 @@ import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -40,38 +37,13 @@ public class CorpMastSearchWebController {
         boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
-        Page<CorpMastSearchResponse> corpList = null;
-        if (hasSearchCondition(form)) {
-            CorpMastManualRequest searchRequest = convertFormToRequest(form);
-            corpList = corpMastService.searchWithPagination(searchRequest, page, size, "id", "desc");
-        } else {
-            corpList = Page.empty(pageable);
-        }
+        Page<CorpMastManualResponse> corpList = corpMastService.findForList(
+                isAdmin, username, form, page, size);
 
         model.addAttribute("corpList", corpList);
         model.addAttribute("form", form);
         model.addAttribute("isAdmin", isAdmin);
         return "corp/list";
-    }
-
-    private boolean hasSearchCondition(CorpMastForm form) {
-        return (form.getBizNm() != null && !form.getBizNm().trim().isEmpty()) ||
-                (form.getBizNo() != null && !form.getBizNo().trim().isEmpty()) ||
-                (form.getCorpRegNo() != null && !form.getCorpRegNo().trim().isEmpty()) ||
-                (form.getSiNm() != null && !form.getSiNm().trim().isEmpty()) ||
-                (form.getSggNm() != null && !form.getSggNm().trim().isEmpty());
-    }
-
-    private CorpMastManualRequest convertFormToRequest(CorpMastForm form) {
-        CorpMastManualRequest request = new CorpMastManualRequest();
-        request.setBizNm(form.getBizNm());
-        request.setBizNo(form.getBizNo());
-        request.setCorpRegNo(form.getCorpRegNo());
-        request.setCity(form.getSiNm());
-        request.setDistrict(form.getSggNm());
-        return request;
     }
 
     @GetMapping("/create")
