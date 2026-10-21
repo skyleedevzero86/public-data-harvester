@@ -4,7 +4,7 @@
 
 <c:set var="pageTitle" value="법인 정보 상세" />
 <c:set var="pageCSS" value="${['corp.css']}" />
-<c:set var="pageJS" value="${['corp.js']}" />
+<c:set var="pageJS" value="${['utils.js', 'corp.js']}" />
 
 <%@ include file="../common/header.jsp" %>
 <%@ include file="../common/navigation.jsp" %>
@@ -60,8 +60,8 @@
                             <i class="bi bi-credit-card"></i> 사업자번호
                         </div>
                         <div class="info-value">
-                            <span class="bizno-display">${corp.formattedBizNo}</span>
-                            <button class="copy-button" onclick="copyToClipboard('${corp.bizNo}', this)">
+                            <span class="bizno-display">${shownBizNo}</span>
+                            <button class="copy-button" onclick="copyToClipboard('${shownBizNo}', this)">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
@@ -72,8 +72,8 @@
                             <i class="bi bi-file-text"></i> 법인등록번호
                         </div>
                         <div class="info-value">
-                                ${corp.corpRegNo}
-                            <button class="copy-button" onclick="copyToClipboard('${corp.corpRegNo}', this)">
+                                ${shownCorpRegNo}
+                            <button class="copy-button" onclick="copyToClipboard('${shownCorpRegNo}', this)">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
@@ -143,14 +143,21 @@
                 <div class="info-section">
                     <h5><i class="bi bi-gear"></i> 관리 정보</h5>
 
-                    <div class="info-row">
+                    <c:if test="${isAdmin}">
+                      <div class="info-row">
                         <div class="info-label">
-                            <i class="bi bi-person"></i> 등록자
+                          <i class="bi bi-person"></i> 등록자
                         </div>
                         <div class="info-value">
-                            <span class="badge bg-info badge-status">${corp.username}</span>
+                          <span class="badge bg-info badge-status">
+                            <c:choose>
+                              <c:when test="${not empty registrantName}">${registrantName}</c:when>
+                              <c:otherwise>이름 없음</c:otherwise>
+                            </c:choose>
+                          </span>
                         </div>
-                    </div>
+                      </div>
+                    </c:if>
 
                     <div class="info-row">
                         <div class="info-label">

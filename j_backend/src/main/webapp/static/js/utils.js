@@ -11,6 +11,9 @@ function setUrlParameter(name, value) {
 
 function copyToClipboard(text, button) {
   navigator.clipboard.writeText(text).then(function() {
+    if (!button) {
+      return;
+    }
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="bi bi-check"></i>';
     button.style.color = '#28a745';

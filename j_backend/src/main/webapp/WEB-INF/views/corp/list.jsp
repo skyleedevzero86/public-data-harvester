@@ -133,7 +133,9 @@
                       <th width="15%">법인등록번호</th>
                       <th width="15%">시/도</th>
                       <th width="15%">구/군</th>
-                      <th width="10%">등록자</th>
+                      <c:if test="${isStaff}">
+                        <th width="10%">등록자</th>
+                      </c:if>
                       <th width="8%">관리</th>
                     </tr>
                   </thead>
@@ -168,25 +170,38 @@
                         <td>
                           <span class="address-info">${corp.sggNm}</span>
                         </td>
+                        <c:if test="${isStaff}">
+                          <td>
+                            <span class="badge bg-info">
+                              <c:choose>
+                                <c:when test="${not empty registrantNames[corp.username]}">
+                                  ${registrantNames[corp.username]}
+                                </c:when>
+                                <c:otherwise>
+                                  <span class="text-muted">이름 없음</span>
+                                </c:otherwise>
+                              </c:choose>
+                            </span>
+                          </td>
+                        </c:if>
                         <td>
-                          <span class="badge bg-info">${corp.username}</span>
-                        </td>
-                        <td>
-                          <div class="btn-group" role="group">
-                            <a
-                              href="/corp/modify/${corp.id}"
-                              class="btn btn-outline-warning btn-sm"
-                            >
-                              <i class="bi bi-pencil"></i> 수정
-                            </a>
-                            <button
-                              type="button"
-                              class="btn btn-outline-danger btn-sm"
-                              onclick="deleteCorp(${corp.id}, '${corp.bizNm}')"
-                            >
-                              <i class="bi bi-trash"></i> 삭제
-                            </button>
-                          </div>
+                          <c:if test="${isStaff or corp.username eq currentUsername}">
+                            <div class="btn-group" role="group">
+                              <a
+                                href="/corp/modify/${corp.id}"
+                                class="btn btn-outline-warning btn-sm"
+                              >
+                                <i class="bi bi-pencil"></i> 수정
+                              </a>
+                              <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="deleteCorp(${corp.id}, '${corp.bizNm}')"
+                              >
+                                <i class="bi bi-trash"></i> 삭제
+                              </button>
+                            </div>
+                          </c:if>
                         </td>
                       </tr>
                     </c:forEach>

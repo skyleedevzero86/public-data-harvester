@@ -191,4 +191,18 @@ public class NumberFormatUtil {
             return false;
         }
     }
+
+    public static String maskLastDigit(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        char[] chars = value.toCharArray();
+        for (int index = chars.length - 1; index >= 0; index--) {
+            if (Character.isDigit(chars[index])) {
+                chars[index] = '*';
+                return new String(chars);
+            }
+        }
+        return value;
+    }
 }
