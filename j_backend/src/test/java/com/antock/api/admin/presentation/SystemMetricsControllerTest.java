@@ -2,13 +2,19 @@ package com.antock.api.admin.presentation;
 
 import com.antock.api.member.application.service.MemberApplicationService;
 import com.antock.api.member.application.service.RateLimitServiceInterface;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -17,9 +23,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(SystemMetricsController.class)
+@Import(SystemMetricsControllerTest.MethodSecurity.class)
 @DisplayName("SystemMetricsController 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class SystemMetricsControllerTest {
+
+    @TestConfiguration
+    @EnableWebSecurity
+    @EnableMethodSecurity
+    static class MethodSecurity {
+        @Bean
+        SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf(csrf -> csrf.disable())
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                            .anyRequest().authenticated());
+            return http.build();
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;

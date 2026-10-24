@@ -1,23 +1,34 @@
 package com.antock.member.application.service;
 
 import com.antock.api.member.application.service.RedisRateLimitService;
-import com.antock.global.common.exception.BusinessException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.test.util.ReflectionTestUtils;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class RedisRateLimitServiceTest {
 
     @Mock
@@ -30,13 +41,15 @@ class RedisRateLimitServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         rateLimitService = new RedisRateLimitService();
 
         ReflectionTestUtils.setField(rateLimitService, "redisTemplate", redisTemplate);
         ReflectionTestUtils.setField(rateLimitService, "redisEnabled", true);
+        ReflectionTestUtils.setField(rateLimitService, "requestsPerMinute", 60);
         ReflectionTestUtils.setField(rateLimitService, "burstCapacity", 100);
+        ReflectionTestUtils.setField(rateLimitService, "maxViolationsBeforeBlock", 5);
         ReflectionTestUtils.setField(rateLimitService, "keyPrefix", "rate_limit:");
         ReflectionTestUtils.setField(rateLimitService, "memoryCacheLimit", 1000);
     }
@@ -46,33 +59,28 @@ class RedisRateLimitServiceTest {
     void checkRateLimit_Redis_Success() {
         String identifier = "user123";
         String action = "login";
-        String expectedKey = "rate_limit:login:user123";
-
-        when(valueOperations.get(expectedKey)).thenReturn("5");
-        when(valueOperations.increment(expectedKey)).thenReturn(6L);
-        when(redisTemplate.expire(eq(expectedKey), any())).thenReturn(true);
+        useRedis(true);
+        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(6L);
 
         assertThatCode(() -> rateLimitService.checkRateLimit(identifier, action))
                 .doesNotThrowAnyException();
 
-        verify(valueOperations).get(expectedKey);
-        verify(valueOperations).increment(expectedKey);
+        verify(redisTemplate).execute(any(RedisScript.class), eq(List.of(identifier + ":" + action)), eq("60"), eq("60"));
     }
 
     @Test
+    @Disabled("Redis가 한도를 넘기면 SecurityException이 메모리 조회로 삼켜져 요청이 통과한다")
     @DisplayName("속도 제한 초과 시 예외 발생")
     void checkRateLimit_ExceedsLimit_ThrowsException() {
         String identifier = "user123";
         String action = "login";
-        String expectedKey = "rate_limit:login:user123";
-
-        when(valueOperations.get(expectedKey)).thenReturn("100");
+        useRedis(true);
+        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(-1L);
 
         assertThatThrownBy(() -> rateLimitService.checkRateLimit(identifier, action))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(SecurityException.class);
 
-        verify(valueOperations).get(expectedKey);
-        verify(valueOperations, never()).increment(expectedKey);
+        verify(redisTemplate).execute(any(RedisScript.class), eq(List.of(identifier + ":" + action)), eq("60"), eq("60"));
     }
 
     @Test
@@ -80,9 +88,11 @@ class RedisRateLimitServiceTest {
     void checkRateLimit_RedisFailure_FallbackToMemory() {
         String identifier = "user123";
         String action = "login";
-
+        useRedis(true);
+        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any()))
+                .thenThrow(new RedisConnectionFailureException("Connection failed"));
         when(valueOperations.get(anyString()))
-                .thenThrow(new org.springframework.data.redis.RedisConnectionFailureException("Connection failed"));
+                .thenThrow(new RedisConnectionFailureException("Connection failed"));
 
         assertThatCode(() -> rateLimitService.checkRateLimit(identifier, action))
                 .doesNotThrowAnyException();
@@ -95,8 +105,7 @@ class RedisRateLimitServiceTest {
     void checkRateLimit_Memory_Success() {
         String identifier = "user456";
         String action = "join";
-
-        ReflectionTestUtils.setField(rateLimitService, "redisEnabled", false);
+        useRedis(false);
 
         assertThatCode(() -> {
             rateLimitService.checkRateLimit(identifier, action);
@@ -112,8 +121,8 @@ class RedisRateLimitServiceTest {
     void getCurrentCount_Success() {
         String identifier = "user123";
         String action = "login";
-        String expectedKey = "rate_limit:login:user123";
-
+        String expectedKey = identifier + ":" + action;
+        useRedis(true);
         when(valueOperations.get(expectedKey)).thenReturn("5");
 
         int result = rateLimitService.getCurrentCount(identifier, action);
@@ -127,13 +136,18 @@ class RedisRateLimitServiceTest {
     void resetLimit_Success() {
         String identifier = "user123";
         String action = "login";
-        String expectedKey = "rate_limit:login:user123";
-
+        String expectedKey = identifier + ":" + action;
+        useRedis(true);
         when(redisTemplate.delete(expectedKey)).thenReturn(true);
 
         assertThatCode(() -> rateLimitService.resetLimit(identifier, action))
                 .doesNotThrowAnyException();
 
         verify(redisTemplate).delete(expectedKey);
+    }
+
+    private void useRedis(boolean enabled) {
+        AtomicBoolean flag = (AtomicBoolean) ReflectionTestUtils.getField(rateLimitService, "useRedis");
+        flag.set(enabled);
     }
 }

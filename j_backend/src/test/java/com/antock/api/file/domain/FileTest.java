@@ -3,7 +3,6 @@ package com.antock.api.file.domain;
 import com.antock.api.file.domain.vo.FileContent;
 import com.antock.api.file.domain.vo.FileDescription;
 import com.antock.api.file.domain.vo.FileMetadata;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +11,6 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("File 도메인 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class FileTest {
 
     @Test
@@ -30,6 +28,8 @@ class FileTest {
     @DisplayName("파일 설명 업데이트")
     void updateDescription() {
         File file = File.create("test.txt", "text/plain", 1000L, "old description");
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                file, "lastModifiedTime", LocalDateTime.now().minusSeconds(1));
         LocalDateTime beforeUpdate = file.getLastModifiedTime();
 
         file.updateDescription("new description");

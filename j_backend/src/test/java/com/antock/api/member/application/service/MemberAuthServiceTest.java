@@ -7,7 +7,8 @@ import com.antock.api.member.value.MemberStatus;
 import com.antock.api.member.value.Role;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import org.junit.jupiter.api.Disabled;
+import com.antock.global.utils.PasswordUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,19 +17,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberAuthService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class MemberAuthServiceTest {
 
     @Mock
@@ -51,18 +52,23 @@ class MemberAuthServiceTest {
 
     private Member testMember;
     private MemberLoginRequest loginRequest;
+    private PasswordEncoder previousEncoder;
 
     @BeforeEach
     void setUp() {
+        previousEncoder = (PasswordEncoder) ReflectionTestUtils.getField(PasswordUtils.class, "passwordEncoder");
+        new PasswordUtils().setPasswordEncoder(mock(PasswordEncoder.class));
+
         testMember = Member.builder()
                 .username("testuser")
-                .password("$2a$10$encoded")
+                .password("password123")
                 .nickname("test")
                 .email("test@test.com")
                 .status(MemberStatus.APPROVED)
                 .role(Role.USER)
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(testMember, "id", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "loginFailCount", 0);
 
         loginRequest = MemberLoginRequest.builder()
                 .username("testuser")
@@ -70,11 +76,15 @@ class MemberAuthServiceTest {
                 .build();
     }
 
+    @AfterEach
+    void tearDown() {
+        new PasswordUtils().setPasswordEncoder(previousEncoder);
+    }
+
     @Test
     @DisplayName("로그인 성공")
     void login_success() {
         when(memberDomainService.findByUsername("testuser")).thenReturn(Optional.of(testMember));
-        when(testMember.matchPassword("password123")).thenReturn(true);
         when(authTokenService.generateAccessToken(any(Member.class))).thenReturn("accessToken");
         when(authTokenService.generateRefreshToken(any(Member.class))).thenReturn("refreshToken");
         when(memberDomainService.save(any(Member.class))).thenReturn(testMember);
@@ -101,9 +111,8 @@ class MemberAuthServiceTest {
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
     void login_passwordMismatch() {
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "password", "stored-secret");
         when(memberDomainService.findByUsername("testuser")).thenReturn(Optional.of(testMember));
-        when(testMember.matchPassword("password123")).thenReturn(false);
-        when(testMember.getLoginFailCount()).thenReturn(0);
 
         assertThatThrownBy(() -> memberAuthService.login(loginRequest, "127.0.0.1"))
                 .isInstanceOf(BusinessException.class)
@@ -163,8 +172,8 @@ class MemberAuthServiceTest {
                 .password("$2a$10$encoded")
                 .status(MemberStatus.APPROVED)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "loginFailCount", 5);
         when(memberDomainService.findByUsername("testuser")).thenReturn(Optional.of(testMember));
-        when(testMember.isLocked()).thenReturn(true);
 
         assertThatThrownBy(() -> memberAuthService.login(loginRequest, "127.0.0.1"))
                 .isInstanceOf(BusinessException.class)
