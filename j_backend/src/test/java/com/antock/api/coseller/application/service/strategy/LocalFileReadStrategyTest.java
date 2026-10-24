@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +42,23 @@ class LocalFileReadStrategyTest {
 
         assertTrue(resolved.startsWith(tempDir.toAbsolutePath().normalize()));
         assertEquals("서울_강남구.csv", resolved.getFileName().toString());
+    }
+
+    @Test
+    @DisplayName("모듈 폴더가 비어 있으면 상위 uploaded-files를 사용한다")
+    void resolveWithin_usesParentDirectoryWhenLocalFolderIsEmpty() throws IOException {
+        Path moduleDir = tempDir.resolve("j_backend");
+        Files.createDirectories(moduleDir.resolve("uploaded-files"));
+        Path populated = tempDir.resolve("uploaded-files");
+        Files.createDirectories(populated);
+        Files.writeString(populated.resolve("서울특별시_강서구.csv"), "header");
+
+        LocalFileReadStrategy strategy = strategy();
+        ReflectionTestUtils.setField(strategy, "uploadPath", "uploaded-files");
+
+        Path resolved = strategy.resolveWithin("서울특별시_강서구.csv", moduleDir);
+
+        assertEquals(populated.resolve("서울특별시_강서구.csv").normalize(), resolved.normalize());
     }
 
     private LocalFileReadStrategy strategy() {

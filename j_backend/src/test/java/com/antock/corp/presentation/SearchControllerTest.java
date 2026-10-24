@@ -3,6 +3,7 @@ package com.antock.corp.presentation;
 import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
+import com.antock.api.member.application.service.MemberDomainService;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
 import com.antock.global.config.TestExceptionHandler;
@@ -57,9 +58,17 @@ public class SearchControllerTest {
                 }
 
                 @Bean
+                public MemberDomainService memberDomainService() {
+                        MemberDomainService memberDomainService = Mockito.mock(MemberDomainService.class);
+                        given(memberDomainService.nicknamesByUsernames(any())).willReturn(Map.of());
+                        return memberDomainService;
+                }
+
+                @Bean
                 public CorpMastSearchWebController corpMastSearchWebController(
-                                CorpMastManualService corpMastSearchService) {
-                        return new CorpMastSearchWebController(corpMastSearchService);
+                                CorpMastManualService corpMastSearchService,
+                                MemberDomainService memberDomainService) {
+                        return new CorpMastSearchWebController(corpMastSearchService, memberDomainService);
                 }
         }
 

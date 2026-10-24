@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import jakarta.persistence.QueryHint;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
                         @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")
         })
         Optional<Member> findByUsername(String username);
+
+        List<Member> findByUsernameIn(Collection<String> usernames);
 
         @QueryHints({
                         @QueryHint(name = org.hibernate.jpa.QueryHints.HINT_CACHEABLE, value = "true")

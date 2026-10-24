@@ -30,15 +30,16 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         String requestURI = request.getRequestURI();
         log.warn("권한이 없는 요청: {} {}", request.getMethod(), requestURI);
 
-        if (requestURI.startsWith("/api/")) {
+        boolean registration = requestURI.startsWith("/coseller/save");
+        if (requestURI.startsWith("/api/") || registration) {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
 
-            ApiResponse<Object> apiResponse = ApiResponse.error(
-                    HttpStatus.FORBIDDEN,
-                    "Access denied to this resource"
-            );
+            String message = registration
+                    ? "관리자 또는 매니저만 등록할 수 있습니다."
+                    : "Access denied to this resource";
+            ApiResponse<Object> apiResponse = ApiResponse.error(HttpStatus.FORBIDDEN, message);
 
             response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
         } else {

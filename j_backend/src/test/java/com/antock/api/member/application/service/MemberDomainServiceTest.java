@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +71,34 @@ class MemberDomainServiceTest {
 
         assertThat(result).isNotNull();
         verify(memberRepository).save(any(Member.class));
+    }
+
+    @Test
+    @DisplayName("사용자명으로 닉네임을 조회하고 빈 닉네임은 제외한다")
+    void nicknamesByUsernames_skipsBlankNickname() {
+        Member named = Member.builder()
+                .username("admin0001")
+                .password("encoded")
+                .nickname("관리자")
+                .email("admin@test.com")
+                .status(MemberStatus.APPROVED)
+                .role(Role.ADMIN)
+                .build();
+        Member blank = Member.builder()
+                .username("blank")
+                .password("encoded")
+                .nickname(" ")
+                .email("blank@test.com")
+                .status(MemberStatus.APPROVED)
+                .role(Role.USER)
+                .build();
+        when(memberRepository.findByUsernameIn(List.of("admin0001", "blank")))
+                .thenReturn(List.of(named, blank));
+
+        Map<String, String> nicknames = memberDomainService.nicknamesByUsernames(List.of("admin0001", "blank", " "));
+
+        assertThat(nicknames).containsEntry("admin0001", "관리자");
+        assertThat(nicknames).doesNotContainKey("blank");
     }
 
     @Test

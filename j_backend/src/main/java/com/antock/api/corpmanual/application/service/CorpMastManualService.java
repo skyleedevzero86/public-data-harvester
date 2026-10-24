@@ -92,6 +92,17 @@ public class CorpMastManualService {
         return corpMastPage.map(this::convertToSearchResponse);
     }
 
+    public Page<CorpMastManualResponse> findForList(CorpMastForm form, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        return corpMastManualRepository.searchCorpMast(
+                form.getBizNm(),
+                form.getBizNo(),
+                form.getCorpRegNo(),
+                form.getSiNm(),
+                form.getSggNm(),
+                pageable).map(this::convertToManualResponse);
+    }
+
     @Cacheable(value = "corpMastById", key = "#id")
     public CorpMastManualResponse getById(Long id) {
         log.info("법인 정보 조회 요청 - ID: {}", id);

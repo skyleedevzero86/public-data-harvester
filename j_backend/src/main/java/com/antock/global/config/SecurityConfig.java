@@ -7,6 +7,7 @@ import com.antock.global.security.handler.JwtAuthenticationEntryPoint;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -44,6 +45,10 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(authz -> authz
+                                                .requestMatchers(HttpMethod.POST, "/coseller/save", "/coseller/save-simple")
+                                                .hasAnyRole("ADMIN", "MANAGER")
+                                                .requestMatchers("/coseller/debug/**", "/api/v1/region-stats/debug/**")
+                                                .denyAll()
                                                 .requestMatchers(
                                                                 "/",
                                                                 "/members/login",
@@ -84,7 +89,6 @@ public class SecurityConfig {
                                                                 "/v3/api-docs/**")
                                                 .permitAll()
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                                .requestMatchers("/coseller/save").authenticated()
                                                 .requestMatchers("/members/profile", "/members/admin/**",
                                                                 "/members/password/change")
                                                 .authenticated()

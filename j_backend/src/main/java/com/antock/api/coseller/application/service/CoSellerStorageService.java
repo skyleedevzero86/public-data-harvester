@@ -60,17 +60,6 @@ public class CoSellerStorageService {
         return written;
     }
 
-    @Transactional
-    public int clearAllData() {
-        List<CorpMast> allCorps = corpMastStore.findAll();
-        int totalCount = allCorps.size();
-
-        for (CorpMast corp : allCorps) {
-            corpMastStore.delete(corp);
-        }
-        return totalCount;
-    }
-
     private void recordHistory(String username, String bizNo, String action, String result, String message) {
         CompletableFuture.runAsync(() -> {
             try {

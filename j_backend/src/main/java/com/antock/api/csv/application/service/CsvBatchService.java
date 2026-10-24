@@ -13,16 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -78,11 +76,11 @@ public class CsvBatchService {
         AtomicLong totalFailed = new AtomicLong(0);
         long startTime = System.currentTimeMillis();
 
+        ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, maxConcurrent));
         try {
             List<CompletableFuture<Void>> futures = CITY_DISTRICT_MAP.entrySet().stream()
-                    .limit(maxConcurrent)
                     .map(entry -> CompletableFuture.runAsync(() -> processCityDistricts(entry.getKey(),
-                            entry.getValue(), totalProcessed, totalSuccess, totalFailed)))
+                            entry.getValue(), totalProcessed, totalSuccess, totalFailed), pool))
                     .toList();
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -96,10 +94,11 @@ public class CsvBatchService {
         } catch (Exception e) {
             log.error("CSV 배치 처리 중 치명적 오류 발생", e);
             saveBatchHistory("BATCH_FAILED", "전체 배치 처리 실패: " + e.getMessage(), 0);
+        } finally {
+            pool.shutdown();
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processDistrict(City city, District district) {
         String cityName = city.name();
         String districtName = district.name();

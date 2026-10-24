@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,6 +55,19 @@ public class MemberDomainService {
                 username, savedMember.getId(), savedMember.getStatus());
 
         return savedMember;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, String> nicknamesByUsernames(Collection<String> usernames) {
+        List<String> names = distinctUsernames(usernames);
+        if (names.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> nicknames = new HashMap<>();
+        for (Member member : memberRepository.findByUsernameIn(names)) {
+            putNickname(nicknames, member);
+        }
+        return nicknames;
     }
 
     @Transactional(readOnly = true)
@@ -264,6 +280,23 @@ public class MemberDomainService {
 
     public long countMembersByStatus(MemberStatus status) {
         return memberRepository.countByStatus(status);
+    }
+
+    private List<String> distinctUsernames(Collection<String> usernames) {
+        if (usernames == null || usernames.isEmpty()) {
+            return List.of();
+        }
+        return usernames.stream()
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private void putNickname(Map<String, String> nicknames, Member member) {
+        String nickname = member.getNickname();
+        if (nickname != null && !nickname.isBlank()) {
+            nicknames.put(member.getUsername(), nickname);
+        }
     }
 
     private void validateDuplicateUsername(String username) {

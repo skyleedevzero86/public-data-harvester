@@ -123,28 +123,5 @@ class CoSellerStorageServiceTest {
 
         assertThat(savedCount).isEqualTo(0);
     }
-
-    @Test
-    @DisplayName("전체 데이터 삭제 성공")
-    void clearAllData_Success() {
-        CorpMast corp1 = CorpMast.builder()
-                .sellerId("seller001")
-                .bizNm("법인1")
-                .bizNo("123-45-67890")
-                .corpRegNo("110111-1234567")
-                .regionCd("11680")
-                .siNm("서울특별시")
-                .sggNm("강남구")
-                .username("testuser")
-                .build();
-
-        List<CorpMast> allCorps = Arrays.asList(corp1);
-        given(corpMastStore.findAll()).willReturn(allCorps);
-
-        int deletedCount = coSellerStorageService.clearAllData();
-
-        assertThat(deletedCount).isEqualTo(1);
-        verify(corpMastStore).findAll();
-    }
 }
 

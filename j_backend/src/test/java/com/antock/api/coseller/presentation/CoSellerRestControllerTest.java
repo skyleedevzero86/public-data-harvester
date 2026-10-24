@@ -87,48 +87,5 @@ class CoSellerRestControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
-
-    @Test
-    @DisplayName("MinIO 파일 목록 조회 성공")
-    @WithMockUser
-    void getMinioFileList_Success() throws Exception {
-        mockMvc.perform(get("/coseller/debug/minio-file-list"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("파일 읽기 테스트 성공")
-    @WithMockUser
-    void testFileRead_Success() throws Exception {
-        mockMvc.perform(get("/coseller/debug/test-file-read")
-                        .param("city", "서울특별시")
-                        .param("district", "강남구"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("데이터 삽입 테스트 성공")
-    @WithMockUser
-    void testInsert_Success() throws Exception {
-        given(cosellerService.saveCoSeller(anyString(), anyString(), anyString())).willReturn(50);
-
-        mockMvc.perform(get("/coseller/debug/test-insert")
-                        .param("city", "서울특별시")
-                        .param("district", "강남구"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
-
-    @Test
-    @DisplayName("데이터 정리 성공")
-    @WithMockUser
-    void clearData_Success() throws Exception {
-        given(cosellerService.clearAllData()).willReturn(100);
-
-        mockMvc.perform(delete("/coseller/debug/clear-data")
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
 }
 

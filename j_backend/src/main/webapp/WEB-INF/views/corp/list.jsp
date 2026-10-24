@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
 <c:set var="pageTitle" value="법인 목록" />
 <c:set var="pageCSS" value="${['corp.css']}" />
@@ -13,9 +14,11 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-building"></i> 법인 목록</h2>
         <div>
-          <a href="/corp/create" class="btn btn-success btn-create">
-            <i class="bi bi-plus-circle"></i> 신규등록
-          </a>
+          <sec:authorize access="hasAnyRole('ADMIN','MANAGER')">
+            <a href="/corp/create" class="btn btn-success btn-create">
+              <i class="bi bi-plus-circle"></i> 신규등록
+            </a>
+          </sec:authorize>
         </div>
       </div>
 
@@ -130,7 +133,9 @@
                       <th width="15%">법인등록번호</th>
                       <th width="15%">시/도</th>
                       <th width="15%">구/군</th>
-                      <th width="10%">등록자</th>
+                      <c:if test="${isStaff}">
+                        <th width="10%">등록자</th>
+                      </c:if>
                       <th width="8%">관리</th>
                     </tr>
                   </thead>
@@ -165,32 +170,38 @@
                         <td>
                           <span class="address-info">${corp.sggNm}</span>
                         </td>
+                        <c:if test="${isStaff}">
+                          <td>
+                            <span class="badge bg-info">
+                              <c:choose>
+                                <c:when test="${not empty registrantNames[corp.username]}">
+                                  ${registrantNames[corp.username]}
+                                </c:when>
+                                <c:otherwise>
+                                  <span class="text-muted">이름 없음</span>
+                                </c:otherwise>
+                              </c:choose>
+                            </span>
+                          </td>
+                        </c:if>
                         <td>
-                          <span class="badge bg-info">
-                            <c:choose>
-                              <c:when test="${isAdmin}"
-                                >${corp.username}</c:when
+                          <c:if test="${isStaff or corp.username eq currentUsername}">
+                            <div class="btn-group" role="group">
+                              <a
+                                href="/corp/modify/${corp.id}"
+                                class="btn btn-outline-warning btn-sm"
                               >
-                              <c:otherwise>본인</c:otherwise>
-                            </c:choose>
-                          </span>
-                        </td>
-                        <td>
-                          <div class="btn-group" role="group">
-                            <a
-                              href="/corp/modify/${corp.id}"
-                              class="btn btn-outline-warning btn-sm"
-                            >
-                              <i class="bi bi-pencil"></i> 수정
-                            </a>
-                            <button
-                              type="button"
-                              class="btn btn-outline-danger btn-sm"
-                              onclick="deleteCorp(${corp.id}, '${corp.bizNm}')"
-                            >
-                              <i class="bi bi-trash"></i> 삭제
-                            </button>
-                          </div>
+                                <i class="bi bi-pencil"></i> 수정
+                              </a>
+                              <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="deleteCorp(${corp.id}, '${corp.bizNm}')"
+                              >
+                                <i class="bi bi-trash"></i> 삭제
+                              </button>
+                            </div>
+                          </c:if>
                         </td>
                       </tr>
                     </c:forEach>
@@ -253,10 +264,12 @@
               <div class="no-results">
                 <i class="bi bi-building"></i>
                 <h5>등록된 법인 정보가 없습니다</h5>
-                <p class="text-muted">첫 번째 법인을 등록해보세요.</p>
-                <a href="/corp/create" class="btn btn-primary btn-create">
-                  <i class="bi bi-plus-circle"></i> 첫 번째 법인 등록하기
-                </a>
+                <sec:authorize access="hasAnyRole('ADMIN','MANAGER')">
+                  <p class="text-muted">첫 번째 법인을 등록해보세요.</p>
+                  <a href="/corp/create" class="btn btn-primary btn-create">
+                    <i class="bi bi-plus-circle"></i> 첫 번째 법인 등록하기
+                  </a>
+                </sec:authorize>
               </div>
             </c:otherwise>
           </c:choose>

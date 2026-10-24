@@ -28,6 +28,7 @@ public class CoSellerWebController {
     public String showManualForm(Model model) {
         model.addAttribute("cities", Arrays.asList(City.values()));
         model.addAttribute("districts", Arrays.asList(District.values()));
+        model.addAttribute("histories", coSellerService.recentManualHistories());
         return "coseller/manual";
     }
 }

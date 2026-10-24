@@ -5,12 +5,11 @@ import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
 import com.antock.api.corpmanual.application.dto.response.CorpMastSearchResponse;
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
+import com.antock.api.member.application.service.MemberDomainService;
+import com.antock.global.utils.NumberFormatUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -27,6 +26,7 @@ import java.util.Map;
 public class CorpMastSearchWebController {
 
     private final CorpMastManualService corpMastService;
+    private final MemberDomainService memberDomainService;
 
     @GetMapping("/list")
     public String list(
@@ -35,43 +35,12 @@ public class CorpMastSearchWebController {
             @RequestParam(defaultValue = "10") int size,
             Model model) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
-        Page<CorpMastSearchResponse> corpList = null;
-        if (hasSearchCondition(form)) {
-            CorpMastManualRequest searchRequest = convertFormToRequest(form);
-            corpList = corpMastService.searchWithPagination(searchRequest, page, size, "id", "desc");
-        } else {
-            corpList = Page.empty(pageable);
-        }
+        Page<CorpMastManualResponse> corpList = corpMastService.findForList(form, page, size);
 
         model.addAttribute("corpList", corpList);
         model.addAttribute("form", form);
-        model.addAttribute("isAdmin", isAdmin);
+        attachListAccess(model, corpList);
         return "corp/list";
-    }
-
-    private boolean hasSearchCondition(CorpMastForm form) {
-        return (form.getBizNm() != null && !form.getBizNm().trim().isEmpty()) ||
-                (form.getBizNo() != null && !form.getBizNo().trim().isEmpty()) ||
-                (form.getCorpRegNo() != null && !form.getCorpRegNo().trim().isEmpty()) ||
-                (form.getSiNm() != null && !form.getSiNm().trim().isEmpty()) ||
-                (form.getSggNm() != null && !form.getSggNm().trim().isEmpty());
-    }
-
-    private CorpMastManualRequest convertFormToRequest(CorpMastForm form) {
-        CorpMastManualRequest request = new CorpMastManualRequest();
-        request.setBizNm(form.getBizNm());
-        request.setBizNo(form.getBizNo());
-        request.setCorpRegNo(form.getCorpRegNo());
-        request.setCity(form.getSiNm());
-        request.setDistrict(form.getSggNm());
-        return request;
     }
 
     @GetMapping("/create")
@@ -117,26 +86,35 @@ public class CorpMastSearchWebController {
     }
 
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id) {
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            if (!canChange(loadOwner(id))) {
+                redirectAttributes.addFlashAttribute("message", "등록한 계정 또는 관리자만 삭제할 수 있습니다.");
+                return "redirect:/corp/list";
+            }
+        } catch (Exception e) {
+            log.error("법인 삭제 권한 확인 실패: ID = {}", id, e);
+            redirectAttributes.addFlashAttribute("message", "법인 정보를 찾을 수 없습니다.");
+            return "redirect:/corp/list";
+        }
         log.warn("법인 삭제 기능은 아직 구현되지 않았습니다.");
         return "redirect:/corp/list";
     }
 
     @GetMapping("/modify/{id}")
-    public String Modify(@PathVariable Long id, Model model) {
+    public String Modify(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             CorpMastManualResponse corp = corpMastService.getById(id);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String username = auth.getName();
-            boolean isAdmin = auth.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-
+            if (!canChange(corp.getUsername())) {
+                redirectAttributes.addFlashAttribute("message", "등록한 계정 또는 관리자만 수정할 수 있습니다.");
+                return "redirect:/corp/list";
+            }
             model.addAttribute("corp", corp);
-            model.addAttribute("isAdmin", isAdmin);
+            model.addAttribute("isAdmin", staff(SecurityContextHolder.getContext().getAuthentication()));
             return "corp/list";
         } catch (Exception e) {
             log.error("법인 정보 조회 실패: ID = {}", id, e);
-            model.addAttribute("errorMessage", "법인 정보를 찾을 수 없습니다.");
+            redirectAttributes.addFlashAttribute("message", "법인 정보를 찾을 수 없습니다.");
             return "redirect:/corp/list";
         }
     }
@@ -179,15 +157,16 @@ public class CorpMastSearchWebController {
 
         try {
             CorpMastManualResponse corp = corpMastService.getById(id);
-            model.addAttribute("corp", corp);
-
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String username = auth.getName();
-            boolean isAdmin = auth.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
-
-            boolean hasEditPermission = isAdmin || corp.getUsername().equals(username);
-            model.addAttribute("hasEditPermission", hasEditPermission);
+            boolean isAdmin = staff(auth);
+            model.addAttribute("corp", corp);
+            model.addAttribute("isAdmin", isAdmin);
+            model.addAttribute("hasEditPermission", canChange(corp.getUsername()));
+            if (isAdmin) {
+                model.addAttribute("registrantName", registrantName(corp.getUsername()));
+            }
+            model.addAttribute("shownBizNo", visibleNumber(corp.getFormattedBizNo(), isAdmin));
+            model.addAttribute("shownCorpRegNo", visibleNumber(corp.getCorpRegNo(), isAdmin));
 
             return "corp/detail";
 
@@ -248,5 +227,52 @@ public class CorpMastSearchWebController {
                 .append("&size=").append(request.getSize());
 
         return queryString.toString();
+    }
+
+    private void attachListAccess(Model model, Page<CorpMastManualResponse> corpList) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean staff = staff(auth);
+        model.addAttribute("isStaff", staff);
+        model.addAttribute("currentUsername", auth == null ? "" : auth.getName());
+        if (!staff) {
+            return;
+        }
+        List<String> owners = corpList.getContent().stream()
+                .map(CorpMastManualResponse::getUsername)
+                .toList();
+        model.addAttribute("registrantNames", memberDomainService.nicknamesByUsernames(owners));
+    }
+
+    private String registrantName(String username) {
+        return memberDomainService.nicknamesByUsernames(List.of(username == null ? "" : username))
+                .getOrDefault(username, "");
+    }
+
+    private String visibleNumber(String value, boolean staff) {
+        if (staff) {
+            return value == null ? "" : value;
+        }
+        return NumberFormatUtil.maskLastDigit(value);
+    }
+
+    private String loadOwner(Long id) {
+        return corpMastService.getById(id).getUsername();
+    }
+
+    private boolean canChange(String owner) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (staff(auth)) {
+            return true;
+        }
+        return auth != null && owner != null && owner.equals(auth.getName());
+    }
+
+    private boolean staff(Authentication auth) {
+        if (auth == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority())
+                        || "ROLE_MANAGER".equals(authority.getAuthority()));
     }
 }
