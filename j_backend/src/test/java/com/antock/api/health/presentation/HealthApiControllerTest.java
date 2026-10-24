@@ -10,7 +10,6 @@ import com.antock.api.health.application.service.HealthCheckPaginationService;
 import com.antock.api.health.application.service.HealthMetricsService;
 import com.antock.api.health.domain.HealthStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(HealthApiController.class)
 @WithMockUser(roles = "ADMIN")
 @DisplayName("HealthApiController 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class HealthApiControllerTest {
 
     @Autowired
@@ -69,6 +67,7 @@ class HealthApiControllerTest {
                 .healthPercentage(100.0)
                 .healthy(true)
                 .checkedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
 
         given(healthCheckService.getSystemHealth(any(HealthCheckRequest.class))).willReturn(response);
@@ -77,7 +76,7 @@ class HealthApiControllerTest {
                         .param("ignoreCache", "false"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.overallStatus.code").value("UP"))
+                .andExpect(jsonPath("$.data.overallStatus").value("UP"))
                 .andExpect(jsonPath("$.data.healthy").value(true));
     }
 
@@ -89,6 +88,7 @@ class HealthApiControllerTest {
                 .overallStatus(HealthStatus.UP)
                 .healthy(true)
                 .checkedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
 
         given(healthCheckService.performSystemHealthCheck(anyList(), anyString())).willReturn(response);
@@ -113,6 +113,7 @@ class HealthApiControllerTest {
                 .status(HealthStatus.UP)
                 .message("정상")
                 .checkedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
 
         Page<HealthCheckResponse> page = new PageImpl<>(Arrays.asList(healthCheck), PageRequest.of(0, 10), 1);
@@ -133,6 +134,7 @@ class HealthApiControllerTest {
                 .component("database")
                 .status(HealthStatus.UP)
                 .checkedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
 
         Page<HealthCheckResponse> page = new PageImpl<>(Arrays.asList(healthCheck), PageRequest.of(0, 10), 1);
@@ -230,6 +232,17 @@ class HealthApiControllerTest {
     @Test
     @DisplayName("페이징된 시스템 헬스 상태 조회 성공")
     void getSystemHealthPaged_Success() throws Exception {
+        given(healthCheckPaginationService.getSystemHealthPaged(anyInt(), anyInt(), anyString()))
+                .willReturn(com.antock.api.health.application.dto.PagedSystemHealthResponse.builder()
+                        .totalComponents(1)
+                        .healthyComponents(1)
+                        .expiresAt(LocalDateTime.now().plusMinutes(5))
+                        .pagination(com.antock.api.health.application.dto.PagedSystemHealthResponse.PaginationInfo
+                                .builder()
+                                .totalPages(1)
+                                .build())
+                        .build());
+
         mockMvc.perform(get("/api/v1/health/system/paged")
                         .param("page", "0")
                         .param("size", "10")

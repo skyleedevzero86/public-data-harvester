@@ -2,7 +2,6 @@ package com.antock.corp.infrastructure;
 
 import com.antock.api.coseller.domain.CorpMast;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,8 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 public class CorpMastRepositoryTest {
 
     @Autowired
@@ -32,6 +29,9 @@ public class CorpMastRepositoryTest {
                 .bizNm("신시어랩")
                 .corpRegNo("111111-1234567")
                 .regionCd("1168010300")
+                .siNm("서울특별시")
+                .sggNm("강남구")
+                .username("admin")
                 .build();
     }
 
@@ -54,6 +54,11 @@ public class CorpMastRepositoryTest {
                 .sellerId("test")
                 .bizNm("테스트")
                 .bizNo("518-42-01193")
+                .corpRegNo("222222-1234567")
+                .regionCd("1168010300")
+                .siNm("서울특별시")
+                .sggNm("강남구")
+                .username("admin")
                 .build();
 
         corpMastRepository.save(entity);

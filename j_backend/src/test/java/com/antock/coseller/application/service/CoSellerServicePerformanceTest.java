@@ -5,7 +5,6 @@ import com.antock.api.coseller.application.dto.api.BizCsvInfoDto;
 import com.antock.api.coseller.application.service.CoSellerService;
 import com.antock.api.coseller.value.City;
 import com.antock.api.coseller.value.District;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class CoSellerServicePerformanceTest {
 
     @Autowired

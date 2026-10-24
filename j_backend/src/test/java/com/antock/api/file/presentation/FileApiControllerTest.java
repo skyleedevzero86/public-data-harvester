@@ -4,23 +4,33 @@ import com.antock.api.file.application.dto.FileResponse;
 import com.antock.api.file.application.dto.FileUpdateCommand;
 import com.antock.api.file.application.service.FileApplicationService;
 import com.antock.api.file.application.service.FileValidationService;
+import com.antock.global.security.annotation.CurrentUser;
 import com.antock.global.security.dto.AuthenticatedUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.hamcrest.Matchers.startsWith;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -30,9 +40,34 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FileApiController.class)
+@Import(FileApiControllerTest.CurrentUserConfig.class)
 @DisplayName("FileApiController 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class FileApiControllerTest {
+
+    @TestConfiguration
+    static class CurrentUserConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new HandlerMethodArgumentResolver() {
+                @Override
+                public boolean supportsParameter(MethodParameter parameter) {
+                    return parameter.hasParameterAnnotation(CurrentUser.class)
+                            && AuthenticatedUser.class.equals(parameter.getParameterType());
+                }
+
+                @Override
+                public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+                        NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+                    return AuthenticatedUser.builder()
+                            .id(1L)
+                            .username("tester")
+                            .nickname("테스터")
+                            .role("USER")
+                            .build();
+                }
+            });
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -103,10 +138,12 @@ class FileApiControllerTest {
         FileResponse file1 = FileResponse.builder()
                 .id(1L)
                 .originalFileName("file1.txt")
+                .fileSize(11L)
                 .build();
         FileResponse file2 = FileResponse.builder()
                 .id(2L)
                 .originalFileName("file2.txt")
+                .fileSize(12L)
                 .build();
 
         List<FileResponse> files = Arrays.asList(file1, file2);
@@ -130,6 +167,7 @@ class FileApiControllerTest {
         FileResponse response = FileResponse.builder()
                 .id(1L)
                 .originalFileName("test.txt")
+                .fileSize(11L)
                 .description("수정된 설명")
                 .build();
 
@@ -176,7 +214,7 @@ class FileApiControllerTest {
         mockMvc.perform(get("/api/v1/files/1/download"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"test.txt\""))
-                .andExpect(header().string("Content-Type", "text/plain"));
+                .andExpect(header().string("Content-Type", startsWith("text/plain")));
     }
 
     @Test
@@ -186,6 +224,7 @@ class FileApiControllerTest {
         FileResponse file = FileResponse.builder()
                 .id(1L)
                 .originalFileName("test.txt")
+                .fileSize(11L)
                 .build();
 
         List<FileResponse> files = Arrays.asList(file);

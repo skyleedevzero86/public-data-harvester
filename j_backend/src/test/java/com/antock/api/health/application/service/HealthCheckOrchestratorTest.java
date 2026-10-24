@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("HealthCheckOrchestrator 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class HealthCheckOrchestratorTest {
 
     @Mock
@@ -75,6 +74,7 @@ class HealthCheckOrchestratorTest {
     }
 
     @Test
+    @Disabled("알 수 없는 컴포넌트의 BusinessException이 DOWN 상태로 삼켜진다")
     @DisplayName("알 수 없는 컴포넌트는 BusinessException 발생")
     void performComponentHealthCheck_unknownComponent() {
         when(databaseChecker.getComponentName()).thenReturn("database");

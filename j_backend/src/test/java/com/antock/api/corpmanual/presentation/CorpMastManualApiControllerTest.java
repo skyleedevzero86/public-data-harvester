@@ -6,7 +6,6 @@ import com.antock.api.corpmanual.application.dto.response.CorpMastSearchResponse
 import com.antock.api.corpmanual.application.service.CorpMastManualService;
 import com.antock.api.corpmanual.application.service.CorpMastManualExcelService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -32,7 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CorpMastManualApiController.class)
 @DisplayName("CorpMastManualApiController 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class CorpMastManualApiControllerTest {
 
     @Autowired
@@ -201,7 +200,7 @@ class CorpMastManualApiControllerTest {
         mockMvc.perform(get("/api/v1/corp/export")
                         .param("bizNm", "테스트"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "application/octet-stream"))
+                .andExpect(header().string("Content-Type", startsWith("application/octet-stream")))
                 .andExpect(header().exists("Content-Disposition"));
     }
 }
