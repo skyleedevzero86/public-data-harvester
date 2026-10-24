@@ -113,54 +113,6 @@ public class RegionStatApiController {
                 "deprecated", true));
     }
 
-    @GetMapping("/debug/fields")
-    public ApiResponse<Map<String, Object>> debugFields(
-            @RequestParam(required = false) String city,
-            @RequestParam(required = false) String district) {
-        try {
-            List<CorpMast> corpList;
-            if (city != null && district != null) {
-                corpList = corpMastRepository.findBySiNmAndSggNm(city, district);
-            } else {
-                corpList = corpMastRepository.findAll();
-            }
-            if (corpList.isEmpty()) {
-                return ApiResponse.of(HttpStatus.OK, Map.of(
-                        "message", "No data found",
-                        "city", city,
-                        "district", district,
-                        "sample_data", "No corporations found"));
-            }
-            CorpMast sample = corpList.get(0);
-            Map<String, Object> debugInfo = Map.of(
-                    "total_count", corpList.size(),
-                    "city", city,
-                    "district", district,
-                    "sample_corp", Map.of(
-                            "id", sample.getId(),
-                            "bizNm", sample.getBizNm(),
-                            "repNm", sample.getRepNm(),
-                            "estbDt", sample.getEstbDt(),
-                            "roadNmAddr", sample.getRoadNmAddr(),
-                            "jibunAddr", sample.getJibunAddr(),
-                            "corpStatus", sample.getCorpStatus(),
-                            "siNm", sample.getSiNm(),
-                            "sggNm", sample.getSggNm()),
-                    "field_analysis", Map.of(
-                            "has_rep_nm", sample.getRepNm() != null && !sample.getRepNm().isEmpty(),
-                            "has_estb_dt", sample.getEstbDt() != null && !sample.getEstbDt().isEmpty(),
-                            "has_road_addr", sample.getRoadNmAddr() != null && !sample.getRoadNmAddr().isEmpty(),
-                            "has_jibun_addr", sample.getJibunAddr() != null && !sample.getJibunAddr().isEmpty(),
-                            "has_corp_status", sample.getCorpStatus() != null && !sample.getCorpStatus().isEmpty()));
-            return ApiResponse.of(HttpStatus.OK, debugInfo);
-        } catch (Exception e) {
-            return ApiResponse.of(HttpStatus.INTERNAL_SERVER_ERROR, Map.of(
-                    "error", e.getMessage(),
-                    "city", city,
-                    "district", district));
-        }
-    }
-
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportToExcel(
             @RequestParam(required = false) String city,

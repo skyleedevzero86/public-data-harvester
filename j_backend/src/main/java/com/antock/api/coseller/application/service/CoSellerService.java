@@ -20,16 +20,11 @@ public class CoSellerService {
 
     static final int CHUNK_SIZE = 100;
 
-    private final CoSellerStorageService storageService;
     private final CoSellerApiService apiService;
     private final CsvService csvService;
     private final CoSellerChunkWriter chunkWriter;
     private final FailedChunkRecorder failedChunkRecorder;
     private final ManualRegistrationHistory manualRegistrationHistory;
-
-    public CsvService getCsvService() {
-        return csvService;
-    }
 
     public int saveCoSeller(RegionRequestDto requestDto, String username) {
         return saveRegion(requestDto.getCity().getValue(), requestDto.getDistrict().getValue(), username, false);
@@ -67,11 +62,6 @@ public class CoSellerService {
 
     public void processBatch(List<BizCsvInfoDto> csvList, String username) {
         processList(csvList, "inline-batch", username, null, null);
-    }
-
-    @Transactional
-    public int clearAllData() {
-        return storageService.clearAllData();
     }
 
     @Transactional
