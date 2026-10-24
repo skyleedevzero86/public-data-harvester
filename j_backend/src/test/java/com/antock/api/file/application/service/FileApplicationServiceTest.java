@@ -13,7 +13,6 @@ import com.antock.api.member.domain.Member;
 import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FileApplicationService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class FileApplicationServiceTest {
 
     @Mock
@@ -124,6 +122,8 @@ class FileApplicationServiceTest {
         when(memberRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> fileApplicationService.uploadFile(command))
+                .isInstanceOf(RuntimeException.class)
+                .cause()
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEMBER_NOT_FOUND);
     }

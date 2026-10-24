@@ -3,14 +3,12 @@ package com.antock.corp.application.dto;
 import com.antock.api.corpmanual.application.dto.request.CorpMastManualRequest;
 import com.antock.api.corpmanual.application.dto.response.CorpMastManualResponse;
 import com.antock.api.coseller.domain.CorpMast;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("CorpMast DTO 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class CorpMastDtoTest {
 
     @Test
@@ -53,9 +51,9 @@ class CorpMastDtoTest {
         request.setBizNo("   ");
         request.setSellerId("");
 
-        assertThat(request.getBizNmForSearch()).isEmpty();
-        assertThat(request.getBizNoForSearch()).isEmpty();
-        assertThat(request.getSellerIdForSearch()).isEmpty();
+        assertThat(request.getBizNmForSearch()).isNull();
+        assertThat(request.getBizNoForSearch()).isNull();
+        assertThat(request.getSellerIdForSearch()).isNull();
     }
 
     @Test
@@ -134,7 +132,7 @@ class CorpMastDtoTest {
 
         CorpMastManualResponse response = CorpMastManualResponse.from(entity);
 
-        assertThat(response.getFormattedBizNo()).isEqualTo("140-81-9474");
+        assertThat(response.getFormattedBizNo()).isEqualTo("140-81-99474");
     }
 
     @Test

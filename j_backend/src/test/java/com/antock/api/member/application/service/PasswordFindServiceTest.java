@@ -11,7 +11,6 @@ import com.antock.api.member.infrastructure.PasswordResetTokenRepository;
 import com.antock.api.member.value.MemberStatus;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PasswordFindService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class PasswordFindServiceTest {
 
     @Mock
@@ -76,6 +74,7 @@ class PasswordFindServiceTest {
                 .status(MemberStatus.APPROVED)
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(testMember, "id", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "loginFailCount", 0);
 
         findRequest = PasswordFindRequest.builder()
                 .username("testuser")
@@ -87,7 +86,6 @@ class PasswordFindServiceTest {
     @DisplayName("비밀번호 재설정 요청 성공")
     void requestPasswordReset_success() throws Exception {
         when(memberRepository.findByUsernameAndEmail("testuser", "test@test.com")).thenReturn(Optional.of(testMember));
-        when(testMember.isActive()).thenReturn(true);
         when(passwordResetTokenRepository.countRecentTokensByMemberId(anyLong(), any(LocalDateTime.class)))
                 .thenReturn(0L);
         when(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
@@ -118,8 +116,8 @@ class PasswordFindServiceTest {
     @Test
     @DisplayName("비밀번호 재설정 요청 실패 - 비활성화된 회원")
     void requestPasswordReset_inactiveMember() {
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "status", MemberStatus.REJECTED);
         when(memberRepository.findByUsernameAndEmail("testuser", "test@test.com")).thenReturn(Optional.of(testMember));
-        when(testMember.isActive()).thenReturn(false);
 
         assertThatThrownBy(() -> passwordFindService.requestPasswordReset(findRequest, "127.0.0.1", "test-agent"))
                 .isInstanceOf(BusinessException.class)
@@ -130,7 +128,6 @@ class PasswordFindServiceTest {
     @DisplayName("비밀번호 재설정 요청 실패 - 요청 횟수 초과")
     void requestPasswordReset_tooManyRequests() {
         when(memberRepository.findByUsernameAndEmail("testuser", "test@test.com")).thenReturn(Optional.of(testMember));
-        when(testMember.isActive()).thenReturn(true);
         when(passwordResetTokenRepository.countRecentTokensByMemberId(anyLong(), any(LocalDateTime.class)))
                 .thenReturn(3L);
 
@@ -156,7 +153,6 @@ class PasswordFindServiceTest {
                 .build();
 
         when(passwordResetTokenRepository.findByToken("validToken")).thenReturn(Optional.of(token));
-        when(token.isValid()).thenReturn(true);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
         when(passwordHistoryRepository.findRecentPasswordHistoryWithLimit(anyLong(), anyInt()))
                 .thenReturn(new ArrayList<>());
@@ -203,7 +199,6 @@ class PasswordFindServiceTest {
                 .build();
 
         when(passwordResetTokenRepository.findByToken("expiredToken")).thenReturn(Optional.of(token));
-        when(token.isValid()).thenReturn(false);
 
         assertThatThrownBy(() -> passwordFindService.resetPassword(resetRequest, "127.0.0.1", "test-agent"))
                 .isInstanceOf(BusinessException.class)
@@ -226,7 +221,6 @@ class PasswordFindServiceTest {
                 .build();
 
         when(passwordResetTokenRepository.findByToken("validToken")).thenReturn(Optional.of(token));
-        when(token.isValid()).thenReturn(true);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
         assertThatThrownBy(() -> passwordFindService.resetPassword(resetRequest, "127.0.0.1", "test-agent"))
@@ -243,7 +237,6 @@ class PasswordFindServiceTest {
                 .build();
 
         when(passwordResetTokenRepository.findByToken("validToken")).thenReturn(Optional.of(token));
-        when(token.isValid()).thenReturn(true);
 
         boolean isValid = passwordFindService.validateResetToken("validToken");
 

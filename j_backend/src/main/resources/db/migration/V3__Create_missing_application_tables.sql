@@ -339,3 +339,13 @@ CREATE INDEX IF NOT EXISTS idx_health_checks_create_date ON health_checks(create
 -- 시스템 헬스 인덱스
 CREATE INDEX IF NOT EXISTS idx_system_health_create_date ON system_health(create_date);              -- 생성일 정렬용
 CREATE INDEX IF NOT EXISTS idx_system_health_overall_status ON system_health(overall_status);        -- 전체 상태 조회용
+
+-- =====================================================================================
+-- 10. csv_batch_history.username
+-- 설명: 수동 등록을 실행한 사용자명을 한 건의 이력에 남긴다
+-- =====================================================================================
+
+ALTER TABLE csv_batch_history
+    ADD COLUMN IF NOT EXISTS username VARCHAR(255);
+
+COMMENT ON COLUMN csv_batch_history.username IS '수동 등록을 실행한 사용자명. 배치 이력은 비어 있을 수 있다';

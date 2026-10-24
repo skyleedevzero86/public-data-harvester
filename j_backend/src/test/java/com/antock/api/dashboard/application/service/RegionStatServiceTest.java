@@ -2,8 +2,6 @@ package com.antock.api.dashboard.application.service;
 
 import com.antock.api.coseller.domain.CorpMast;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RegionStatService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class RegionStatServiceTest {
 
     @Mock
@@ -34,17 +31,11 @@ class RegionStatServiceTest {
     @InjectMocks
     private RegionStatService regionStatService;
 
-    @BeforeEach
-    void setUp() {
-        Object[] statData = new Object[]{"서울특별시", "강남구", 100L, 80L, 75L};
-        List<Object[]> statsList = new ArrayList<>();
-        statsList.add(statData);
-        when(corpMastRepository.getRegionStats()).thenReturn(statsList);
-    }
-
     @Test
     @DisplayName("상위 지역 통계 조회")
     void getTopRegionStat() {
+        when(corpMastRepository.getRegionStats()).thenReturn(regionStatRow());
+
         com.antock.api.dashboard.application.dto.RegionStatDto result = regionStatService.getTopRegionStat();
 
         assertThat(result).isNotNull();
@@ -55,6 +46,8 @@ class RegionStatServiceTest {
     @Test
     @DisplayName("모든 지역 통계 조회")
     void getAllRegionStats() {
+        when(corpMastRepository.getRegionStats()).thenReturn(regionStatRow());
+
         List<com.antock.api.dashboard.application.dto.RegionStatDto> result = regionStatService.getAllRegionStats();
 
         assertThat(result).isNotEmpty();
@@ -108,6 +101,12 @@ class RegionStatServiceTest {
         com.antock.api.dashboard.application.dto.RegionStatDto result = regionStatService.getTopRegionStat();
 
         assertThat(result).isNull();
+    }
+
+    private List<Object[]> regionStatRow() {
+        List<Object[]> statsList = new ArrayList<>();
+        statsList.add(new Object[]{"서울특별시", "강남구", 100L, 80L, 75L});
+        return statsList;
     }
 }
 

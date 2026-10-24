@@ -7,7 +7,6 @@ import com.antock.api.member.infrastructure.MemberPasswordHistoryRepository;
 import com.antock.api.member.infrastructure.MemberRepository;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberPasswordService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class MemberPasswordServiceTest {
 
     @Mock
@@ -124,9 +122,6 @@ class MemberPasswordServiceTest {
                 .newPasswordConfirm("DifferentPassword123!")
                 .build();
 
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-        when(passwordEncoder.matches("oldPassword", "$2a$10$oldEncodedPassword")).thenReturn(true);
-
         assertThatThrownBy(() -> memberPasswordService.changePassword(1L, changeRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
@@ -140,9 +135,6 @@ class MemberPasswordServiceTest {
                 .newPassword("weak")
                 .newPasswordConfirm("weak")
                 .build();
-
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-        when(passwordEncoder.matches("oldPassword", "$2a$10$oldEncodedPassword")).thenReturn(true);
 
         assertThatThrownBy(() -> memberPasswordService.changePassword(1L, changeRequest))
                 .isInstanceOf(BusinessException.class)
@@ -172,7 +164,6 @@ class MemberPasswordServiceTest {
     @DisplayName("비밀번호 변경 필요 여부 확인")
     void isPasswordChangeRequired() {
         when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-        when(testMember.isPasswordChangeRequired()).thenReturn(true);
 
         boolean result = memberPasswordService.isPasswordChangeRequired(1L);
 
@@ -182,8 +173,8 @@ class MemberPasswordServiceTest {
     @Test
     @DisplayName("비밀번호 변경 권장 여부 확인")
     void isPasswordChangeRecommended() {
+        org.springframework.test.util.ReflectionTestUtils.setField(testMember, "passwordChangedAt", LocalDateTime.now());
         when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-        when(testMember.isPasswordChangeRecommended()).thenReturn(false);
 
         boolean result = memberPasswordService.isPasswordChangeRecommended(1L);
 

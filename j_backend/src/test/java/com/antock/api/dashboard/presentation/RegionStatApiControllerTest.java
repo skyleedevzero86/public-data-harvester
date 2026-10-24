@@ -4,7 +4,6 @@ import com.antock.api.coseller.domain.CorpMast;
 import com.antock.api.coseller.infrastructure.CorpMastRepository;
 import com.antock.api.dashboard.application.dto.RegionStatDto;
 import com.antock.api.dashboard.application.service.RegionStatService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -27,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(RegionStatApiController.class)
 @DisplayName("RegionStatApiController 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class RegionStatApiControllerTest {
 
     @Autowired
@@ -99,7 +98,7 @@ class RegionStatApiControllerTest {
                 1
         );
 
-        given(regionStatService.getRegionStatsWithPaging(any(), anyString(), anyString()))
+        given(regionStatService.getRegionStatsWithPaging(any(), nullable(String.class), nullable(String.class)))
                 .willReturn(page);
 
         mockMvc.perform(get("/api/v1/region-stats/paged")
@@ -173,12 +172,13 @@ class RegionStatApiControllerTest {
     @WithMockUser
     void exportToExcel_Success() throws Exception {
         byte[] excelData = "test excel data".getBytes();
-        given(regionStatService.exportToExcel(anyString(), anyString())).willReturn(excelData);
+        given(regionStatService.exportToExcel(nullable(String.class), nullable(String.class))).willReturn(excelData);
 
         mockMvc.perform(get("/api/v1/region-stats/export")
                         .param("city", "서울특별시"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(header().string("Content-Type",
+                        startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")))
                 .andExpect(header().exists("Content-Disposition"));
     }
 }

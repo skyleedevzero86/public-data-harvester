@@ -10,7 +10,6 @@ import com.antock.api.health.infrastructure.HealthCheckRepository;
 import com.antock.api.health.infrastructure.SystemHealthRepository;
 import com.antock.global.common.exception.BusinessException;
 import com.antock.global.common.exception.ErrorCode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("HealthCheckService 테스트")
-@Disabled("현재 구현과 기대값이 달라 실패한다")
 class HealthCheckServiceTest {
 
     @Mock
@@ -64,8 +62,6 @@ class HealthCheckServiceTest {
     @Test
     @DisplayName("시스템 헬스 체크 요청 처리")
     void getSystemHealth() {
-        when(healthCheckOrchestrator.getAvailableComponents())
-                .thenReturn(Arrays.asList("database", "redis"));
         when(systemHealthRepository.findLatestValidSystemHealth(any(LocalDateTime.class)))
                 .thenReturn(Optional.empty());
         when(healthCheckOrchestrator.performComponentHealthCheck(anyString(), anyString()))
@@ -75,8 +71,6 @@ class HealthCheckServiceTest {
                         .message("정상")
                         .checkedAt(LocalDateTime.now())
                         .build());
-        when(healthCheckRepository.save(any(HealthCheck.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
         when(systemHealthRepository.save(any(SystemHealth.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(responseConverter.convertToSystemHealthResponse(any(SystemHealth.class), anyList()))
