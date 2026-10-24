@@ -47,6 +47,8 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authz -> authz
                                                 .requestMatchers(HttpMethod.POST, "/coseller/save", "/coseller/save-simple")
                                                 .hasAnyRole("ADMIN", "MANAGER")
+                                                .requestMatchers("/coseller/debug/**", "/api/v1/region-stats/debug/**")
+                                                .denyAll()
                                                 .requestMatchers(
                                                                 "/",
                                                                 "/members/login",
