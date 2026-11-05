@@ -1,0 +1,7 @@
+build
+out
+bin
+logs
+uploads
+uploaded-files
+.gradle

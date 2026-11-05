@@ -1,5 +1,6 @@
 plugins {
     java
+    war
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
     jacoco
@@ -155,7 +156,7 @@ tasks.register("runDev") {
     doLast {
         project.exec {
             commandLine("java", "-jar", "-Dspring.profiles.active=dev",
-                "build/libs/${project.name}-${project.version}.jar")
+                "build/libs/${project.name}-${project.version}.war")
         }
     }
 }
@@ -167,7 +168,11 @@ tasks.register("runProd") {
     doLast {
         project.exec {
             commandLine("java", "-jar", "-Dspring.profiles.active=prod",
-                "build/libs/${project.name}-${project.version}.jar")
+                "build/libs/${project.name}-${project.version}.war")
         }
     }
+}
+
+tasks.named<War>("war") {
+    enabled = false
 }

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS corp_mast (
+    id BIGSERIAL PRIMARY KEY,
+    seller_id VARCHAR(100) NOT NULL,
+    biz_nm VARCHAR(200) NOT NULL,
+    biz_no VARCHAR(20) NOT NULL,
+    corp_reg_no VARCHAR(20) NOT NULL,
+    region_cd VARCHAR(20) NOT NULL,
+    si_nm VARCHAR(50) NOT NULL,
+    sgg_nm VARCHAR(50) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    description VARCHAR(2000),
+    rep_nm VARCHAR(100),
+    estb_dt VARCHAR(20),
+    road_nm_addr VARCHAR(200),
+    jibun_addr VARCHAR(200),
+    corp_status VARCHAR(50),
+    create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modify_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT corp_mast_unique UNIQUE (biz_no)
+);
